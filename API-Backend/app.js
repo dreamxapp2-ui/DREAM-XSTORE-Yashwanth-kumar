@@ -10,6 +10,7 @@ const authRoutes = require('./routes/auth');
 const googleAuthRoutes = require('./routes/google.auth');
 const designRoutes = require('./routes/design');
 const userRoutes = require('./routes/user');
+var downloadRouter = require('./routes/download');
 
 
 const app = express();
@@ -42,6 +43,8 @@ app.use('/', userRoutes);
 
 // design routes
 app.use('/api', designRoutes);
+
+app.use('/download', downloadRouter);
 
 
 // Basic route
