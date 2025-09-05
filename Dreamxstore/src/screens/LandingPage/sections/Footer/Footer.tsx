@@ -1,6 +1,7 @@
 import React from "react";
 import { Button } from "../../../../components/ui/button";
 import { Instagram, Facebook, Twitter, Youtube, Mail, Phone, MapPin } from "lucide-react";
+import DownloadButton from "../../../../components/DownloadButton";
 
 export const Footer = (): JSX.Element => {
   const currentYear = new Date().getFullYear();
@@ -93,6 +94,13 @@ export const Footer = (): JSX.Element => {
                     <social.icon className="w-5 h-5 sm:w-6 sm:h-6" />
                   </a>
                 </Button>
+                <DownloadButton
+                  type="catalog"
+                  variant="link"
+                  className="text-gray-600 hover:text-black text-sm p-0 h-auto transition-colors font-['Poppins',sans-serif]"
+                >
+                  Download Catalog
+                </DownloadButton>
               ))}
             </div>
           </div>

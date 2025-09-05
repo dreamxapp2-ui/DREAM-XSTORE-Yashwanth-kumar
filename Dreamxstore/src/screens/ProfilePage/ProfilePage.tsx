@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import EditProfileModal from '../../components/EditProfileModal';
 import { Button } from '../../components/ui/button';
+import DownloadButton from '../../components/DownloadButton';
 
 interface UserProfile {
   email: string;
@@ -71,6 +72,21 @@ const ProfilePage: React.FC = () => {
         <div className="flex gap-4 mt-4">
           <Button onClick={handleEdit} className="bg-purple-600 text-white hover:bg-purple-700 rounded-lg px-6 py-2">Edit Profile</Button>
           <Button onClick={handleLogout} className="bg-red-500 text-white hover:bg-red-600 rounded-lg px-6 py-2">Logout</Button>
+        </div>
+        
+        {/* Download User Data */}
+        <div className="mt-6 pt-4 border-t border-gray-200">
+          <h3 className="text-lg font-medium mb-3">Data Export</h3>
+          <p className="text-sm text-gray-600 mb-4">
+            Download all your data including profile information, orders, and designs.
+          </p>
+          <DownloadButton
+            type="user-data"
+            variant="outline"
+            className="w-full"
+          >
+            Download My Data
+          </DownloadButton>
         </div>
       </div>
       <EditProfileModal isOpen={isModalOpen} onClose={handleClose} currentUser={user} />

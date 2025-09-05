@@ -7,6 +7,7 @@ import { Button } from '../../components/ui/button';
 import { Card, CardContent } from '../../components/ui/card';
 import { useCart } from '../../contexts/CartContext';
 import { useNavigate } from 'react-router-dom';
+import DownloadButton from '../../components/DownloadButton';
 
 export const CartPage: React.FC = () => {
   const { cart, updateQuantity, removeFromCart } = useCart();
@@ -482,6 +483,30 @@ export const CartPage: React.FC = () => {
                   {statusMessage && (
                     <div className={`mt-4 p-3 rounded text-center text-sm ${isError ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>{statusMessage}</div>
                   )}
+                  
+                  {/* Download Options */}
+                  <div className="mt-4 pt-4 border-t border-gray-200">
+                    <h4 className="text-sm font-medium text-gray-700 mb-2">Download Options</h4>
+                    <div className="flex gap-2">
+                      <DownloadButton
+                        type="catalog"
+                        variant="outline"
+                        size="sm"
+                        className="text-xs"
+                      >
+                        Catalog
+                      </DownloadButton>
+                      <DownloadButton
+                        type="user-data"
+                        variant="outline"
+                        size="sm"
+                        className="text-xs"
+                      >
+                        My Data
+                      </DownloadButton>
+                    </div>
+                  </div>
+                  
                   {orderSuccess && (
                     <div className="flex items-center justify-center mt-3 py-2 text-green-600 font-medium">
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">

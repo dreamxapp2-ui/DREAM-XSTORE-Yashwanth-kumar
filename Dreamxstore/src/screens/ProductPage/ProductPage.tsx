@@ -5,6 +5,7 @@ import { Card, CardContent } from "../../components/ui/card";
 import { Badge } from "../../components/ui/badge";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { useCart } from "../../contexts/CartContext";
+import DownloadButton from "../../components/DownloadButton";
 
 export const ProductPage = (): JSX.Element => {
   const navigate = useNavigate();
@@ -662,6 +663,15 @@ export const ProductPage = (): JSX.Element => {
             >
               <Share2 className="h-5 w-5" />
             </Button>
+            {/* Download Button */}
+            <DownloadButton
+              type="image-url"
+              imageUrl={product.images[selectedImage]}
+              filename={`${product.name}_image.jpg`}
+              variant="ghost"
+              size="icon"
+              className="h-10 w-10 rounded-[40px] hover:bg-gray-100"
+            />
             {/* Cart Icon with Count - Clickable */}
             <div className="relative">
               <Button
