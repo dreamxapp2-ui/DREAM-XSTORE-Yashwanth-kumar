@@ -301,7 +301,7 @@ router.post("/add-brand-account", async (req, res) => {
     const lastName = "";
 
     let isVerified = true;
-    let isabrand = true;
+    let isBrand = true;
 
     // Hash the password
     const saltRounds = 10;
@@ -348,7 +348,7 @@ router.post("/add-brand-account", async (req, res) => {
       username,
       lastName,
       isVerified,
-      isabrand,
+      isBrand,
       pickup_location,
       pincode,
       phone,
@@ -452,7 +452,7 @@ router.post("/update-pickup-location", auth, async (req, res) => {
 router.post("/list-brands", auth, async (req, res) => {
   try {
     const brands = await User.find({
-      isabrand: true,
+      isBrand: true,
       _id: { $ne: req.user._id }
     }).select("username _id");
     res.json({ brands });

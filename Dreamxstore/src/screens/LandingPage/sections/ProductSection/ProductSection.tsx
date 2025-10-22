@@ -1,13 +1,15 @@
+"use client";
+
 import React, { useState } from "react";
 import { useCart } from "../../../../contexts/CartContext";
 import { Button } from "../../../../components/ui/button";
 import { Card, CardContent } from "../../../../components/ui/card";
 import { Heart, ArrowUpRight } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useRouter } from "next/navigation";
 
-export const ProductSection = (): JSX.Element => {
+export const ProductSection = () => {
   const [activeCategory, setActiveCategory] = useState("T-Shirts");
-  const navigate = useNavigate();
+  const router = useRouter();
   const { addToCart } = useCart();
 
   // Category buttons data
@@ -82,9 +84,7 @@ export const ProductSection = (): JSX.Element => {
     );
     
     // Navigate to the product page with the correct slug
-    navigate(`/product/${product.slug}`, {
-      state: { fromLandingPage: true, productData }
-    });
+    router.push(`/product/${product.slug}`);
   };
 
   return (

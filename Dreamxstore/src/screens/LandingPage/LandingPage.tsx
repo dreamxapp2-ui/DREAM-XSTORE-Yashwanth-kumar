@@ -9,7 +9,7 @@ import { TrendingFashionCards } from "./sections/TrendingFashionCards";
 import { Footer } from "./sections/Footer";
 import { FloatingChatButton } from "./sections/FloatingChatButton";
 
-export const LandingPage = (): JSX.Element => {
+export const LandingPage = () => {
   // Handle scroll restoration when returning from product page
   useEffect(() => {
     const handleScrollRestoration = () => {
@@ -24,7 +24,7 @@ export const LandingPage = (): JSX.Element => {
           sessionStorage.removeItem('clickedProduct');
           
           // Ultra-smooth scroll function with optimized performance
-          const ultraSmoothScrollToElement = (element, duration = 1200) => {
+          const ultraSmoothScrollToElement = (element: HTMLElement, duration = 1200) => {
             const rect = element.getBoundingClientRect();
             const elementTop = rect.top + window.pageYOffset;
             
@@ -60,14 +60,14 @@ export const LandingPage = (): JSX.Element => {
             }
             
             // Use high-precision timing for ultra-smooth animation
-            let startTime = null;
-            let lastTime = null;
+            let startTime: number | null = null;
+            let lastTime: number | null = null;
             
             // Ultra-smooth easing function (ease-out-quart for very smooth deceleration)
-            const easeOutQuart = (t) => 1 - Math.pow(1 - t, 4);
+            const easeOutQuart = (t: number) => 1 - Math.pow(1 - t, 4);
             
             // Optimized animation function with requestAnimationFrame
-            const animateUltraSmooth = (currentTime) => {
+            const animateUltraSmooth = (currentTime: number) => {
               if (startTime === null) {
                 startTime = currentTime;
                 lastTime = currentTime;
@@ -184,9 +184,9 @@ export const LandingPage = (): JSX.Element => {
               const startPosition = window.pageYOffset;
               const distance = fallbackPosition - startPosition;
               const duration = 800;
-              let startTime = null;
+              let startTime: number | null = null;
               
-              const animateFallback = (currentTime) => {
+              const animateFallback = (currentTime: number) => {
                 if (startTime === null) startTime = currentTime;
                 const timeElapsed = currentTime - startTime;
                 const progress = Math.min(timeElapsed / duration, 1);
@@ -265,7 +265,7 @@ export const LandingPage = (): JSX.Element => {
     }
     
     // Handle browser back/forward navigation
-    const handlePopState = (event) => {
+    const handlePopState = (event: PopStateEvent) => {
       console.log("PopState event:", event);
       if (event.state?.fromProductPage || sessionStorage.getItem('clickedProduct')) {
         if ('scrollRestoration' in history) {

@@ -1,8 +1,6 @@
 import React from "react";
-import { useNavigate } from "react-router-dom";
 
 const VerificationLinkSentPage = () => {
-  const navigate = useNavigate();
   const email = localStorage.getItem("pendingVerificationEmail");
 
   return (

@@ -39,7 +39,7 @@ const userSchema = new mongoose.Schema({
     type:String,
     default : ""
   },
-  isabrand:{
+  isBrand:{
     type:Boolean,
     default:false,
   },

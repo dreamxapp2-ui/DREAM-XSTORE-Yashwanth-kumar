@@ -16,9 +16,20 @@ const userSchema = new mongoose.Schema({
     type: String,
     trim: true
   },
+  firstName: {
+    type: String,
+    trim: true
+  },
   lastName: {
     type: String,
     trim: true
+  },
+  googleId: {
+    type: String,
+    sparse: true
+  },
+  profilePicture: {
+    type: String
   },
   authType: {
     type: String,
@@ -39,7 +50,7 @@ const userSchema = new mongoose.Schema({
     type:String,
     default : ""
   },
-  isabrand:{
+  isBrand:{
     type:Boolean,
     default:false,
   },

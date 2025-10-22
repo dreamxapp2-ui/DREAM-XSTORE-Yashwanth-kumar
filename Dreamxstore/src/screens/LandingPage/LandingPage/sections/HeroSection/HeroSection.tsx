@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useRouter } from "next/navigation";
 import { Avatar, AvatarImage } from "../../../../../components/ui/avatar";
 import { Button } from "../../../../../components/ui/button";
 
@@ -12,7 +12,7 @@ const getUserFromStorage = () => {
 
 export const HeroSection = (): JSX.Element => {
   const [user, setUser] = useState<any>(getUserFromStorage());
-  const navigate = useNavigate();
+  const router = useRouter();
 
   // Listen for login changes (simulate login event)
   useEffect(() => {
@@ -76,9 +76,9 @@ export const HeroSection = (): JSX.Element => {
               className="rounded-none hover:bg-[#e5f570] [font-family:'Azeret_Mono',Helvetica] font-normal text-[#004d84] text-2xl"
               onClick={() => {
                 alert("Hero DEBUG button clicked");
-                console.log("Hero DEBUG button navigating to login", { navigate, location: window.location.href });
+                console.log("Hero DEBUG button navigating to login", { location: window.location.href });
                 try {
-                  navigate("/login");
+                  router.push("/login");
                 } catch (err) {
                   alert("Navigation error: " + err);
                   console.error("Navigation error", err);

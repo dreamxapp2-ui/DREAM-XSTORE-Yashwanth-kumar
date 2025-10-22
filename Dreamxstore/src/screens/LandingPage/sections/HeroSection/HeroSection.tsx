@@ -1,22 +1,33 @@
+"use client";
+
 import React, { useState, useEffect } from "react";
 import { Button } from "../../../../components/ui/button";
 import { X, Menu, ShoppingBag } from "lucide-react";
-import { Link, useNavigate } from "react-router-dom";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useCart } from "../../../../contexts/CartContext";
-export const HeroSection = (): JSX.Element => {
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [user, setUser] = useState<any>(() => {
-    const u = localStorage.getItem("dreamx_user");
-    return u ? JSON.parse(u) : null;
-  });
-  const { cart } = useCart();
-  const navigate = useNavigate();
 
+export const HeroSection = () => {
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [user, setUser] = useState<any>(null);
+  const { cart } = useCart();
+  const router = useRouter();
+
+  // Load user from localStorage on client side only
   useEffect(() => {
-    const onStorage = () => setUser(() => {
-      const u = localStorage.getItem("dreamx_user");
-      return u ? JSON.parse(u) : null;
-    });
+    const loadUser = () => {
+      if (typeof window !== 'undefined') {
+        const u = localStorage.getItem("dreamx_user");
+        setUser(u ? JSON.parse(u) : null);
+      }
+    };
+    
+    loadUser();
+    
+    const onStorage = () => {
+      loadUser();
+    };
+    
     window.addEventListener("storage", onStorage);
     return () => window.removeEventListener("storage", onStorage);
   }, []);
@@ -33,17 +44,17 @@ export const HeroSection = (): JSX.Element => {
   };
 
   const handleCartClick = () => {
-    navigate('/cart');
+    router.push('/cart');
   };
 
   const totalItems = cart.reduce((total, item) => total + item.quantity, 0);
 
   return (
     <>
-      <header className="w-full h-[100px] bg-white border-b border-gray-100 shadow-sm">
+      <header className="w-full h-[65px] bg-white border-b border-gray-100 shadow-sm">
         <div className="w-full h-full mx-auto relative flex items-center justify-between px-4 sm:px-6 md:px-8 lg:px-12 xl:px-16 2xl:px-20">
           {/* Logo */}
-          <Link to="/" className="flex items-center flex-shrink-0">
+          <Link href="/" className="flex items-center flex-shrink-0">
             <img
               src="https://i.postimg.cc/xTVNmCps/Dream-X-Store.png"
               alt="Dream X Store"
@@ -56,7 +67,7 @@ export const HeroSection = (): JSX.Element => {
             {navLinks.map((link, index) => (
               <Link
                 key={index}
-                to={link.path}
+                href={link.path}
                 className={`[font-family:'Azeret_Mono',Helvetica] font-normal text-black text-base xl:text-lg hover:text-[#004d84] transition-colors p-0 h-auto whitespace-nowrap ${link.className || ""}`}
               >
                 {link.text}
@@ -68,8 +79,8 @@ export const HeroSection = (): JSX.Element => {
               <div className="relative group">
                 <Button
                   variant="ghost"
-                  className="w-auto h-[34px] xl:h-[42px] 2xl:h-[34px] rounded-[1px] px-4 flex items-center gap-2 cursor-pointer bg-transparent hover:bg-gray-100"
-                  onClick={() => navigate('/profile')}
+                  className="min-w-[120px] max-w-[200px] h-[34px] xl:h-[42px] 2xl:h-[34px] rounded-[1px] px-4 flex items-center gap-2 cursor-pointer bg-transparent hover:bg-gray-100"
+                  onClick={() => router.push('/profile')}
                 >
                   <span className="[font-family:'Azeret_Mono',Helvetica] font-normal text-[#004d84] text-[12px] xl:text-[14px] 2xl:text-[14px]">
                     {user.username}
@@ -80,7 +91,7 @@ export const HeroSection = (): JSX.Element => {
                 <div className="absolute right-0 mt-2 w-40 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded shadow-lg z-50 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity duration-150 pointer-events-auto group-hover:pointer-events-auto group-focus-within:pointer-events-auto" tabIndex={-1}>
                   <button
                     className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"
-                    onClick={() => navigate('/profile')}
+                    onClick={() => router.push('/profile')}
                   >
                     Profile
                   </button>
@@ -90,7 +101,7 @@ export const HeroSection = (): JSX.Element => {
                       localStorage.removeItem('dreamx_user');
                       setUser(null);
                       window.dispatchEvent(new Event('storage'));
-                      navigate('/');
+                      router.push('/');
                     }}
                   >
                     Logout
@@ -101,10 +112,10 @@ export const HeroSection = (): JSX.Element => {
               <Button
                 className="w-[90px] xl:w-[120px] 2xl:w-[110px] h-[30px] xl:h-[42px] 2xl:h-[34px] bg-[#f0ff7f] rounded-[1px] hover:bg-[#e5f570] transition-colors ml-4 xl:ml-6 2xl:ml-8 flex-shrink-0 flex items-center justify-center"
                 onClick={() => {
-                  console.log("HeroSection navigating to login", { navigate, location: window.location.href });
+                  console.log("HeroSection navigating to login", { router, location: window.location.href });
                   try {
                     console.log("Navigating to /login");
-                    navigate("/login");
+                    router.push("/login");
                   } catch (err) {
                     alert("Navigation error: " + err);
                     console.error("Navigation error", err);
@@ -118,14 +129,14 @@ export const HeroSection = (): JSX.Element => {
             )}
 
             {/* Shopping Bag Icon - Bigger size */}
-            <div className="relative pl-2 group flex-shrink-0">
+            <div className="relative pl-2 group flex-shrink-0 ">
               <Button
                 variant="ghost"
                 size="icon"
                 onClick={handleCartClick}
-                className="w-[40px] h-[40px] xl:w-[44px] xl:h-[44px] 2xl:w-[48px] 2xl:h-[48px] hover:bg-gray-100 rounded-full transition-all duration-300 cursor-pointer shadow-sm hover:shadow-md"
+                className="w-[40px] h-[40px] xl:w-[44px] xl:h-[44px] 2xl:w-[48px] 2xl:h-[48px] hover:bg-gray-100 rounded-full transition-all duration-300 cursor-pointer shadow-md shadow-gray-200 hover:shadow-md"
               >
-                <ShoppingBag className="w-6 h-6 xl:w-7 xl:h-7 2xl:w-8 2xl:h-8 text-gray-700 hover:text-[#004d84] transition-colors" />
+                <ShoppingBag className="w-6 h-6 xl:w-7 xl:h-7 2xl:w-8 2xl:h-8 text-gray-700 hover:text-[#004d84] transition-colors " />
               </Button>
               
               {/* Cart Items Badge - Show only if items > 0 */}
@@ -162,17 +173,18 @@ export const HeroSection = (): JSX.Element => {
         )}
 
         {/* Mobile Menu - Fixed positioning */}
-        <div className={`fixed top-0 right-0 h-full w-[85vw] max-w-[320px] bg-white shadow-2xl transform transition-transform duration-300 ease-in-out z-50 lg:hidden ${
+        <div className={`fixed top-0 right-0 h-full w-[70vw] max-w-[320px] bg-white shadow-2xl transform transition-transform duration-300 ease-in-out z-50 lg:hidden ${
           isMobileMenuOpen ? 'translate-x-0' : 'translate-x-full'
         }`}>
-          <div className="flex flex-col h-full">
+          {/*  Added fixed to avoid overflow  */}
+           <div className="flex flex-col fixed-h-[calc(100vh-180px)]"> 
             {/* Mobile Menu Header with Logo and Cart */}
             <div className="flex items-center justify-between p-6 border-b border-gray-200">
               <div className="flex items-center gap-3">
                 <img
                   src="https://i.postimg.cc/xTVNmCps/Dream-X-Store.png"
                   alt="Dream X Store"
-                  className="h-8 w-auto object-contain"
+                  className="h-7 w-auto object-contain"
                 />
                 
                 {/* Mobile Cart Icon - Bigger */}
@@ -181,7 +193,7 @@ export const HeroSection = (): JSX.Element => {
                     variant="ghost"
                     size="icon"
                     onClick={handleCartClick}
-                    className="w-10 h-10 hover:bg-gray-100 rounded-full"
+                    className="w-10 h-10 hover:bg-gray-100 rounded-full "
                   >
                     <ShoppingBag className="w-6 h-6 text-gray-700" />
                   </Button>
@@ -208,7 +220,7 @@ export const HeroSection = (): JSX.Element => {
                 {navLinks.map((link, index) => (
                   <div key={index} className="border-b border-gray-200 pb-6">
                     <Link
-                      to={link.path}
+                      href={link.path}
                       onClick={toggleMobileMenu}
                       className="text-2xl font-bold text-black p-0 h-auto font-mono uppercase tracking-wider hover:text-[#004d84] transition-colors"
                     >
@@ -219,30 +231,34 @@ export const HeroSection = (): JSX.Element => {
                 
                 {/* Get Started Button in Menu */}
                 <div className="pt-4">
-                  {user?(<Button
-                variant="ghost"
-                className="w-auto h-[34px] xl:h-[42px] 2xl:h-[34px] rounded-[1px] px-4 flex items-center gap-2 bg-transparent hover:bg-gray-100"
-                onClick={() => { toggleMobileMenu(); navigate('/profile'); }}
-              >
-                <span className="[font-family:'Azeret_Mono',Helvetica] font-normal text-[#004d84] text-[12px] xl:text-[14px] 2xl:text-[14px]">
-                  {user.username}
-                </span>
-              </Button>):(<Button
-                    variant="link"
-                    onClick={() => {
-                      console.log("HeroSection navigating to login", { navigate, location: window.location.href });
-                      try {
-                        console.log("Navigating to /login");
-                        navigate("/login");
-                      } catch (err) {
-                        alert("Navigation error: " + err);
-                        console.error("Navigation error", err);
-                      }
-                    }}
-                    className="text-2xl font-bold text-black p-0 h-auto font-mono uppercase tracking-wider hover:text-[#004d84] transition-colors"
-                  >
-                    GET STARTED
-                  </Button>)}
+                  {user ? (
+                    <Button
+                      variant="ghost"
+                      className="w-auto h-[34px] xl:h-[42px] 2xl:h-[34px] rounded-[1px] px-4 flex items-center gap-2 bg-transparent hover:bg-gray-100"
+                      onClick={() => { toggleMobileMenu(); router.push('/profile'); }}
+                    >
+                      <span className="[font-family:'Azeret_Mono',Helvetica] font-normal text-[#004d84] text-[12px] xl:text-[14px] 2xl:text-[14px]">
+                        {user.username}
+                      </span>
+                    </Button>
+                  ) : (
+                    <Button
+                      variant="link"
+                      onClick={() => {
+                        console.log("HeroSection navigating to login", { router, location: window.location.href });
+                        try {
+                          console.log("Navigating to /login");
+                          router.push("/login");
+                        } catch (err) {
+                          alert("Navigation error: " + err);
+                          console.error("Navigation error", err);
+                        }
+                      }}
+                      className="text-2xl font-bold text-black p-0 h-auto font-mono uppercase tracking-wider hover:text-[#004d84] transition-colors"
+                    >
+                      GET STARTED
+                    </Button>
+                  )}
                 </div>
               </div>
             </div>

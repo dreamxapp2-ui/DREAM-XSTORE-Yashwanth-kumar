@@ -1,4 +1,3 @@
-/// <reference types="vite/client" />
 import React, { useState, useEffect } from 'react';
 import axios from "axios";
 import { v4 as uuidv4 } from 'uuid';
@@ -6,12 +5,12 @@ import { ArrowLeft, Plus, Minus, Trash2, ShoppingBag } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import { Card, CardContent } from '../../components/ui/card';
 import { useCart } from '../../contexts/CartContext';
-import { useNavigate } from 'react-router-dom';
+import { useRouter } from 'next/navigation';
 import DownloadButton from '../../components/DownloadButton';
 
 export const CartPage: React.FC = () => {
   const { cart, updateQuantity, removeFromCart } = useCart();
-  const navigate = useNavigate();
+  const router = useRouter();
 
   // Address management
   const [addresses, setAddresses] = useState<{id: string, text: string}[]>([]);
@@ -58,7 +57,7 @@ export const CartPage: React.FC = () => {
   const getTotalPrice = () => cart.reduce((total, item) => total + (item.price * item.quantity), 0);
 
   const handleContinueShopping = () => {
-    navigate('/');
+    router.push('/');
   };
 
   const clearCart = () => {
@@ -109,7 +108,7 @@ export const CartPage: React.FC = () => {
       setPinLoading(true);
       try {
         const res = await fetch(
-          `${import.meta.env.VITE_PAY_API_URL || ""}/orders/get-delivery-price`,
+          `${process.env.NEXT_PUBLIC_PAY_API_URL || ""}/orders/get-delivery-price`,
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -223,7 +222,7 @@ export const CartPage: React.FC = () => {
         billing_phone: billingDetails.billing_phone,
         address: billingDetails.billing_address,
       };
-      const UAT_PAY_API_URL = import.meta.env.VITE_PAY_API_URL || "";
+      const UAT_PAY_API_URL = process.env.NEXT_PUBLIC_PAY_API_URL || "";
       // Validate amount
       const amount = Number(orderData.totals.total);
       if (isNaN(amount) || amount <= 0) {
@@ -252,7 +251,7 @@ export const CartPage: React.FC = () => {
       const amountPaise = Math.round(amount * 100);
       console.log("[Checkout] Razorpay amount (paise):", amountPaise);
       const options = {
-        key: import.meta.env.VITE_RAZORPAY_KEY,
+        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY,
         amount: amountPaise + "",
         currency: "INR",
         name: "Dream X Store",
@@ -311,7 +310,7 @@ export const CartPage: React.FC = () => {
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => navigate(-1)}
+            onClick={() => router.back()}
             className="h-10 w-10 rounded-[40px] hover:bg-gray-100"
           >
             <ArrowLeft className="h-5 w-5" />

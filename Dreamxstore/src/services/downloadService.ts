@@ -1,6 +1,6 @@
 // Download service for handling file downloads
 class DownloadService {
-  private static baseURL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+  private static baseURL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
   // Get auth token from localStorage
   private static getAuthToken(): string | null {

@@ -3,14 +3,15 @@ import { ArrowLeft, Heart, Share2, ShoppingBag, Star, Plus, Minus, ChevronLeft, 
 import { Button } from "../../components/ui/button";
 import { Card, CardContent } from "../../components/ui/card";
 import { Badge } from "../../components/ui/badge";
-import { useNavigate, useParams, useLocation } from "react-router-dom";
+import { useRouter, useParams, useSearchParams } from "next/navigation";
 import { useCart } from "../../contexts/CartContext";
 import DownloadButton from "../../components/DownloadButton";
 
 export const ProductPage = (): JSX.Element => {
-  const navigate = useNavigate();
-  const location = useLocation();
-  const { productSlug } = useParams<{ productSlug: string }>();
+  const router = useRouter();
+  const params = useParams();
+  const searchParams = useSearchParams();
+  const productSlug = params?.productSlug as string;
   const { cart, addToCart } = useCart();
   const [selectedImage, setSelectedImage] = useState(0);
   const [selectedSize, setSelectedSize] = useState("M");
@@ -158,11 +159,10 @@ export const ProductPage = (): JSX.Element => {
   useEffect(() => {
     console.log("ProductPage mounted with slug:", productSlug);
     console.log("Current URL:", window.location.href);
-    console.log("Location state:", location.state);
     console.log("Product found:", product);
     
     // Check if this is coming from the landing page (direct navigation)
-    const isFromLandingPage = location.state?.fromLandingPage;
+    const isFromLandingPage = searchParams?.get('from') === 'landing';
     
     // Check if this is a back navigation
     const navigationType = (performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming)?.type;
@@ -209,7 +209,7 @@ export const ProductPage = (): JSX.Element => {
       window.location.href
     );
     
-  }, [productSlug, location.state]);
+  }, [productSlug, searchParams]);
 
   // Real-time rating state
   const [currentRating, setCurrentRating] = useState(product.rating);
@@ -489,7 +489,7 @@ export const ProductPage = (): JSX.Element => {
 
   // Handle cart navigation
   const handleCartClick = () => {
-    navigate('/cart');
+    router.push('/cart');
   };
 
   const RatingComponent = ({ 
@@ -531,7 +531,7 @@ export const ProductPage = (): JSX.Element => {
         <div className="text-center">
           <h1 className="text-2xl font-medium mb-4">Product Not Found</h1>
           <p className="text-gray-600 mb-6">The product you're looking for doesn't exist.</p>
-          <Button onClick={() => navigate('/')} className="bg-black text-white hover:bg-gray-800">
+          <Button onClick={() => router.push('/')} className="bg-black text-white hover:bg-gray-800">
             Go Back Home
           </Button>
         </div>
@@ -636,7 +636,7 @@ export const ProductPage = (): JSX.Element => {
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => navigate(-1)}
+            onClick={() => router.back()}
             className="h-10 w-10 rounded-[40px] hover:bg-gray-100"
           >
             <ArrowLeft className="h-5 w-5" />

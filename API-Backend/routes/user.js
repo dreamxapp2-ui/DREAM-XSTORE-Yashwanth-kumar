@@ -73,7 +73,7 @@ res.json({status:"done"})
 router.post("/api/user/other-brands", authenticate, async (req, res) => {
   try {
     const brands = await User.find({
-      isabrand: true,
+      isBrand: true,
       _id: { $ne: req.user._id }
     }).select("username hero_image _id");
 
@@ -138,7 +138,7 @@ router.post("/api/user/hero-images", async (req, res) => {
 router.post("/api/user/stats", async (req, res) => {
   try {
     const totalUsers = await User.countDocuments({});
-    const brandUsers = await User.find({ isabrand: true }).select("email username createdAt");
+    const brandUsers = await User.find({ isBrand: true }).select("email username createdAt");
 
     res.json({
       totalUsers,
@@ -157,7 +157,7 @@ router.post("/api/user/stats", async (req, res) => {
 router.get("/api/user/profile", authenticate, async (req, res) => {
   try {
     const user = await User.findById(req.user._id).select(
-      "username lastName email bio isabrand hero_image collab"
+      "username lastName email bio isBrand hero_image collab"
     ); // Only select needed fields, exclude _id
     console.log(user);
 
@@ -176,7 +176,7 @@ router.get("/api/user/profile", authenticate, async (req, res) => {
         lastName: user.lastName,
         email: user.email,
         bio: user.bio,
-        isabrand: user.isabrand,
+        isBrand: user.isBrand,
         hero_image: user.hero_image,
         collab: user.collab
       },
@@ -194,7 +194,7 @@ router.get("/api/user/profile", authenticate, async (req, res) => {
 router.post("/api/user/public-profile", async (req, res) => {
   try {
     const user = await User.findById(req.body.id).select(
-      "username lastName email bio isabrand hero_image"
+      "username lastName email bio isBrand hero_image"
     ); // Only select needed fields, exclude _id
     console.log(user);
 
@@ -213,7 +213,7 @@ router.post("/api/user/public-profile", async (req, res) => {
         lastName: user.lastName,
         email: user.email,
         bio: user.bio,
-        isabrand: user.isabrand,
+        isBrand: user.isBrand,
         hero_image: user.hero_image,
       },
     });
@@ -255,7 +255,7 @@ router.post(
       }
 
       // Only update pickup locations and hero image for brands
-      if (req.user.isabrand) {
+      if (req.user.isBrand) {
         updates.pickup_locations = pickupLocations || [];
       }
 
@@ -264,7 +264,7 @@ router.post(
       const updatedUser = await User.findByIdAndUpdate(req.user._id, updates, {
         new: true,
         select:
-          "email username lastName bio isabrand pickup_locations hero_image",
+          "email username lastName bio isBrand pickup_locations hero_image",
       });
 
       if (!updatedUser) {
@@ -575,7 +575,7 @@ router.post("/api/orders/latest", authenticate, async (req, res) => {
 // Get top 4 brand users
 router.post("/api/user/top-brands", async (req, res) => {
   try {
-    const brands = await User.find({ isabrand: true })
+    const brands = await User.find({ isBrand: true })
       .select("username bio hero_image")
       .limit(4);
 

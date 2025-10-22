@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useRouter, useSearchParams } from "next/navigation";
 
 const VerifyEmailTokenPage = () => {
   const [verifying, setVerifying] = useState(true);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("Please check your email for a verification link.");
-  const navigate = useNavigate();
-  const location = useLocation();
+  const router = useRouter();
+  const searchParams = useSearchParams();
 
   // Simulate auth context login
   const login = (token: string, user: { id: string; username: string; email: string }) => {
@@ -20,8 +20,7 @@ const VerifyEmailTokenPage = () => {
   };
 
   useEffect(() => {
-    const params = new URLSearchParams(location.search);
-    const token = params.get("token");
+    const token = searchParams?.get("token");
     const email = localStorage.getItem("pendingVerificationEmail");
 
     if (!token && !email) {
@@ -33,8 +32,7 @@ const VerifyEmailTokenPage = () => {
     if (token) {
       // If token is present, verify
       const verifyEmail = async () => {
-        // @ts-ignore
-        const apiUrl = import.meta.env.VITE_NEXT_PUBLIC_API_URL || "http://localhost:3001/api";
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api";
         try {
           const response = await fetch(`${apiUrl}/auth/verify-email`, {
             method: "POST",
@@ -49,7 +47,7 @@ const VerifyEmailTokenPage = () => {
           localStorage.removeItem("pendingVerificationEmail");
           login(data.token, data.user);
           setMessage("Email verified successfully! Redirecting to your profile...");
-          setTimeout(() => navigate("/profile"), 2000);
+          setTimeout(() => router.push("/profile"), 2000);
         } catch (err: any) {
           setError(err.message || "Verification failed");
         } finally {
@@ -62,7 +60,7 @@ const VerifyEmailTokenPage = () => {
       setMessage("Please check your email for the verification link.");
       setVerifying(false);
     }
-  }, [location, navigate]);
+  }, [searchParams, router]);
 
   // Periodically check verification status if waiting
   useEffect(() => {
@@ -71,8 +69,7 @@ const VerifyEmailTokenPage = () => {
     if (!email) return;
 
     const checkVerificationStatus = async () => {
-      // @ts-ignore
-      const apiUrl = import.meta.env.VITE_NEXT_PUBLIC_API_URL || "http://localhost:3001/api";
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api";
       try {
         const response = await fetch(`${apiUrl}/auth/check-verification-status`, {
           method: "POST",
@@ -84,7 +81,7 @@ const VerifyEmailTokenPage = () => {
           if (data.isVerified) {
             localStorage.removeItem("pendingVerificationEmail");
             login(data.token, data.user);
-            navigate("/profile");
+            router.push("/profile");
           }
         }
       } catch (error) {
@@ -93,7 +90,7 @@ const VerifyEmailTokenPage = () => {
     };
     const interval = setInterval(checkVerificationStatus, 5000);
     return () => clearInterval(interval);
-  }, [verifying, navigate]);
+  }, [verifying, router]);
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-50">
@@ -111,7 +108,7 @@ const VerifyEmailTokenPage = () => {
               <div className="mt-4">
                 <button
                   className="text-purple-600 hover:text-purple-700 underline"
-                  onClick={() => navigate('/signup')}
+                  onClick={() => router.push('/signup')}
                 >
                   Return to signup
                 </button>

@@ -448,7 +448,7 @@ router.get("/artifacts/:id", authenticate, async (req, res) => {
 // Get top 25 public designs Todo later based on ratings get the list
 router.get("/public", async (req, res) => {
   try {
-    const brandedUsers = await User.find({ isabrand: true }).select("_id");
+    const brandedUsers = await User.find({ isBrand: true }).select("_id");
     const brandedUserIds = brandedUsers.map((user) => user._id);
 
     const publicDesigns = await Design.find({
@@ -485,7 +485,7 @@ router.get("/public", async (req, res) => {
 
 router.get("/publicBranded", async (req, res) => {
   try {
-    // const brandedUsers = await User.find({ isabrand: false }).select('_id');
+    // const brandedUsers = await User.find({ isBrand: false }).select('_id');
     // const brandedUserIds = brandedUsers.map(user => user._id);
 
     const publicDesigns = await Design.find({
