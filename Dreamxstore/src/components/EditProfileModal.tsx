@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
-import { X } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { X, Upload, Camera } from 'lucide-react';
+import { Button } from './ui/button';
 
 interface EditProfileModalProps {
   isOpen: boolean;
@@ -7,69 +8,45 @@ interface EditProfileModalProps {
   currentUser: {
     email: string;
     username: string;
-    lastName: string;
-    bio: string;
+    lastName?: string;
+    bio?: string;
     isBrand?: boolean;
     hero_image?: string;
+    phone?: string;
+    firstName?: string;
+    displayName?: string;
   };
 }
 
 const EditProfileModal: React.FC<EditProfileModalProps> = ({ isOpen, onClose, currentUser }) => {
-  const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
-  const [isPickupModalOpen, setIsPickupModalOpen] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [profileImage, setProfileImage] = useState<string>(currentUser?.hero_image || '');
+  const [imagePreview, setImagePreview] = useState<string>(currentUser?.hero_image || '');
   const [formData, setFormData] = useState({
     email: currentUser?.email || '',
-    username: currentUser?.username || '',
+    firstName: currentUser?.firstName || '',
     lastName: currentUser?.lastName || '',
+    displayName: currentUser?.displayName || currentUser?.username || '',
+    phone: currentUser?.phone || '',
     bio: currentUser?.bio || '',
-    hero_image: currentUser?.hero_image || '',
-  });
-
-  // Add useEffect to update formData when currentUser changes
-  useEffect(() => {
-    const baseFormData = {
-      email: currentUser.email || '',
-      username: currentUser.username || '',
-      lastName: currentUser.lastName || '',
-      bio: currentUser.bio || '',
-    };
-
-    if (currentUser.isBrand) {
-      setFormData({
-        ...baseFormData,
-        hero_image: currentUser.hero_image || '',
-      });
-    } else {
-      setFormData({
-        ...baseFormData,
-        hero_image: '',
-      });
-    }
-  }, [currentUser]);
-
-  const [passwordData, setPasswordData] = useState({
-    oldPassword: '',
-    newPassword: '',
-    confirmPassword: '',
   });
 
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  const [heroImage, setHeroImage] = useState<File | null>(null);
-  const [pickupData, setPickupData] = useState({
-    pickup_location: '',
-    name: '',
-    email: '',
-    phone: '',
-    address: '',
-    address_2: '',
-    city: '',
-    state: '',
-    country: '',
-    pin_code: ''
-  });
-  const [pickupError, setPickupError] = useState('');
-  const [pickupSuccess, setPickupSuccess] = useState('');
+
+  // Update formData when currentUser changes
+  useEffect(() => {
+    setFormData({
+      email: currentUser.email || '',
+      firstName: currentUser.firstName || '',
+      lastName: currentUser.lastName || '',
+      displayName: currentUser.displayName || currentUser.username || '',
+      phone: currentUser.phone || '',
+      bio: currentUser.bio || '',
+    });
+    setProfileImage(currentUser.hero_image || '');
+    setImagePreview(currentUser.hero_image || '');
+  }, [currentUser]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setFormData({
@@ -78,207 +55,209 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({ isOpen, onClose, cu
     });
   };
 
-  const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setPasswordData({
-      ...passwordData,
-      [e.target.name]: e.target.value,
-    });
-  };
-
-  const handlePickupChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setPickupData({
-      ...pickupData,
-      [e.target.name]: e.target.value
-    });
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      // Save to dreamx_user for consistency
-      localStorage.setItem('dreamx_user', JSON.stringify(formData));
+      const updatedData = {
+        ...formData,
+        username: formData.displayName,
+        hero_image: imagePreview
+      };
+      localStorage.setItem('dreamx_user', JSON.stringify(updatedData));
       setSuccess('Profile updated successfully!');
       window.dispatchEvent(new Event('storage'));
       setTimeout(() => {
         setSuccess('');
         onClose();
-      }, 2000);
+      }, 1500);
     } catch (err) {
       setError('An error occurred while updating profile');
     }
   };
 
-  const handlePasswordSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (passwordData.newPassword !== passwordData.confirmPassword) {
-      setError('Passwords do not match');
-      return;
-    }
-    // Simulate password update
-    setSuccess('Password updated successfully!');
-    setTimeout(() => {
-      setSuccess('');
-      setIsPasswordModalOpen(false);
-    }, 2000);
-  };
-
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-full max-w-md relative">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-[1px] p-6 w-full max-w-2xl relative max-h-[90vh] overflow-y-auto">
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 text-gray-500 hover:text-gray-700"
+          className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 z-10"
         >
           <X size={24} />
         </button>
 
-        {!isPasswordModalOpen ? (
-          <>
-            <h2 className="text-2xl text-black font-bold mb-6">Edit Profile</h2>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Email</label>
-                <input
-                  type="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleInputChange}
-                  className="mt-1 block text-black w-full rounded-md border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500"
+        <h2 className="text-2xl text-black font-semibold mb-6">Edit Profile</h2>
+        
+        <form onSubmit={handleSubmit} className="space-y-5">
+          {/* Profile Picture Uploader */}
+          <div className="flex flex-col items-center pb-4 border-b border-gray-200">
+            <div className="relative">
+              {imagePreview ? (
+                <img
+                  src={imagePreview}
+                  alt="Profile"
+                  className="w-24 h-24 rounded-full object-cover border-4 border-[#f1ff8c]"
                 />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Username</label>
-                <input
-                  type="text"
-                  name="username"
-                  value={formData.username}
-                  onChange={handleInputChange}
-                  className="mt-1 block w-full text-black rounded-md border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Last Name</label>
-                <input
-                  type="text"
-                  name="lastName"
-                  value={formData.lastName}
-                  onChange={handleInputChange}
-                  className="mt-1 block w-full text-black  rounded-md border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Bio</label>
-                <textarea
-                  name="bio"
-                  value={formData.bio}
-                  onChange={handleInputChange}
-                  rows={3}
-                  maxLength={300}
-                  className="mt-1 block w-full text-black rounded-md border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500"
-                />
-                <div className="text-xs text-gray-500 text-right">
-                  {formData.bio.length}/300 characters
-                </div>
-              </div>
-              {currentUser.isBrand && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">
-                    Hero Banner Image
-                    <span className="text-xs text-gray-500 ml-1">(Recommended: 1920x1080)</span>
-                  </label>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => setHeroImage(e.target.files?.[0] || null)}
-                    className="mt-1 block w-full text-sm text-gray-500
-                      file:mr-4 file:py-2 file:px-4
-                      file:rounded-full file:border-0
-                      file:text-sm file:font-semibold
-                      file:bg-purple-50 file:text-purple-700
-                      hover:file:bg-purple-100"
-                  />
-                  {formData.hero_image && !heroImage && (
-                    <p className="text-sm text-gray-500 mt-1">
-                      Current banner image is set
-                    </p>
-                  )}
+              ) : (
+                <div className="w-24 h-24 rounded-full bg-[#f1ff8c] flex items-center justify-center border-4 border-black">
+                  <span className="text-4xl font-bold text-[#004d84]">
+                    {formData.firstName?.charAt(0).toUpperCase() || formData.displayName?.charAt(0).toUpperCase() || 'U'}
+                  </span>
                 </div>
               )}
-              {error && <p className="text-red-500 text-sm">{error}</p>}
-              {success && <p className="text-green-500 text-sm">{success}</p>}
-              <div className="flex justify-between gap-2 mt-6">
-                <button
-                  type="button"
-                  onClick={() => setIsPasswordModalOpen(true)}
-                  className="px-4 py-2 bg-gray-100 text-black rounded-lg hover:bg-gray-200"
-                >
-                  Change Password
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
-                >
-                  Save Changes
-                </button>
-              </div>
-            </form>
-          </>
-        ) : (
-          <>
-            <h2 className="text-2xl font-bold mb-6">Change Password</h2>
-            <form onSubmit={handlePasswordSubmit} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Current Password</label>
-                <input
-                  type="password"
-                  name="oldPassword"
-                  value={passwordData.oldPassword}
-                  onChange={handlePasswordChange}
-                  className="mt-1 block w-full text-black  rounded-md border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700">New Password</label>
-                <input
-                  type="password"
-                  name="newPassword"
-                  value={passwordData.newPassword}
-                  onChange={handlePasswordChange}
-                  className="mt-1 block w-full text-black  rounded-md border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Confirm New Password</label>
-                <input
-                  type="password"
-                  name="confirmPassword"
-                  value={passwordData.confirmPassword}
-                  onChange={handlePasswordChange}
-                  className="mt-1 block w-full text-black  rounded-md border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500"
-                />
-              </div>
-              {error && <p className="text-red-500 text-sm">{error}</p>}
-              {success && <p className="text-green-500 text-sm">{success}</p>}
-              <div className="flex justify-between mt-6">
-                <button
-                  type="button"
-                  onClick={() => setIsPasswordModalOpen(false)}
-                  className="px-4 py-2 bg-gray-100 text-black rounded-lg hover:bg-gray-200"
-                >
-                  Back
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
-                >
-                  Update Password
-                </button>
-              </div>
-            </form>
-          </>
-        )}
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="absolute bottom-0 right-0 bg-[#004d84] text-white p-2 rounded-full hover:bg-[#003d6a]"
+              >
+                <Camera className="w-4 h-4" />
+              </button>
+            </div>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleImageChange}
+              className="hidden"
+            />
+            <p className="text-sm text-gray-600 mt-2">Click camera icon to upload</p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* First Name */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">First Name</label>
+              <input
+                type="text"
+                name="firstName"
+                value={formData.firstName}
+                onChange={handleInputChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-[1px] focus:outline-none focus:ring-2 focus:ring-[#004d84] text-black"
+                placeholder="Enter first name"
+              />
+            </div>
+
+            {/* Last Name */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
+              <input
+                type="text"
+                name="lastName"
+                value={formData.lastName}
+                onChange={handleInputChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-[1px] focus:outline-none focus:ring-2 focus:ring-[#004d84] text-black"
+                placeholder="Enter last name"
+              />
+            </div>
+          </div>
+
+          {/* Display Name */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Display Name</label>
+            <input
+              type="text"
+              name="displayName"
+              value={formData.displayName}
+              onChange={handleInputChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-[1px] focus:outline-none focus:ring-2 focus:ring-[#004d84] text-black"
+              placeholder="How should we display your name?"
+            />
+          </div>
+
+          {/* Phone Number */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
+            <input
+              type="tel"
+              name="phone"
+              value={formData.phone}
+              onChange={handleInputChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-[1px] focus:outline-none focus:ring-2 focus:ring-[#004d84] text-black"
+              placeholder="+91 1234567890"
+            />
+          </div>
+
+          {/* Email (Read-only with Change button) */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+            <div className="flex gap-2">
+              <input
+                type="email"
+                name="email"
+                value={formData.email}
+                readOnly
+                className="flex-1 px-3 py-2 border border-gray-300 rounded-[1px] bg-gray-50 text-gray-600 cursor-not-allowed"
+              />
+              <Button
+                type="button"
+                variant="outline"
+                className="border-[#004d84] text-[#004d84] hover:bg-[#004d84] hover:text-white rounded-none h-auto"
+                onClick={() => alert('Email change functionality coming soon!')}
+              >
+                Change
+              </Button>
+            </div>
+          </div>
+
+          {/* Bio */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Bio</label>
+            <textarea
+              name="bio"
+              value={formData.bio}
+              onChange={handleInputChange}
+              rows={4}
+              maxLength={300}
+              className="w-full px-3 py-2 border border-gray-300 rounded-[1px] focus:outline-none focus:ring-2 focus:ring-[#004d84] text-black resize-none"
+              placeholder="Tell us about yourself..."
+            />
+            <div className="text-xs text-gray-500 text-right mt-1">
+              {formData.bio.length}/300 characters
+            </div>
+          </div>
+
+          {/* Error/Success Messages */}
+          {error && (
+            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-[1px]">
+              {error}
+            </div>
+          )}
+          {success && (
+            <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-[1px]">
+              {success}
+            </div>
+          )}
+
+          {/* Action Buttons */}
+          <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
+            <Button
+              type="button"
+              onClick={onClose}
+              variant="outline"
+              className="border-gray-300 text-gray-700 hover:bg-gray-50 rounded-none"
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              className="bg-[#004d84] hover:bg-[#003d6a] text-white rounded-none"
+            >
+              Save Changes
+            </Button>
+          </div>
+        </form>
       </div>
     </div>
   );

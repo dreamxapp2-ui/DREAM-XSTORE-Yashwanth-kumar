@@ -1,8 +1,8 @@
 "use client";
 
 import React from "react";
-import { LandingPage } from "../../src/screens/LandingPage";
+import { AboutPage } from "../../src/screens/AboutPage";
 
 export default function Page() {
-  return <LandingPage />;
+  return <AboutPage />;
 }
