@@ -10,6 +10,9 @@ const authRoutes = require('./routes/auth');
 const googleAuthRoutes = require('./routes/google.auth');
 const designRoutes = require('./routes/design');
 const userRoutes = require('./routes/user');
+const adminRoutes = require('./routes/admin');
+const productRoutes = require('./routes/products');
+const uploadRoutes = require('./routes/upload');
 var downloadRouter = require('./routes/download');
 
 
@@ -41,11 +44,21 @@ mongoose.connect(process.env.MONGODB_URI)
 app.use('/api/auth', authRoutes);
 app.use('/api/auth/google', googleAuthRoutes);
 
-//user routes
+//upload routes
+app.use('/api/upload', uploadRoutes);
+
+//admin routes
+app.use('/api/admin', adminRoutes);
+app.use('/api/admin', productRoutes);
+
+//product and user routes
 app.use('/', userRoutes);
 
 // design routes
 app.use('/api', designRoutes);
+
+//public product routes
+app.use('/api/products', productRoutes);
 
 app.use('/download', downloadRouter);
 

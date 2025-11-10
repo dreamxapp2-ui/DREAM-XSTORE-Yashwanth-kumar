@@ -251,7 +251,6 @@ const signupSchema = z
       .regex(/^(?=.*\d)/, "Password must contain at least one number")
       .regex(/^(?=.*[@$!%*?&#\-_.,;:()[\]{}'"<>~`+=|\\\/])/, "Password must contain at least one special character"),
     confirmPassword: z.string(),
-    isBrand: z.boolean(),
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: "Passwords do not match",
@@ -270,7 +269,6 @@ const SignupPage = () => {
     email: "",
     password: "",
     confirmPassword: "",
-    isBrand: false,
   });
   const [errors, setErrors] = useState<ErrorState>({});
   const [globalError, setGlobalError] = useState<string | null>(null);  // Upgrade: Global errors
@@ -299,7 +297,6 @@ const SignupPage = () => {
           username: validatedData.username,
           email: validatedData.email,
           password: validatedData.password,
-          isBrand: validatedData.isBrand,
         }),
       });
 
@@ -476,12 +473,10 @@ const SignupPage = () => {
             <label className="flex items-center space-x-2">
               <input
                 type="checkbox"
-                name="isBrand"
-                checked={formData.isBrand}
-                onChange={(e) => setFormData({ ...formData, isBrand: e.target.checked })}
+                name="agreeToTerms"
                 className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 dark:border-gray-700 rounded"
               />
-              <span className="text-gray-900 dark:text-white text-sm">Are you a brand?</span>
+              <span className="text-gray-900 dark:text-white text-sm">I agree to the Terms of Service</span>
             </label>
           </div>
           <button

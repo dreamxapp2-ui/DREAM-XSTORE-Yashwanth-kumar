@@ -22,7 +22,11 @@
       }
     ],
     "baseUrl": ".",
-    "incremental": true
+    "incremental": true,
+    "paths": {
+      "@/*": ["./*"]
+    },
+    "types": ["jest", "@testing-library/jest-dom"]
   },
   "include": [
     "next-env.d.ts",

@@ -1,0 +1,168 @@
+{
+  "info": {
+    "name": "Dream X Store - Admin Endpoints",
+    "description": "API collection for testing admin and superadmin endpoints",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Admin Login",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"admin@dreamxstore.com\",\n  \"password\": \"AdminPass@123\"\n}"
+        },
+        "url": {
+          "raw": "http://localhost:3000/api/admin/login",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "3000",
+          "path": ["api", "admin", "login"]
+        },
+        "description": "Login as admin/superadmin (checks role)"
+      },
+      "response": []
+    },
+    {
+      "name": "Get All Users (Superadmin)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": {
+          "raw": "http://localhost:3000/api/admin/users?page=1&limit=10&role=user",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "3000",
+          "path": ["api", "admin", "users"],
+          "query": [
+            {
+              "key": "page",
+              "value": "1"
+            },
+            {
+              "key": "limit",
+              "value": "10"
+            },
+            {
+              "key": "role",
+              "value": "user",
+              "disabled": true
+            }
+          ]
+        },
+        "description": "Get all users with pagination (superadmin only)"
+      },
+      "response": []
+    },
+    {
+      "name": "Update User Role (Superadmin)",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"role\": \"admin\"\n}"
+        },
+        "url": {
+          "raw": "http://localhost:3000/api/admin/users/{{userId}}/role",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "3000",
+          "path": ["api", "admin", "users", "{{userId}}", "role"]
+        },
+        "description": "Update user role (promote/demote)"
+      },
+      "response": []
+    },
+    {
+      "name": "Get Dashboard Stats (Admin+)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": {
+          "raw": "http://localhost:3000/api/admin/stats",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "3000",
+          "path": ["api", "admin", "stats"]
+        },
+        "description": "Get dashboard statistics (admin or superadmin)"
+      },
+      "response": []
+    },
+    {
+      "name": "Test Invalid Token (Should Fail)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer invalid.token.here"
+          }
+        ],
+        "url": {
+          "raw": "http://localhost:3000/api/admin/users",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "3000",
+          "path": ["api", "admin", "users"]
+        },
+        "description": "Test endpoint with invalid token (should return 401)"
+      },
+      "response": []
+    },
+    {
+      "name": "Test No Token (Should Fail)",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "http://localhost:3000/api/admin/users",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "3000",
+          "path": ["api", "admin", "users"]
+        },
+        "description": "Test endpoint without token (should return 401)"
+      },
+      "response": []
+    }
+  ],
+  "variable": [
+    {
+      "key": "token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "userId",
+      "value": "",
+      "type": "string"
+    }
+  ]
+}

@@ -99,7 +99,17 @@ const userSchema = new mongoose.Schema({
    collab : {
     type : [String],
     default : []
-   }
+   },
+  role: {
+    type: String,
+    enum: ['user', 'admin', 'superadmin'],
+    default: 'user'
+  },
+  status: {
+    type: String,
+    enum: ['active', 'banned', 'inactive'],
+    default: 'active'
+  }
 
   //   "phone": "9777777779",
   //   "address": "Mutant Facility, Sector 3 ",

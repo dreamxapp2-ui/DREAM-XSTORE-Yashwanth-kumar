@@ -271,7 +271,7 @@ const authController = {
 
   async register(req, res) {
     try {
-      const { email, password, username, isBrand } = req.body;  // Dropped lastName
+      const { email, password, username } = req.body;
 
       // Enhanced input validation (granular, with field-specific errors)
       if (!email || !password || !username) {
@@ -319,12 +319,13 @@ const authController = {
         { expiresIn: '24h' }  // Changed from '30d' to match expiry field
       );
 
-      // Create new user with verification token (dropped lastName)
+      // Create new user with verification token
+      // isBrand defaults to false - admins can change this later from the admin panel
       const user = new User({
         email,
         password: hashedPassword,
         username,
-        isBrand: isBrand || false,
+        isBrand: false,  // Default: not a brand
         authType: 'email',
         verificationToken,
         verificationTokenExpiry: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours / 1 day
@@ -336,7 +337,7 @@ const authController = {
       // Create verification URL
       const verificationUrl = `${process.env.FRONTEND_URL}/verify-email?token=${verificationToken}`;
 
-      // Send verification email (dropped lastName reference)
+      // Send verification email
        const emailContent = `
          Hello ${username || 'there'},
 
@@ -366,7 +367,7 @@ const authController = {
         });
       }
 
-      // Remove sensitive information from response (dropped lastName)
+      // Remove sensitive information from response
       const userResponse = user.toObject();
       delete userResponse.password;
       delete userResponse.verificationToken;
@@ -378,7 +379,7 @@ const authController = {
           id: userResponse._id,
           email: userResponse.email,
           username: userResponse.username,
-          isBrand: userResponse.isBrand || false,
+          isBrand: false,  // Always false on signup
           isVerified: false
         }
       });
@@ -427,9 +428,9 @@ const authController = {
       user.verificationTokenExpiry = undefined;
       await user.save();
 
-      // Generate new JWT token for authenticated session
+      // Generate new JWT token for authenticated session (includes role)
       const authToken = jwt.sign(
-        { userId: user._id },
+        { userId: user._id, role: user.role },
         process.env.JWT_SECRET,
         { expiresIn: '30d' }
       );
@@ -441,6 +442,7 @@ const authController = {
           id: user._id,
           email: user.email,
           username: user.username,
+          role: user.role,
           isVerified: true
         }
       });
@@ -514,9 +516,9 @@ const authController = {
         });
       }
 
-      // Generate JWT token
+      // Generate JWT token (includes role for authorization)
       const token = jwt.sign(
-        { userId: user._id },
+        { userId: user._id, role: user.role },
         process.env.JWT_SECRET,
         { expiresIn: '30d' }
       );
@@ -532,6 +534,7 @@ const authController = {
           id: userResponse._id,
           email: userResponse.email,
           username: userResponse.username,
+          role: userResponse.role,
           isBrand: userResponse.isBrand || false
         }
       });

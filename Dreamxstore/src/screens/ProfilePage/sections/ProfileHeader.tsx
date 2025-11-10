@@ -44,7 +44,7 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({ user, stats, onEdi
             ) : (
               <div className="w-24 h-24 rounded-full bg-[#f1ff8c] flex items-center justify-center border-4 border-black">
                 <span className="text-4xl font-bold text-[#004d84]">
-                  {user.username.charAt(0).toUpperCase()}
+                  {(user.username || 'U').charAt(0).toUpperCase()}
                 </span>
               </div>
             )}

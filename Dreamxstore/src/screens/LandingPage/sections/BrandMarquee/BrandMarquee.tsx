@@ -1,6 +1,6 @@
 import React from "react";
 
-export const BrandMarquee = (): JSX.Element => {
+export const BrandMarquee = ()=> {
   // Brand data - using the provided images and additional brands
   const brands = [
     {
@@ -31,7 +31,7 @@ export const BrandMarquee = (): JSX.Element => {
     {
       id: 6,
       name: "Under Armour",
-      logo: "https://logos-world.net/wp-content/uploads/2020/09/Under-Armour-Logo.png",
+      logo: "https://logos-world.net/wp-content/uploads/2020/04/Under-Armour-Logo.png",
     }
   ];
 

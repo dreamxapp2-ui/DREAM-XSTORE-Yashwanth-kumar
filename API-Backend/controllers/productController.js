@@ -1,0 +1,295 @@
+const Product = require('../models/Product');
+const Brand = require('../models/Brand');
+
+const productController = {
+  /**
+   * Create a new product
+   */
+  async createProduct(req, res) {
+    try {
+      const {
+        name,
+        description,
+        longDescription,
+        brandId,
+        brandName,
+        category,
+        subCategory,
+        price,
+        originalPrice,
+        discount,
+        stockQuantity,
+        sizes,
+        features,
+        tags,
+        images,
+      } = req.body;
+
+      console.log('[createProduct] Received data:', {
+        name,
+        category,
+        brandId,
+        brandName,
+        price,
+        imagesCount: images?.length,
+      });
+
+      // Validate brand exists
+      const brand = await Brand.findById(brandId);
+      if (!brand) {
+        return res.status(404).json({
+          success: false,
+          message: 'Brand not found',
+        });
+      }
+
+      // Create product
+      const product = new Product({
+        name,
+        description,
+        longDescription,
+        brandId,
+        brandName,
+        category,
+        subCategory,
+        price,
+        originalPrice,
+        discount,
+        stockQuantity,
+        sizes,
+        features,
+        tags,
+        images,
+        inStock: stockQuantity > 0,
+      });
+
+      await product.save();
+      console.log('[createProduct] Product created:', product._id);
+
+      res.status(201).json({
+        success: true,
+        message: 'Product created successfully',
+        data: product,
+      });
+    } catch (error) {
+      console.error('[createProduct] Error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Error creating product',
+        error: error.message,
+      });
+    }
+  },
+
+  /**
+   * Get all products with pagination and filters
+   */
+  async getProducts(req, res) {
+    try {
+      const { page = 1, limit = 20, category, search, sortBy = 'createdAt' } = req.query;
+      const skip = (page - 1) * limit;
+
+      console.log('[getProducts] Query params:', { page, limit, category, search });
+
+      // Build filter
+      const filter = {};
+      if (category) filter.category = category;
+      if (search) {
+        filter.$or = [
+          { name: { $regex: search, $options: 'i' } },
+          { description: { $regex: search, $options: 'i' } },
+          { tags: { $in: [new RegExp(search, 'i')] } },
+        ];
+      }
+
+      console.log('[getProducts] Filter:', filter);
+
+      // Get products
+      const products = await Product.find(filter)
+        .populate('brandId', 'brandName')
+        .limit(parseInt(limit))
+        .skip(skip)
+        .sort({ [sortBy]: -1 });
+
+      const total = await Product.countDocuments(filter);
+
+      console.log('[getProducts] Found products:', products.length);
+
+      res.json({
+        success: true,
+        data: products,
+        pagination: {
+          total,
+          page: parseInt(page),
+          limit: parseInt(limit),
+          pages: Math.ceil(total / limit),
+        },
+      });
+    } catch (error) {
+      console.error('[getProducts] Error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Error fetching products',
+        error: error.message,
+      });
+    }
+  },
+
+  /**
+   * Get single product by ID
+   */
+  async getProductById(req, res) {
+    try {
+      const { productId } = req.params;
+
+      console.log('[getProductById] ID:', productId);
+
+      const product = await Product.findById(productId).populate('brandId', 'brandName');
+
+      if (!product) {
+        return res.status(404).json({
+          success: false,
+          message: 'Product not found',
+        });
+      }
+
+      res.json({
+        success: true,
+        data: product,
+      });
+    } catch (error) {
+      console.error('[getProductById] Error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Error fetching product',
+        error: error.message,
+      });
+    }
+  },
+
+  /**
+   * Update product
+   */
+  async updateProduct(req, res) {
+    try {
+      const { productId } = req.params;
+      const updateData = req.body;
+
+      console.log('[updateProduct] ID:', productId);
+      console.log('[updateProduct] Update data keys:', Object.keys(updateData));
+
+      // Validate brand if being updated
+      if (updateData.brandId) {
+        const brand = await Brand.findById(updateData.brandId);
+        if (!brand) {
+          return res.status(404).json({
+            success: false,
+            message: 'Brand not found',
+          });
+        }
+      }
+
+      const product = await Product.findByIdAndUpdate(productId, updateData, {
+        new: true,
+        runValidators: true,
+      }).populate('brandId', 'brandName');
+
+      if (!product) {
+        return res.status(404).json({
+          success: false,
+          message: 'Product not found',
+        });
+      }
+
+      console.log('[updateProduct] Product updated:', product._id);
+
+      res.json({
+        success: true,
+        message: 'Product updated successfully',
+        data: product,
+      });
+    } catch (error) {
+      console.error('[updateProduct] Error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Error updating product',
+        error: error.message,
+      });
+    }
+  },
+
+  /**
+   * Delete product
+   */
+  async deleteProduct(req, res) {
+    try {
+      const { productId } = req.params;
+
+      console.log('[deleteProduct] ID:', productId);
+
+      const product = await Product.findByIdAndDelete(productId);
+
+      if (!product) {
+        return res.status(404).json({
+          success: false,
+          message: 'Product not found',
+        });
+      }
+
+      console.log('[deleteProduct] Product deleted:', product._id);
+
+      res.json({
+        success: true,
+        message: 'Product deleted successfully',
+        data: { id: product._id },
+      });
+    } catch (error) {
+      console.error('[deleteProduct] Error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Error deleting product',
+        error: error.message,
+      });
+    }
+  },
+
+  /**
+   * Toggle product active status
+   */
+  async toggleProductStatus(req, res) {
+    try {
+      const { productId } = req.params;
+
+      console.log('[toggleProductStatus] ID:', productId);
+
+      const product = await Product.findById(productId);
+
+      if (!product) {
+        return res.status(404).json({
+          success: false,
+          message: 'Product not found',
+        });
+      }
+
+      product.isActive = !product.isActive;
+      await product.save();
+
+      console.log('[toggleProductStatus] Status updated:', product.isActive);
+
+      res.json({
+        success: true,
+        message: `Product ${product.isActive ? 'activated' : 'deactivated'} successfully`,
+        data: product,
+      });
+    } catch (error) {
+      console.error('[toggleProductStatus] Error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Error toggling product status',
+        error: error.message,
+      });
+    }
+  },
+};
+
+module.exports = productController;

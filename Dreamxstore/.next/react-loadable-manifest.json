@@ -1,4 +1,16 @@
 {
+  "app\\home\\components\\HeroCarousel.tsx -> @/src/screens/LandingPage/sections/HeroCarousel": {
+    "id": "app\\home\\components\\HeroCarousel.tsx -> @/src/screens/LandingPage/sections/HeroCarousel",
+    "files": [
+      "static/chunks/_app-pages-browser_src_screens_LandingPage_sections_HeroCarousel_index_ts.js"
+    ]
+  },
+  "app\\providers.tsx -> ../src/mocks/browser": {
+    "id": "app\\providers.tsx -> ../src/mocks/browser",
+    "files": [
+      "static/chunks/_app-pages-browser_src_mocks_browser_ts.js"
+    ]
+  },
   "node_modules\\next\\dist\\client\\dev\\hot-reloader\\app\\use-websocket.js -> @vercel/turbopack-ecmascript-runtime/browser/dev/hmr-client/hmr-client.ts": {
     "id": "node_modules\\next\\dist\\client\\dev\\hot-reloader\\app\\use-websocket.js -> @vercel/turbopack-ecmascript-runtime/browser/dev/hmr-client/hmr-client.ts",
     "files": [
