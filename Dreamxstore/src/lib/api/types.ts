@@ -45,6 +45,18 @@ export interface User {
   firstName?: string;
   lastName?: string;
   role?: 'user' | 'admin' | 'superadmin';
+  hero_image?: {
+    url: string;
+    publicId: string;
+  };
+  bio?: string;
+  phone?: string;
+  wishlist?: Array<{
+    productId: string;
+    addedAt: string;
+  }>;
+  followingBrands?: string[];
+  createdAt?: string;
 }
 
 export interface AuthResponse {

@@ -4,6 +4,7 @@ import { Heart } from 'lucide-react';
 import Image from 'next/image';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import WishlistButton from '../WishlistButton';
 
 export interface ProductCardProps {
   id: string;
@@ -29,14 +30,6 @@ export default function ProductCard({
   onClick,
 }: ProductCardProps) {
   const router = useRouter();
-  const [isWishlisted, setIsWishlisted] = useState(false);
-
-  const handleWishlistClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    const newState = !isWishlisted;
-    setIsWishlisted(newState);
-    onWishlistToggle?.(id, newState);
-  };
 
   const handleCardClick = () => {
     if (onClick) {
@@ -54,18 +47,15 @@ export default function ProductCard({
     >
       {/* Product Image Section */}
       <div className="relative bg-gray-200 aspect-square flex items-center justify-center overflow-hidden">
-        <button
-          onClick={handleWishlistClick}
-          className="absolute top-4 right-4 z-10 bg-white rounded-full p-2 hover:bg-gray-100 transition-colors"
-          aria-label={isWishlisted ? 'Remove from wishlist' : 'Add to wishlist'}
-        >
-          <Heart
-            className="w-6 h-6"
-            strokeWidth={1.5}
-            fill={isWishlisted ? '#ef4444' : 'none'}
-            color={isWishlisted ? '#ef4444' : '#1f2937'}
+        <div className="absolute top-4 right-4 z-10">
+          <WishlistButton
+            productId={id}
+            className="bg-white rounded-full p-2 hover:bg-gray-100 transition-colors"
+            onWishlistChange={(isWishlisted) => {
+              onWishlistToggle?.(id, isWishlisted);
+            }}
           />
-        </button>
+        </div>
         <Image
           src={image}
           alt={title}

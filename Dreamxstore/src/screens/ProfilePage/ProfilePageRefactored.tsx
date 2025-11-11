@@ -3,8 +3,9 @@
 import React, { useState, useEffect } from 'react';
 import EditProfileModal from '../../components/EditProfileModal';
 import { Card, CardContent } from '../../components/ui/card';
-import { User, Package, Settings, Heart, ArrowLeft, Home } from 'lucide-react';
+import { User, Package, Settings, Heart, ArrowLeft } from 'lucide-react';
 import { Button } from '../../components/ui/button';
+import { UserService } from '../../lib/api/services/userService';
 import {
   ProfileHeader,
   ProfileOverview,
@@ -25,56 +26,20 @@ interface UserProfile {
   hero_image?: string;
   phone?: string;
   joinedDate?: string;
-}
-
-interface Address {
-  id: string;
-  type: 'shipping' | 'billing';
-  name: string;
-  phone: string;
-  addressLine1: string;
-  addressLine2?: string;
-  city: string;
-  state: string;
-  zipCode: string;
-  country: string;
-  isDefault: boolean;
-}
-
-interface PaymentMethod {
-  id: string;
-  type: 'card' | 'wallet';
-  lastFour?: string;
-  cardBrand?: string;
-  expiryDate?: string;
-  walletName?: string;
-  isDefault: boolean;
-}
-
-interface Order {
-  id: string;
-  orderNumber: string;
-  date: string;
-  status: 'processing' | 'shipped' | 'delivered' | 'canceled';
-  total: number;
-  items: number;
-}
-
-interface WishlistItem {
-  id: string;
-  name: string;
-  price: number;
-  image: string;
-  inStock: boolean;
+  firstName?: string;
+  id?: string;
+  role?: 'user' | 'admin' | 'superadmin';
+  createdAt?: string;
 }
 
 const ProfilePage: React.FC = () => {
   const [user, setUser] = useState<UserProfile | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'profile' | 'orders' | 'wishlist' | 'settings'>('profile');
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   
   // Mock data - replace with actual API calls
-  const [addresses, setAddresses] = useState<Address[]>([
+  const [addresses] = useState<Array<Record<string, unknown>>>([
     {
       id: '1',
       type: 'shipping',
@@ -90,7 +55,7 @@ const ProfilePage: React.FC = () => {
     }
   ]);
 
-  const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([
+  const [paymentMethods] = useState<Array<Record<string, unknown>>>([
     {
       id: '1',
       type: 'card',
@@ -101,7 +66,7 @@ const ProfilePage: React.FC = () => {
     }
   ]);
 
-  const [orders, setOrders] = useState<Order[]>([
+  const [orders] = useState<Array<Record<string, unknown>>>([
     {
       id: '1',
       orderNumber: 'ORD-2024-001',
@@ -120,19 +85,11 @@ const ProfilePage: React.FC = () => {
     }
   ]);
 
-  const [wishlist, setWishlist] = useState<WishlistItem[]>([
-    {
-      id: '1',
-      name: 'Premium Cotton T-Shirt',
-      price: 799,
-      image: 'https://images.pexels.com/photos/1926769/pexels-photo-1926769.jpeg?w=300',
-      inStock: true
-    }
-  ]);
+  const [wishlist] = useState<Array<Record<string, unknown>>>([]);
 
   const [stats, setStats] = useState({
     totalOrders: 12,
-    wishlistItems: 5,
+    wishlistItems: 6,
     totalSpent: 24999,
     memberSince: '2024-01-15'
   });
@@ -144,31 +101,68 @@ const ProfilePage: React.FC = () => {
   const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
 
   useEffect(() => {
-    const userData = localStorage.getItem('dreamx_user');
-    if (userData) {
-      const parsedUser = JSON.parse(userData);
-      setUser({
-        ...parsedUser,
-        joinedDate: parsedUser.joinedDate || '2024-01-15'
-      });
-    }
+    const loadProfileData = async () => {
+      try {
+        // Fetch user profile from API
+        const response = await UserService.getProfile();
+        console.log('[Profile] Raw API Response:', response);
+        
+        // The API response is { success: true, user: {...} }
+        const profile = (response as any)?.user || response;
+        console.log('[Profile] Extracted profile:', profile);
+        console.log('[Profile] Username:', profile.username);
+        console.log('[Profile] Email:', profile.email);
+        console.log('[Profile] Hero image:', profile.hero_image);
+        
+        const heroImageUrl = typeof profile.hero_image === 'string' ? profile.hero_image : profile.hero_image?.url;
+        const userDataToSet = {
+          ...profile,
+          hero_image: heroImageUrl,
+          username: profile.username || '',
+          email: profile.email || '',
+          joinedDate: profile.createdAt || '2024-01-15'
+        };
+        console.log('[Profile] User data to set:', userDataToSet);
+        setUser(userDataToSet);
 
-    const onStorage = () => {
-      const updated = localStorage.getItem('dreamx_user');
-      if (updated) {
-        setUser(JSON.parse(updated));
+        // Fetch wishlist
+        const wishlistItems = await UserService.getWishlist();
+        const memberSince = profile.createdAt ? new Date(profile.createdAt).toISOString().split('T')[0] : '2024-01-15';
+        
+        setStats({
+          totalOrders: 12,
+          wishlistItems: wishlistItems.length,
+          totalSpent: 24999,
+          memberSince: memberSince
+        });
+      } catch (error) {
+        console.error('[Profile] Error loading profile:', error);
+        setUser(null);
+      } finally {
+        setIsLoading(false);
       }
     };
-    window.addEventListener('storage', onStorage);
-    return () => window.removeEventListener('storage', onStorage);
-  }, []);
 
+    loadProfileData();
+  }, []);
   const handleLogout = () => {
     localStorage.removeItem('dreamx_user');
     localStorage.removeItem('token');
     window.dispatchEvent(new Event('storage'));
     window.location.href = '/login';
   };
+
+  // Show loading state
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center space-y-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#004d84] mx-auto"></div>
+          <p className="text-gray-600">Loading profile...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!user) {
     return (
@@ -221,13 +215,14 @@ const ProfilePage: React.FC = () => {
       
       <main className="container mx-auto px-4 sm:px-6 md:px-8 lg:px-12 xl:px-16 py-8 sm:py-12">
         {/* Profile Header */}
+      
         <ProfileHeader 
           user={user}
           stats={stats}
           onEditProfile={() => setIsEditModalOpen(true)}
           onLogout={handleLogout}
         />
-
+        
         {/* Tabs Navigation */}
         <div className="flex flex-wrap gap-2 mb-6 border-b border-gray-200">
           {tabs.map((tab) => (
@@ -252,7 +247,10 @@ const ProfilePage: React.FC = () => {
           {activeTab === 'profile' && <ProfileOverview user={user} />}
 
           {/* Orders Tab */}
-          {activeTab === 'orders' && <OrdersTab orders={orders} />}
+          {activeTab === 'orders' && (
+            // @ts-ignore - mock data
+            <OrdersTab orders={orders} />
+          )}
 
           {/* Wishlist Tab */}
           {activeTab === 'wishlist' && <WishlistTab wishlist={wishlist} />}
@@ -260,8 +258,10 @@ const ProfilePage: React.FC = () => {
           {/* Settings Tab */}
           {activeTab === 'settings' && (
             <div className="space-y-6">
-              <AddressManagement addresses={addresses} />
-              <PaymentMethods paymentMethods={paymentMethods} />
+              {/* @ts-ignore - mock data */}
+              <AddressManagement addresses={addresses as any} />
+              {/* @ts-ignore - mock data */}
+              <PaymentMethods paymentMethods={paymentMethods as any} />
               <SecuritySettings 
                 twoFactorEnabled={twoFactorEnabled}
                 onToggle2FA={() => setTwoFactorEnabled(!twoFactorEnabled)}

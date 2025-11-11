@@ -10,6 +10,12 @@ export interface UpdateProfileData {
   email?: string;
   phone?: string;
   avatar?: string;
+  username?: string;
+  bio?: string;
+  hero_image?: {
+    url: string;
+    publicId: string;
+  };
 }
 
 export interface ChangePasswordData {
@@ -43,7 +49,7 @@ export class UserService {
    * Update user profile
    */
   static async updateProfile(data: UpdateProfileData): Promise<User> {
-    const user = await apiClient.put<User>(ENDPOINTS.UPDATE_PROFILE, data);
+    const user = await apiClient.put<User>('/user/profile', data);
     TokenManager.setUser(user);
     return user;
   }
@@ -56,16 +62,39 @@ export class UserService {
   }
 
   /**
-   * Upload profile picture
+   * Upload profile images to Cloudinary
    */
-  static async uploadAvatar(file: File): Promise<{ url: string }> {
+  static async uploadProfileImage(files: File[], onProgress?: (progress: number) => void): Promise<{ url: string; publicId: string }[]> {
     const formData = new FormData();
-    formData.append('avatar', file);
-
-    return await apiClient.upload<{ url: string }>(
-      '/user/upload-avatar',
-      formData
+    files.forEach((file) => {
+      formData.append('image', file);
+    });
+    
+    const response = await apiClient.upload<any>(
+      '/upload/image',
+      formData,
+      onProgress
     );
+    
+    console.log('[uploadProfileImage] Raw response:', response);
+    
+    // Handle different response formats
+    if (Array.isArray(response)) {
+      return response;
+    } else if (response?.data) {
+      // If response has a data property, use it
+      if (Array.isArray(response.data)) {
+        return response.data;
+      } else {
+        // Single item response, wrap in array
+        return [response.data];
+      }
+    } else if (response?.url) {
+      // Direct response with url/publicId
+      return [response];
+    }
+    
+    return [];
   }
 
   /**
@@ -119,6 +148,49 @@ export class UserService {
   static async deleteAccount(password: string): Promise<void> {
     await apiClient.post('/user/delete-account', { password });
     TokenManager.logout();
+  }
+
+  /**
+   * Add product to wishlist
+   */
+  static async addToWishlist(productId: string): Promise<User> {
+    try {
+      const response = await apiClient.post<any>('/user/wishlist/add', { productId });
+      console.log('[UserService] addToWishlist response:', response);
+      
+      // Handle response - could be { success, user } or just user
+      const user = (response as any)?.user || response as User;
+      TokenManager.setUser(user);
+      return user;
+    } catch (error) {
+      console.error('[UserService] addToWishlist error:', error);
+      throw error; // Re-throw so the calling code can handle it
+    }
+  }
+
+  /**
+   * Remove product from wishlist
+   */
+  static async removeFromWishlist(productId: string): Promise<User> {
+    try {
+      const response = await apiClient.post<any>('/user/wishlist/remove', { productId });
+      console.log('[UserService] removeFromWishlist response:', response);
+      
+      // Handle response - could be { success, user } or just user
+      const user = (response as any)?.user || response as User;
+      TokenManager.setUser(user);
+      return user;
+    } catch (error) {
+      console.error('[UserService] removeFromWishlist error:', error);
+      throw error; // Re-throw so the calling code can handle it
+    }
+  }
+
+  /**
+   * Get user's wishlist
+   */
+  static async getWishlist(): Promise<any[]> {
+    return await apiClient.get<any[]>('/user/wishlist');
   }
 }
 

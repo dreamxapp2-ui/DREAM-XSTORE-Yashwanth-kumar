@@ -4,8 +4,9 @@ import React, { useState } from "react";
 import { useCart } from "../../../../contexts/CartContext";
 import { Button } from "../../../../components/ui/button";
 import { Card, CardContent } from "../../../../components/ui/card";
-import { Heart, ArrowUpRight } from "lucide-react";
+import { ArrowUpRight } from "lucide-react";
 import { useRouter } from "next/navigation";
+import WishlistButton from "../../../../components/WishlistButton";
 
 export const ProductSection = () => {
   const [activeCategory, setActiveCategory] = useState("T-Shirts");
@@ -176,17 +177,12 @@ export const ProductSection = () => {
                     <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
 
                     {/* Heart Icon - Top Right */}
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        // Handle wishlist functionality
-                      }}
-                      className="absolute top-3 sm:top-4 right-3 sm:right-4 w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-full border border-white/30 transition-all duration-300 hover:scale-110"
-                    >
-                      <Heart className="w-3 h-3 sm:w-4 sm:h-4 md:w-5 md:h-5 text-white" />
-                    </Button>
+                    <div className="absolute top-3 sm:top-4 right-3 sm:right-4 w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12">
+                      <WishlistButton
+                        productId={product._id}
+                        className="w-full h-full bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-full border border-white/30 transition-all duration-300 hover:scale-110 flex items-center justify-center"
+                      />
+                    </div>
 
                     {/* View/Arrow Icon - Positioned relative to text like in reference */}
                     <Button

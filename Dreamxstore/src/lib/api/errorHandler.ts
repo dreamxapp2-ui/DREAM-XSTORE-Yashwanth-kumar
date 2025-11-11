@@ -43,12 +43,11 @@ export class ApiErrorHandler {
   static logError(error: ApiError, context?: string): void {
     const errorObj = {
       message: error.message || 'Unknown error',
-      status: error.status || 'N/A',
-      code: error.code || 'N/A',
+      status: error.status ?? 'N/A',
+      code: error.code ?? 'N/A',
       errors: error.errors,
     };
     console.error(`[API Error${context ? ` - ${context}` : ''}]:`, errorObj);
-    console.error('[API Error Full Details]:', error);
   }
 
   /**

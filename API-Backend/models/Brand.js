@@ -17,6 +17,43 @@ const brandSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+  profileImage: {
+    url: {
+      type: String,
+      default: null,
+    },
+    publicId: {
+      type: String,
+      default: null,
+    },
+  },
+  followerCount: {
+    type: Number,
+    default: 0,
+  },
+  description: {
+    type: String,
+    default: '',
+    trim: true,
+    maxlength: 1000,
+  },
+  socialLinks: {
+    instagram: {
+      type: String,
+      default: null,
+      trim: true,
+    },
+    facebook: {
+      type: String,
+      default: null,
+      trim: true,
+    },
+    twitter: {
+      type: String,
+      default: null,
+      trim: true,
+    },
+  },
   pickupLocation: {
     type: String,
     required: true,
@@ -66,41 +103,6 @@ const brandSchema = new mongoose.Schema({
   commissionRate: {
     type: Number,
     default: 20,
-  },
-  profileImage: {
-    type: Buffer,
-    default: null,
-  },
-  profileImageContentType: {
-    type: String,
-    default: null,
-  },
-  description: {
-    type: String,
-    default: '',
-    trim: true,
-    maxlength: 1000,
-  },
-  followerCount: {
-    type: Number,
-    default: 0,
-  },
-  socialLinks: {
-    instagram: {
-      type: String,
-      default: null,
-      trim: true,
-    },
-    facebook: {
-      type: String,
-      default: null,
-      trim: true,
-    },
-    website: {
-      type: String,
-      default: null,
-      trim: true,
-    },
   },
   createdBy: {
     type: mongoose.Schema.Types.ObjectId,

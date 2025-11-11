@@ -284,7 +284,7 @@ export default function ProductDetail() {
           {/* I leave this for another dev that can upgrade to go to the the page of brand. */}
           <div className="text-sm text-purple-600 font-medium ">
             <button onClick={() => {}} className="text-gray-600 font-medium rounded-full border-2 border-gray-300 px-2 py-1 hover:bg-gray-100 hover:border-purple-600 transition-all duration-200 ease-in-out hover:-translate-y-0.5 hover:shadow-md">
-                by {product.brand}</button></div>
+                by {product?.brandName || 'Unknown'}</button></div>
 
           {/* Ratings */}
           <div className="space-y-4">

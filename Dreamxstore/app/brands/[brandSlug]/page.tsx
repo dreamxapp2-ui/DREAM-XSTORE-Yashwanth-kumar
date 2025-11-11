@@ -55,7 +55,9 @@ export default function BrandProfilePage() {
     description: '',
     instagram: '',
     facebook: '',
-    website: ''
+    twitter: '',
+    uploading: false,
+    uploadProgress: 0,
   });
 
   // Helper function to convert Buffer to displayable image URL
@@ -121,7 +123,9 @@ export default function BrandProfilePage() {
         description: brand.description || '',
         instagram: brand.instagram || '',
         facebook: brand.facebook || '',
-        website: brand.website || ''
+        twitter: brand.twitter || '',
+        uploading: false,
+        uploadProgress: 0,
       });
     }
   }, [isEditModalOpen, brand]);
@@ -150,33 +154,35 @@ export default function BrandProfilePage() {
       
       if (foundBrand) {
         // Map API response to Brand interface
-        // Convert Buffer profileImage to displayable URL
-        console.log('[BrandProfile] Converting image buffer:', {
-          hasProfileImage: !!foundBrand.profileImage,
-          contentType: foundBrand.profileImageContentType,
-          imageType: typeof foundBrand.profileImage
+        // Handle profileImage - can be URL string or object with {url, publicId}
+        let profileImageUrl = '';
+        if (foundBrand.profileImage) {
+          if (typeof foundBrand.profileImage === 'string') {
+            // Old format: direct URL or buffer
+            profileImageUrl = foundBrand.profileImage;
+          } else if (foundBrand.profileImage.url) {
+            // New format: {url, publicId}
+            profileImageUrl = foundBrand.profileImage.url;
+          }
+        }
+        
+        console.log('[BrandProfile] Profile image:', {
+          hasProfileImage: !!profileImageUrl,
+          url: profileImageUrl
         });
-        
-        const profileImageUrl = convertBufferToImageUrl(
-          foundBrand.profileImage,
-          foundBrand.profileImageContentType || 'image/jpeg'
-        );
-        
-        console.log('[BrandProfile] Converted image URL:', profileImageUrl);
-        
         const brand: Brand = {
           id: foundBrand.id,
           brandName: foundBrand.name || foundBrand.brandName,
           location: foundBrand.location,
           productCount: foundBrand.productCount || 0,
           followers: foundBrand.followerCount || 0,
-          sales: 0, // May need to add to model if needed
+          sales: 0,
           logo: profileImageUrl,
           description: foundBrand.description,
           instagram: foundBrand.socialLinks?.instagram || foundBrand.instagram || '',
           facebook: foundBrand.socialLinks?.facebook || foundBrand.facebook || '',
-          website: foundBrand.socialLinks?.website || foundBrand.website || '',
-          twitter: foundBrand.twitter || ''
+          twitter: foundBrand.socialLinks?.twitter || foundBrand.twitter || '',
+          website: foundBrand.socialLinks?.website || foundBrand.website || ''
         };
         
         console.log('[BrandProfile] Final brand object:', brand);
@@ -188,7 +194,9 @@ export default function BrandProfilePage() {
           description: brand.description || '',
           instagram: brand.instagram || '',
           facebook: brand.facebook || '',
-          website: brand.website || ''
+          twitter: brand.twitter || '',
+          uploading: false,
+          uploadProgress: 0,
         });
         
         // Fetch products for this brand
@@ -245,33 +253,68 @@ export default function BrandProfilePage() {
       console.log('[BrandProfile] Current brand ID:', brand.id);
       console.log('[BrandProfile] Edit form data:', editFormData);
       
-      // If image file was uploaded, send FormData
+      // Upload image to Cloudinary first if there's a new file
+      let cloudinaryImageUrl: string | null = null;
+      let cloudinaryPublicId: string | null = null;
       if (editFormData.imageFile) {
-        const formData = new FormData();
-        formData.append('profileImage', editFormData.imageFile);
-        formData.append('description', editFormData.description);
-        formData.append('instagram', editFormData.instagram);
-        formData.append('facebook', editFormData.facebook);
-        formData.append('website', editFormData.website);
-        console.log('[BrandProfile] Uploading with FormData');
-        const response = await AdminService.updateBrandProfile(brand.id, formData);
-        console.log('[BrandProfile] Upload response:', response);
-      } else {
-        // Send description and social links
-        const updateData: any = {
-          description: editFormData.description,
-          instagram: editFormData.instagram,
-          facebook: editFormData.facebook,
-          website: editFormData.website
+        try {
+          setEditFormData(prev => ({ ...prev, uploading: true, uploadProgress: 0 }));
+          console.log('[BrandProfile] Uploading image to Cloudinary...');
+          const uploadedImages = await AdminService.uploadBrandImages(
+            [editFormData.imageFile],
+            (progress: number) => {
+              console.log('[BrandProfile] Upload progress:', progress);
+              setEditFormData(prev => ({ ...prev, uploadProgress: progress }));
+            }
+          );
+          cloudinaryImageUrl = uploadedImages[0]?.url;
+          cloudinaryPublicId = uploadedImages[0]?.publicId;
+          console.log('[BrandProfile] Image uploaded successfully:', { url: cloudinaryImageUrl, publicId: cloudinaryPublicId });
+          console.log('[BrandProfile] uploadedImages response:', uploadedImages);
+          console.log('[BrandProfile] uploadedImages[0]:', uploadedImages[0]);
+        } catch (uploadError: any) {
+          console.error('[BrandProfile] Image upload failed:', uploadError);
+          alert(`Failed to upload image: ${uploadError?.message || 'Unknown error'}`);
+          setEditFormData(prev => ({ ...prev, uploading: false, uploadProgress: 0 }));
+          return;
+        }
+      }
+      
+      // Now update the brand profile with the data
+      // Send image URL to backend if it was uploaded
+      const updateData: any = {
+        description: editFormData.description,
+        instagram: editFormData.instagram,
+        facebook: editFormData.facebook,
+        twitter: editFormData.twitter,
+      };
+      
+      // If image was uploaded, add it to update data
+      if (cloudinaryImageUrl && cloudinaryPublicId) {
+        updateData.profileImage = {
+          url: cloudinaryImageUrl,
+          publicId: cloudinaryPublicId
         };
-        console.log('[BrandProfile] Updating profile data:', updateData);
-        const response = await AdminService.updateBrandProfile(brand.id, updateData);
-        console.log('[BrandProfile] Update response:', response);
+      }
+      
+      console.log('[BrandProfile] Before sending to backend - cloudinaryImageUrl:', cloudinaryImageUrl);
+      console.log('[BrandProfile] Before sending to backend - cloudinaryPublicId:', cloudinaryPublicId);
+      console.log('[BrandProfile] updateData.profileImage:', updateData.profileImage);
+      const response = await AdminService.updateBrandProfile(brand.id, updateData);
+      console.log('[BrandProfile] Update response:', response);
+      
+      // Update the brand state immediately with the new image if it was uploaded
+      if (cloudinaryImageUrl && brand) {
+        console.log('[BrandProfile] Updating brand state with new image:', cloudinaryImageUrl);
+        setBrand({
+          ...brand,
+          logo: cloudinaryImageUrl
+        });
       }
       
       console.log('[BrandProfile] Reloading brand data...');
       await loadBrandData();
-      console.log('[BrandProfile] Brand data reloaded, brand state:', brand);
+      console.log('[BrandProfile] Brand data reloaded');
       
       console.log('[BrandProfile] Brand profile updated successfully');
       setIsEditModalOpen(false);
@@ -286,6 +329,8 @@ export default function BrandProfilePage() {
         fullError: error
       });
       alert(`Failed to update brand profile: ${errorMessage}`);
+    } finally {
+      setEditFormData(prev => ({ ...prev, uploading: false, uploadProgress: 0 }));
     }
   };
 
@@ -661,13 +706,13 @@ export default function BrandProfilePage() {
 
                 {/* Website */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Website URL</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Twitter URL</label>
                   <input
                     type="url"
-                    value={editFormData.website}
-                    onChange={(e) => setEditFormData({ ...editFormData, website: e.target.value })}
+                    value={editFormData.twitter}
+                    onChange={(e) => setEditFormData({ ...editFormData, twitter: e.target.value })}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    placeholder="https://brandname.com"
+                    placeholder="https://twitter.com/brandname"
                   />
                 </div>
               </div>

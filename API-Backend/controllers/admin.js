@@ -9,6 +9,7 @@ const User = require('../models/User');
 const Brand = require('../models/Brand');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
+const { uploadImage, deleteImage } = require('../utils/cloudinary');
 
 const adminController = {
   /**
@@ -586,11 +587,12 @@ const adminController = {
   async updateBrandProfile(req, res) {
     try {
       const { brandId } = req.params;
-      const { description, instagram, facebook, website } = req.body;
+      const { description, instagram, facebook, twitter, profileImage } = req.body;
       
       console.log('[updateBrandProfile] Params:', { brandId });
-      console.log('[updateBrandProfile] Body:', { description, instagram, facebook, website });
-      console.log('[updateBrandProfile] File:', req.file ? { filename: req.file.filename, size: req.file.size, mimetype: req.file.mimetype } : 'undefined');
+      console.log('[updateBrandProfile] Full Body:', req.body);
+      console.log('[updateBrandProfile] Extracted:', { description, instagram, facebook, twitter, profileImage });
+      console.log('[updateBrandProfile] File:', req.file ? { filename: req.file.originalname, size: req.file.size, mimetype: req.file.mimetype } : 'undefined');
 
       // Build update object
       const updateData = {};
@@ -600,11 +602,60 @@ const adminController = {
         updateData.description = description.trim();
       }
       
-      // Handle image file - store as Buffer with content type
+      // Handle image from request body (Cloudinary URL sent from frontend)
+      if (profileImage) {
+        console.log('[updateBrandProfile] profileImage received:', profileImage);
+        console.log('[updateBrandProfile] profileImage is string?', typeof profileImage === 'string');
+        
+        let imageData = profileImage;
+        // If profileImage is a JSON string, parse it
+        if (typeof profileImage === 'string') {
+          try {
+            imageData = JSON.parse(profileImage);
+            console.log('[updateBrandProfile] Parsed profileImage:', imageData);
+          } catch (e) {
+            console.log('[updateBrandProfile] Could not parse profileImage as JSON');
+          }
+        }
+        
+        if (imageData && imageData.url && imageData.publicId) {
+          console.log('[updateBrandProfile] Setting profileImage in updateData:', imageData);
+          updateData.profileImage = imageData;
+        } else {
+          console.warn('[updateBrandProfile] profileImage missing url or publicId:', imageData);
+        }
+      } else {
+        console.log('[updateBrandProfile] profileImage not provided');
+      }
+      
+      // Handle image file - upload to Cloudinary
       if (req.file) {
-        updateData.profileImage = req.file.buffer;
-        updateData.profileImageContentType = req.file.mimetype;
-        console.log('[updateBrandProfile] Image buffer size:', req.file.buffer.length);
+        try {
+          console.log('[updateBrandProfile] Uploading image to Cloudinary...');
+          const uploadResult = await uploadImage(req.file.buffer, 'brands', `brand-${brandId}`);
+          console.log('[updateBrandProfile] Cloudinary upload successful:', uploadResult);
+          
+          // Delete old image if it exists
+          const existingBrand = await Brand.findById(brandId);
+          if (existingBrand && existingBrand.profileImage && existingBrand.profileImage.publicId) {
+            console.log('[updateBrandProfile] Deleting old image:', existingBrand.profileImage.publicId);
+            await deleteImage(existingBrand.profileImage.publicId).catch(err => {
+              console.error('[updateBrandProfile] Error deleting old image:', err);
+            });
+          }
+          
+          updateData.profileImage = {
+            url: uploadResult.url,
+            publicId: uploadResult.publicId
+          };
+        } catch (uploadError) {
+          console.error('[updateBrandProfile] Cloudinary upload failed:', uploadError);
+          return res.status(500).json({
+            success: false,
+            message: 'Failed to upload image',
+            error: uploadError.message
+          });
+        }
       }
 
       // Update social links
@@ -615,8 +666,8 @@ const adminController = {
       if (facebook !== undefined && facebook !== null) {
         socialLinks.facebook = facebook.trim() || null;
       }
-      if (website !== undefined && website !== null) {
-        socialLinks.website = website.trim() || null;
+      if (twitter !== undefined && twitter !== null) {
+        socialLinks.twitter = twitter.trim() || null;
       }
       
       // Only set socialLinks if we have any updates
@@ -625,6 +676,7 @@ const adminController = {
       }
 
       console.log('[updateBrandProfile] Update data keys:', Object.keys(updateData));
+      console.log('[updateBrandProfile] Final updateData being sent to MongoDB:', JSON.stringify(updateData, null, 2));
 
       if (Object.keys(updateData).length === 0) {
         return res.status(400).json({
@@ -635,9 +687,9 @@ const adminController = {
 
       const brand = await Brand.findByIdAndUpdate(
         brandId,
-        updateData,
+        { $set: updateData },
         { new: true, runValidators: true }
-      ).select('-password -profileImage');
+      ).select('-password');
 
       if (!brand) {
         return res.status(404).json({
@@ -646,7 +698,9 @@ const adminController = {
         });
       }
 
-      console.log('[updateBrandProfile] Updated brand:', { id: brand._id, name: brand.brandName });
+      console.log('[updateBrandProfile] After DB update - brand profileImage:', brand.profileImage);
+      console.log('[updateBrandProfile] After DB update - brand.profileImage.url:', brand.profileImage?.url);
+      console.log('[updateBrandProfile] After DB update - brand.profileImage.publicId:', brand.profileImage?.publicId);
 
       res.json({
         success: true,

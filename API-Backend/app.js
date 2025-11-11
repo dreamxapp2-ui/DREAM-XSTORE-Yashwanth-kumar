@@ -13,6 +13,7 @@ const userRoutes = require('./routes/user');
 const adminRoutes = require('./routes/admin');
 const productRoutes = require('./routes/products');
 const uploadRoutes = require('./routes/upload');
+const reviewRoutes = require('./routes/reviews');
 var downloadRouter = require('./routes/download');
 
 
@@ -54,8 +55,8 @@ app.use('/api/admin', productRoutes);
 //product and user routes
 app.use('/', userRoutes);
 
-// design routes
-app.use('/api', designRoutes);
+// reviews routes
+app.use('/api', reviewRoutes);
 
 //public product routes
 app.use('/api/products', productRoutes);

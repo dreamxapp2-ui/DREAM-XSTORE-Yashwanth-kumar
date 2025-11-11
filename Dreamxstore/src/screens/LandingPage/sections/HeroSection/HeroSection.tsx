@@ -33,7 +33,7 @@ export const HeroSection = () => {
   }, []);
 
   const navLinks = [
-    { text: "Home", path: "/", className: "whitespace-nowrap" },
+    { text: "Home", path: "/home", className: "whitespace-nowrap" },
     { text: "About us", path: "/about" },
     { text: "Services", path: "/services" },
     { text: "Contact", path: "/contact" },

@@ -161,14 +161,15 @@ class ApiClient {
         ApiErrorHandler.logError(apiError, error.config?.url);
         
         // Log raw error details for debugging
-        console.error('[API Client Raw Error]:', {
-          message: error.message,
-          status: error.response?.status,
-          statusText: error.response?.statusText,
-          data: error.response?.data,
-          url: error.config?.url,
-        });
-        return Promise.reject(apiError);
+        if (error.message || error.response?.status) {
+          console.error('[API Client Raw Error]:', {
+            message: error.message || 'Unknown error',
+            status: error.response?.status ?? 'N/A',
+            statusText: error.response?.statusText || 'N/A',
+            data: error.response?.data,
+            url: error.config?.url || 'Unknown URL',
+          });
+        }
       }
     );
   }
@@ -197,9 +198,9 @@ class ApiClient {
   ): Promise<T> {
     try {
       const response = await this.axiosInstance.get<ApiResponse<T>>(url, config);
-      return (response.data.data || response.data) as T;
+      return (response.data?.data || response.data) as T;
     } catch (error) {
-      throw error as ApiError;
+      throw ApiErrorHandler.handleError(error);
     }
   }
 
@@ -213,9 +214,9 @@ class ApiClient {
   ): Promise<T> {
     try {
       const response = await this.axiosInstance.post<ApiResponse<T>>(url, data, config);
-      return (response.data.data || response.data) as T;
+      return (response.data?.data || response.data) as T;
     } catch (error) {
-      throw error as ApiError;
+      throw ApiErrorHandler.handleError(error);
     }
   }
 
@@ -229,9 +230,9 @@ class ApiClient {
   ): Promise<T> {
     try {
       const response = await this.axiosInstance.put<ApiResponse<T>>(url, data, config);
-      return (response.data.data || response.data) as T;
+      return (response.data?.data || response.data) as T;
     } catch (error) {
-      throw error as ApiError;
+      throw ApiErrorHandler.handleError(error);
     }
   }
 
@@ -245,9 +246,9 @@ class ApiClient {
   ): Promise<T> {
     try {
       const response = await this.axiosInstance.patch<ApiResponse<T>>(url, data, config);
-      return (response.data.data || response.data) as T;
+      return (response.data?.data || response.data) as T;
     } catch (error) {
-      throw error as ApiError;
+      throw ApiErrorHandler.handleError(error);
     }
   }
 
@@ -260,9 +261,9 @@ class ApiClient {
   ): Promise<T> {
     try {
       const response = await this.axiosInstance.delete<ApiResponse<T>>(url, config);
-      return (response.data.data || response.data) as T;
+      return (response.data?.data || response.data) as T;
     } catch (error) {
-      throw error as ApiError;
+      throw ApiErrorHandler.handleError(error);
     }
   }
 
@@ -286,9 +287,9 @@ class ApiClient {
           }
         },
       });
-      return (response.data.data || response.data) as T;
+      return (response.data?.data || response.data) as T;
     } catch (error) {
-      throw error as ApiError;
+      throw ApiErrorHandler.handleError(error);
     }
   }
 

@@ -24,8 +24,14 @@ export default function FeaturedProducts() {
         
         setProducts(productsData);
       } catch (err: any) {
-        console.error('[FeaturedProducts] Error fetching products:', err);
-        setError(err?.message || 'Failed to load products');
+        const errorMessage = err?.message || err?.toString?.() || 'Failed to load products';
+        console.error('[FeaturedProducts] Error fetching products:', {
+          message: errorMessage,
+          status: err?.status,
+          code: err?.code,
+          fullError: err,
+        });
+        setError(errorMessage);
       } finally {
         setLoading(false);
       }
@@ -121,7 +127,7 @@ export default function FeaturedProducts() {
                 key={product._id}
                 id={product._id}
                 title={product.name}
-                brand={product.brand?.brandName || 'Unknown'}
+                brand={product?.brandName || 'Unknown'}
                 price={product.price}
                 originalPrice={product.originalPrice}
                 discount={product.discount}

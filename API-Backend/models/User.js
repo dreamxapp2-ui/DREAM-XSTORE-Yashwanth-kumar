@@ -56,8 +56,14 @@ const userSchema = new mongoose.Schema({
   },
 
   hero_image : {
-    type: String,
-    default : ''
+    url: {
+      type: String,
+      default: null
+    },
+    publicId: {
+      type: String,
+      default: null
+    }
   },
   pickup_location: {
   type: String,
@@ -96,10 +102,24 @@ const userSchema = new mongoose.Schema({
     type : String,
     default : ""
    },
-   collab : {
-    type : [String],
-    default : []
-   },
+  wishlist: [
+    {
+      productId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Product'
+      },
+      addedAt: {
+        type: Date,
+        default: Date.now
+      }
+    }
+  ],
+  followingBrands: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Brand'
+    }
+  ],
   role: {
     type: String,
     enum: ['user', 'admin', 'superadmin'],

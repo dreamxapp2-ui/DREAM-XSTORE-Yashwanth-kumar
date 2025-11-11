@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { X, Upload, Camera } from 'lucide-react';
 import { Button } from './ui/button';
+import { UserService } from '../lib/api/services/userService';
 
 interface EditProfileModalProps {
   isOpen: boolean;
@@ -33,19 +34,24 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({ isOpen, onClose, cu
 
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
 
   // Update formData when currentUser changes
   useEffect(() => {
-    setFormData({
-      email: currentUser.email || '',
-      firstName: currentUser.firstName || '',
-      lastName: currentUser.lastName || '',
-      displayName: currentUser.displayName || currentUser.username || '',
-      phone: currentUser.phone || '',
-      bio: currentUser.bio || '',
-    });
-    setProfileImage(currentUser.hero_image || '');
-    setImagePreview(currentUser.hero_image || '');
+    if (currentUser) {
+      setFormData({
+        email: currentUser.email || '',
+        firstName: currentUser.firstName || '',
+        lastName: currentUser.lastName || '',
+        displayName: currentUser.displayName || currentUser.username || '',
+        phone: currentUser.phone || '',
+        bio: currentUser.bio || '',
+      });
+      setProfileImage(currentUser.hero_image || '');
+      setImagePreview(currentUser.hero_image || '');
+    }
   }, [currentUser]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -58,6 +64,7 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({ isOpen, onClose, cu
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      setImageFile(file);
       const reader = new FileReader();
       reader.onloadend = () => {
         setImagePreview(reader.result as string);
@@ -69,20 +76,70 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({ isOpen, onClose, cu
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const updatedData = {
+      setError('');
+      let heroImageUrl = currentUser?.hero_image || '';
+      let heroImagePublicId = '';
+
+      // Upload image to Cloudinary if a new file was selected
+      if (imageFile) {
+        setUploading(true);
+        try {
+          const uploadResponse = await UserService.uploadProfileImage(
+            [imageFile],
+            (progress: number) => setUploadProgress(progress)
+          );
+          heroImageUrl = uploadResponse[0]?.url || '';
+          heroImagePublicId = uploadResponse[0]?.publicId || '';
+          console.log('[EditProfileModal] Image uploaded:', { url: heroImageUrl, publicId: heroImagePublicId });
+        } catch (uploadErr: any) {
+          console.error('[EditProfileModal] Image upload failed:', uploadErr);
+          setError('Failed to upload profile image');
+          setUploading(false);
+          return;
+        }
+      }
+
+      // Prepare profile update data
+      const profileUpdateData = {
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        username: formData.displayName,
+        phone: formData.phone,
+        bio: formData.bio,
+        ...(heroImageUrl && {
+          hero_image: {
+            url: heroImageUrl,
+            publicId: heroImagePublicId
+          }
+        })
+      };
+
+      console.log('[EditProfileModal] Updating profile with data:', profileUpdateData);
+
+      // Call API to update user profile
+      const response = await UserService.updateProfile(profileUpdateData);
+      console.log('[EditProfileModal] Update response:', response);
+
+      // Update localStorage with new data
+      const updatedUser = {
+        ...currentUser,
         ...formData,
         username: formData.displayName,
-        hero_image: imagePreview
+        hero_image: heroImageUrl
       };
-      localStorage.setItem('dreamx_user', JSON.stringify(updatedData));
+      localStorage.setItem('dreamx_user', JSON.stringify(updatedUser));
+      
       setSuccess('Profile updated successfully!');
       window.dispatchEvent(new Event('storage'));
       setTimeout(() => {
         setSuccess('');
+        setUploading(false);
         onClose();
       }, 1500);
-    } catch (err) {
-      setError('An error occurred while updating profile');
+    } catch (err: any) {
+      console.error('[EditProfileModal] Update error:', err);
+      setError(err?.message || 'Failed to update profile');
+      setUploading(false);
     }
   };
 
@@ -132,7 +189,7 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({ isOpen, onClose, cu
               onChange={handleImageChange}
               className="hidden"
             />
-            <p className="text-sm text-gray-600 mt-2">Click camera icon to upload</p>
+        <p className="text-sm text-gray-600 mt-2">Click camera icon to upload (Image will be uploaded to Cloudinary)</p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

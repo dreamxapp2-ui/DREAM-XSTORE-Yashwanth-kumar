@@ -37,6 +37,7 @@ const upload = multer({
 
 const { createShiprocketOrder } = require("../utils/shiprocket");
 const bcrypt = require("bcryptjs");
+const { addToWishlist, removeFromWishlist, getWishlist } = require("../controllers/wishlistController");
 
 // const storage = multer.memoryStorage();
 // const upload = multer({ storage });
@@ -157,8 +158,8 @@ router.post("/api/user/stats", async (req, res) => {
 router.get("/api/user/profile", authenticate, async (req, res) => {
   try {
     const user = await User.findById(req.user._id).select(
-      "username lastName email bio isBrand hero_image collab"
-    ); // Only select needed fields, exclude _id
+      "username lastName email bio isBrand hero_image collab wishlist"
+    ); // Added wishlist to select
     console.log(user);
 
     if (!user) {
@@ -178,7 +179,8 @@ router.get("/api/user/profile", authenticate, async (req, res) => {
         bio: user.bio,
         isBrand: user.isBrand,
         hero_image: user.hero_image,
-        collab: user.collab
+        collab: user.collab,
+        wishlist: user.wishlist
       },
     });
   } catch (error) {
@@ -279,6 +281,62 @@ router.post(
       res.status(500).json({
         success: false,
         message: "Error fetching user profile",
+      });
+    }
+  }
+);
+
+// PUT /api/user/profile - Update user profile with Cloudinary image support
+router.put(
+  "/api/user/profile",
+  authenticate,
+  async (req, res) => {
+    try {
+      const { firstName, lastName, username, bio, phone, hero_image } = req.body;
+      
+      console.log('[updateProfile] Body:', req.body);
+      
+      const updates = {};
+      
+      if (firstName !== undefined) updates.firstName = firstName;
+      if (lastName !== undefined) updates.lastName = lastName;
+      if (username !== undefined) updates.username = username;
+      if (bio !== undefined) updates.bio = bio;
+      if (phone !== undefined) updates.phone = phone;
+      
+      // Handle Cloudinary image (comes as {url, publicId})
+      if (hero_image) {
+        console.log('[updateProfile] Saving hero_image:', hero_image);
+        updates.hero_image = hero_image;
+      }
+      
+      console.log('[updateProfile] Updates:', updates);
+      
+      const updatedUser = await User.findByIdAndUpdate(
+        req.user._id,
+        { $set: updates },
+        { new: true, select: 'email username firstName lastName bio phone hero_image isBrand' }
+      );
+      
+      if (!updatedUser) {
+        return res.status(404).json({
+          success: false,
+          message: 'User not found'
+        });
+      }
+      
+      console.log('[updateProfile] Updated user:', updatedUser);
+      
+      res.json({
+        success: true,
+        user: updatedUser
+      });
+    } catch (error) {
+      console.error('[updateProfile] Error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Error updating user profile',
+        error: error.message
       });
     }
   }
@@ -605,5 +663,24 @@ router.post("/api/user/top-brands", async (req, res) => {
     });
   }
 });
+
+// Wishlist endpoints
+/**
+ * POST /api/user/wishlist/add
+ * Add product to wishlist
+ */
+router.post("/api/user/wishlist/add", authenticate, addToWishlist);
+
+/**
+ * POST /api/user/wishlist/remove
+ * Remove product from wishlist
+ */
+router.post("/api/user/wishlist/remove", authenticate, removeFromWishlist);
+
+/**
+ * GET /api/user/wishlist
+ * Get user's wishlist with pagination
+ */
+router.get("/api/user/wishlist", authenticate, getWishlist);
 
 module.exports = router;

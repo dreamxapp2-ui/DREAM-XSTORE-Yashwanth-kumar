@@ -100,12 +100,53 @@ export class AdminService {
   /**
    * Update brand profile (description, profile image, social links, etc.)
    */
-  static async updateBrandProfile(id: string, data: FormData | { description?: string; instagram?: string; facebook?: string; website?: string }): Promise<Brand> {
+  static async updateBrandProfile(id: string, data: FormData | { 
+    description?: string; 
+    instagram?: string; 
+    facebook?: string; 
+    twitter?: string;
+    profileImage?: { url: string; publicId: string };
+  }): Promise<Brand> {
     if (data instanceof FormData) {
       // For FormData, use POST to /upload endpoint which handles multipart/form-data
       return await apiClient.upload<Brand>(`/admin/brands/${id}/upload`, data);
     }
     return await apiClient.patch<Brand>(`/admin/brands/${id}`, data);
+  }
+
+  /**
+   * Upload brand images to Cloudinary
+   */
+  static async uploadBrandImages(files: File[], onProgress?: (progress: number) => void): Promise<{ url: string; publicId: string }[]> {
+    const formData = new FormData();
+    files.forEach((file) => {
+      formData.append('image', file);
+    });
+    const response = await apiClient.upload<any>(
+      '/upload/brand',
+      formData,
+      onProgress
+    );
+    
+    console.log('[uploadBrandImages] Raw response:', response);
+    
+    // Handle different response formats
+    if (Array.isArray(response)) {
+      return response;
+    } else if (response?.data) {
+      // If response has a data property, use it
+      if (Array.isArray(response.data)) {
+        return response.data;
+      } else {
+        // Single item response, wrap in array
+        return [response.data];
+      }
+    } else if (response?.url) {
+      // Direct response with url/publicId
+      return [response];
+    }
+    
+    return [];
   }
 
   /**

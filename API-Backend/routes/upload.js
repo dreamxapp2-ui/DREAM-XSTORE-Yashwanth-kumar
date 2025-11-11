@@ -258,7 +258,8 @@ router.post('/brand', auth, upload.single('image'), async (req, res) => {
     const result = await uploadImage(req.file.buffer, 'brands');
 
     console.log('[uploadBrand] Upload successful:', {
-      url: result.url
+      url: result.url,
+      publicId: result.publicId
     });
 
     res.json({
