@@ -158,7 +158,7 @@ router.post("/api/user/stats", async (req, res) => {
 router.get("/api/user/profile", authenticate, async (req, res) => {
   try {
     const user = await User.findById(req.user._id).select(
-      "username lastName email bio isBrand hero_image collab wishlist"
+      "username lastName email bio isBrand hero_image collab wishlist role createdAt phone"
     ); // Added wishlist to select
     console.log(user);
 
@@ -176,11 +176,14 @@ router.get("/api/user/profile", authenticate, async (req, res) => {
         username: user.username,
         lastName: user.lastName,
         email: user.email,
+        phone: user.phone,
         bio: user.bio,
+        role: user.role,
         isBrand: user.isBrand,
         hero_image: user.hero_image,
         collab: user.collab,
-        wishlist: user.wishlist
+        wishlist: user.wishlist,
+        createdAt: user.createdAt,
       },
     });
   } catch (error) {
@@ -214,6 +217,7 @@ router.post("/api/user/public-profile", async (req, res) => {
         username: user.username,
         lastName: user.lastName,
         email: user.email,
+        role: user.role,
         bio: user.bio,
         isBrand: user.isBrand,
         hero_image: user.hero_image,

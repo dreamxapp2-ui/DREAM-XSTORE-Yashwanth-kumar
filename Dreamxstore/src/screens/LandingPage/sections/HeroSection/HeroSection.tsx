@@ -6,6 +6,7 @@ import { X, Menu, ShoppingBag } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCart } from "../../../../contexts/CartContext";
+import { UserService } from '@/src/lib/api/services/userService';
 
 export const HeroSection = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -14,23 +15,37 @@ export const HeroSection = () => {
   const router = useRouter();
 
   // Load user from localStorage on client side only
+  // useEffect(() => {
+  //   const loadUser = () => {
+  //     if (typeof window !== 'undefined') {
+  //       const u = localStorage.getItem("dreamx_user");
+  //       setUser(u ? JSON.parse(u) : null);
+  //     }
+  //   };
+    
+  //   loadUser();
+    
+  //   const onStorage = () => {
+  //     loadUser();
+  //   };
+    
+  //   window.addEventListener("storage", onStorage);
+  //   return () => window.removeEventListener("storage", onStorage);
+  // }, []);
   useEffect(() => {
-    const loadUser = () => {
-      if (typeof window !== 'undefined') {
-        const u = localStorage.getItem("dreamx_user");
-        setUser(u ? JSON.parse(u) : null);
+    const loadProfileData = async () => {
+      try {
+        const response = await UserService.getProfile();
+        const profile = (response as any)?.user || response;
+        setUser(profile);
+      } catch (error) {
+        setUser(null);
       }
     };
-    
-    loadUser();
-    
-    const onStorage = () => {
-      loadUser();
-    };
-    
-    window.addEventListener("storage", onStorage);
-    return () => window.removeEventListener("storage", onStorage);
+
+    loadProfileData();
   }, []);
+
 
   const navLinks = [
     { text: "Home", path: "/home", className: "whitespace-nowrap" },

@@ -142,7 +142,7 @@ const getWishlist = async (req, res) => {
       .select('wishlist')
       .populate({
         path: 'wishlist.productId',
-        select: 'name price images rating reviewsCount brandName'
+        select: 'name price originalPrice discount images rating reviewsCount brandName'
       });
 
     if (!user) {

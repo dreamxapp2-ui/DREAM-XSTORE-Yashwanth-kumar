@@ -5,7 +5,7 @@ interface UserProfile {
   email: string;
   username: string;
   phone?: string;
-  isBrand?: boolean;
+  role?:string;
 }
 
 interface ProfileOverviewProps {
@@ -35,7 +35,7 @@ export const ProfileOverview: React.FC<ProfileOverviewProps> = ({ user }) => {
             )}
             <div className="flex justify-between py-2">
               <span className="text-gray-600">Account Type:</span>
-              <span className="font-medium text-black">{user.isBrand ? 'Brand' : 'Customer'}</span>
+              <span className="font-medium text-black">{user.role}</span>
             </div>
           </div>
         </CardContent>

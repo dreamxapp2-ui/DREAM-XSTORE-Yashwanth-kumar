@@ -14,8 +14,11 @@ export interface ProductCardProps {
   originalPrice: number;
   discount: number;
   image: string;
-  onWishlistToggle?: (id: string, isWishlisted: boolean) => void;
+  // Optional callback when wishlist state changes - receives (productId, newWishlistStatus)
+  onWishlistToggle?: (productId: string, isWishlisted: boolean) => void;
   onClick?: () => void;
+  // Option to disable internal wishlist handling and use custom handler instead
+  useCustomWishlistHandler?: boolean;
 }
 
 export default function ProductCard({
@@ -28,6 +31,7 @@ export default function ProductCard({
   image,
   onWishlistToggle,
   onClick,
+  useCustomWishlistHandler = false,
 }: ProductCardProps) {
   const router = useRouter();
 
@@ -48,13 +52,29 @@ export default function ProductCard({
       {/* Product Image Section */}
       <div className="relative bg-gray-200 aspect-square flex items-center justify-center overflow-hidden">
         <div className="absolute top-4 right-4 z-10">
-          <WishlistButton
-            productId={id}
-            className="bg-white rounded-full p-2 hover:bg-gray-100 transition-colors"
-            onWishlistChange={(isWishlisted) => {
-              onWishlistToggle?.(id, isWishlisted);
-            }}
-          />
+          {useCustomWishlistHandler ? (
+            // Custom wishlist handler - parent component handles all logic
+            <button
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onWishlistToggle?.(id, true);
+              }}
+              className="bg-white rounded-full p-2 hover:bg-gray-100 transition-colors"
+              title="Remove from wishlist"
+            >
+              <Heart size={24} className="fill-red-500 stroke-red-500" />
+            </button>
+          ) : (
+            // Default internal wishlist handling via WishlistButton
+            <WishlistButton
+              productId={id}
+              className="bg-white rounded-full p-2 hover:bg-gray-100 transition-colors"
+              onWishlistChange={(isWishlisted) => {
+                onWishlistToggle?.(id, isWishlisted);
+              }}
+            />
+          )}
         </div>
         <Image
           src={image}

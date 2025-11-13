@@ -100,14 +100,16 @@ const WishlistButton: React.FC<WishlistButtonProps> = ({
       console.error('[WishlistButton] Error message:', error?.message);
       const errorMessage = error?.message || 'Failed to update wishlist';
       
-      // Only revert optimistic update if it's a real error, not a "already in wishlist" error
-      // If trying to add and got "already in wishlist", keep it red (status 400 means conflict, not error)
+      // If got "already in wishlist" error, it means the product IS in wishlist
+      // Keep the heart red and don't show alert
       if (newWishlistStatus && error?.status === 400 && error?.message?.includes('already')) {
-        // Product already in wishlist - keep the red heart
         console.log('[WishlistButton] Product already in wishlist, keeping heart red');
+        // Ensure state is synced with server reality
+        setIsWishlisted(true);
       } else {
-        // Real error - revert the optimistic update
-        setIsWishlisted(!newWishlistStatus);
+        // Real error - revert the optimistic update and sync with server
+        console.log('[WishlistButton] Real error, reverting to server state');
+        await checkWishlistStatus();
         alert('Failed to update wishlist: ' + errorMessage);
       }
     } finally {

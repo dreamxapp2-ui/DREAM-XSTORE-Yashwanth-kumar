@@ -41,6 +41,7 @@ export class UserService {
    */
   static async getProfile(): Promise<User> {
     const user = await apiClient.get<User>(ENDPOINTS.USER_PROFILE);
+
     TokenManager.setUser(user);
     return user;
   }

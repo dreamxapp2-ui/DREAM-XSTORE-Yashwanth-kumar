@@ -13,6 +13,8 @@ interface WishlistItemData {
     _id: string;
     name: string;
     price: number;
+    originalPrice: number;
+    discount: number;
     images?: string[];
     rating?: number;
     reviewsCount?: number;
@@ -60,17 +62,22 @@ export const WishlistTab: React.FC<WishlistTabProps> = ({ wishlist: initialWishl
     }
   };
 
-  const handleRemoveItem = async (productId: string) => {
-    try {
-      console.log('[WishlistTab] Removing product:', productId);
-      await UserService.removeFromWishlist(productId);
-      setWishlistItems(wishlistItems.filter((item) => item.productId._id !== productId));
-      console.log('[WishlistTab] Product removed successfully');
-    } catch (err: any) {
-      console.error('[WishlistTab] Error removing item:', err);
-      const errorMessage = err?.message || 'Failed to remove item from wishlist';
-      alert(errorMessage);
+  const handleWishlistToggle = async (productId: string, isWishlisted: boolean) => {
+    if (!isWishlisted) {
+      // User wants to remove from wishlist
+      try {
+        console.log('[WishlistTab] Removing product:', productId);
+        await UserService.removeFromWishlist(productId);
+        setWishlistItems(wishlistItems.filter((item) => item.productId._id !== productId));
+        console.log('[WishlistTab] Product removed successfully');
+      } catch (err: any) {
+        console.error('[WishlistTab] Error removing item:', err);
+        const errorMessage = err?.message || 'Failed to remove item from wishlist';
+        alert(errorMessage);
+      }
     }
+    // If isWishlisted is true, it means trying to add - but in profile wishlist context,
+    // we only show already-wishlisted items, so this shouldn't happen
   };
 
   if (loading) {
@@ -123,11 +130,6 @@ export const WishlistTab: React.FC<WishlistTabProps> = ({ wishlist: initialWishl
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {wishlistItems.map((item) => {
             const product = item.productId;
-            // Calculate discount if originalPrice is available
-            const originalPrice = (product as any)?.originalPrice || product.price * 1.2;
-            const discount = Math.round(
-              ((originalPrice - product.price) / originalPrice) * 100
-            );
             const productImage = product.images?.[0] || '/placeholder-product.png';
 
             return (
@@ -137,10 +139,11 @@ export const WishlistTab: React.FC<WishlistTabProps> = ({ wishlist: initialWishl
                   title={product.name}
                   brand={product.brandName || 'Unknown Brand'}
                   price={product.price}
-                  originalPrice={originalPrice}
-                  discount={discount}
+                  originalPrice={product.originalPrice}
+                  discount={product.discount}
                   image={productImage}
-                  onWishlistToggle={() => handleRemoveItem(product._id)}
+                  onWishlistToggle={handleWishlistToggle}
+                  useCustomWishlistHandler={true}
                 />
               </div>
             );

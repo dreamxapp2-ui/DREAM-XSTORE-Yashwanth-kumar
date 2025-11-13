@@ -28,7 +28,7 @@ interface UserProfile {
   joinedDate?: string;
   firstName?: string;
   id?: string;
-  role?: 'user' | 'admin' | 'superadmin';
+  role?: string;
   createdAt?: string;
 }
 
@@ -120,6 +120,8 @@ const ProfilePage: React.FC = () => {
           hero_image: heroImageUrl,
           username: profile.username || '',
           email: profile.email || '',
+          phone: profile.phone || '',
+          role: profile.role || '',
           joinedDate: profile.createdAt || '2024-01-15'
         };
         console.log('[Profile] User data to set:', userDataToSet);
