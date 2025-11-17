@@ -3,12 +3,14 @@
 import { Users, Layers, ShoppingCart, TrendingUp } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { AdminService } from '@/src/lib/api/admin/adminService';
+import { useToast } from '@/src/contexts/ToastContext';
 
 export default function AdminDashboard() {
   const [stats, setStats] = useState<any>(null);
   const [recentOrders, setRecentOrders] = useState<any[]>([]);
   const [recentBrands, setRecentBrands] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const { showToast } = useToast();
 
   useEffect(() => {
     loadDashboardData();
@@ -35,8 +37,11 @@ export default function AdminDashboard() {
       console.log('[Dashboard] Brands response:', brandsResponse);
       const brandsData = Array.isArray(brandsResponse) ? brandsResponse : (brandsResponse as any)?.data || [];
       setRecentBrands(brandsData);
+      
+      showToast('Dashboard data loaded successfully', 'success');
     } catch (error) {
       console.error('[Dashboard] Error loading dashboard data:', error);
+      showToast('Failed to load dashboard data', 'error');
     } finally {
       setLoading(false);
     }

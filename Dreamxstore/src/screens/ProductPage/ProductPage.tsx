@@ -5,6 +5,7 @@ import { Card, CardContent } from "../../components/ui/card";
 import { Badge } from "../../components/ui/badge";
 import { useRouter, useParams, useSearchParams } from "next/navigation";
 import { useCart } from "../../contexts/CartContext";
+import { useToast } from "../../contexts/ToastContext";
 import DownloadButton from "../../components/DownloadButton";
 
 export const ProductPage = (): JSX.Element => {
@@ -13,6 +14,7 @@ export const ProductPage = (): JSX.Element => {
   const searchParams = useSearchParams();
   const productSlug = params?.productSlug as string;
   const { cart, addToCart } = useCart();
+  const { showToast } = useToast();
   const [selectedImage, setSelectedImage] = useState(0);
   const [selectedSize, setSelectedSize] = useState("M");
   const [quantity, setQuantity] = useState(1);
@@ -434,19 +436,9 @@ export const ProductPage = (): JSX.Element => {
       case 'copy':
         // Copy to clipboard
         navigator.clipboard.writeText(productUrl).then(() => {
-          // Show success message
-          const successMessage = document.createElement('div');
-          successMessage.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
-          successMessage.textContent = '✓ Product link copied to clipboard!';
-          document.body.appendChild(successMessage);
-          
-          setTimeout(() => {
-            if (document.body.contains(successMessage)) {
-              document.body.removeChild(successMessage);
-            }
-          }, 3000);
+          showToast('Product link copied to clipboard!', 'success', 3000);
         }).catch(() => {
-          alert(`Copy this link: ${productUrl}`);
+          showToast('Failed to copy link', 'error');
         });
         setShowShareMenu(false);
         return;

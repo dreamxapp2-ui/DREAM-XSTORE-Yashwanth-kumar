@@ -4,22 +4,34 @@ import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { Heart, Share2, ShoppingCart, ChevronLeft, ChevronRight, Minus, Plus, ShoppingBag } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { ProductService, type Product } from '@/src/lib/api';
+import { ProductService, type Product } from '../../../src/lib/api';
+import { useCart } from '../../../src/contexts/CartContext';
+import { useToast } from '../../../src/contexts/ToastContext';
+import { ReviewService } from '../../../src/lib/api/services/reviewService';
+import { TokenManager } from '../../../src/lib/api/tokenManager';
 
 export default function ProductDetail() {
   const params = useParams();
   const router = useRouter();
+  const { addToCart } = useCart();
+  const { showToast } = useToast();
   const productId = params.productId as string;
 
   const [selectedSize, setSelectedSize] = useState('S');
   const [quantity, setQuantity] = useState(1);
+  const [maxQuantity, setMaxQuantity] = useState(0);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [userRating, setUserRating] = useState(0);
+  const [hoverRating, setHoverRating] = useState(0);
   const [isWishlisted, setIsWishlisted] = useState(false);
   const [loading, setLoading] = useState(true);
   const [totalItems, setTotalItems] = useState(0);
   const [product, setProduct] = useState<Product | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [ratingLoading, setRatingLoading] = useState(false);
+  const [userHasRated, setUserHasRated] = useState(false);
+  const [displayRating, setDisplayRating] = useState(0);
+  const [displayReviewsCount, setDisplayReviewsCount] = useState(0);
 
   const handleCartClick = () => {
     router.push('/cart');
@@ -35,10 +47,34 @@ export default function ProductDetail() {
         const fetchedProduct = await ProductService.getProductById(productId);
         console.log('[ProductDetail] Product loaded:', fetchedProduct);
         setProduct(fetchedProduct);
+        setDisplayRating(fetchedProduct.rating || 4); // Default to 4 stars
+        setDisplayReviewsCount(fetchedProduct.reviewsCount || 1500); // Default to 1.5k reviews
         
         // Set initial size to first available size
         if (fetchedProduct.sizes && fetchedProduct.sizes.length > 0) {
           setSelectedSize(fetchedProduct.sizes[0]);
+          // Set max quantity based on initial size stock
+          updateMaxQuantityForSize(fetchedProduct.sizes[0], fetchedProduct);
+        }
+        
+        // Check if user has already rated this product
+        if (TokenManager.getToken()) {
+          try {
+            const userReview = await ReviewService.getUserProductReview(productId);
+            if (userReview) {
+              setUserRating(userReview.rating);
+              setUserHasRated(true);
+              console.log('[ProductDetail] User has rated:', userReview.rating);
+            }
+          } catch (err: any) {
+            // User hasn't rated yet (404 is expected) - this is fine
+            const statusCode = err?.status || err?.response?.status;
+            if (statusCode === 404) {
+              console.log('[ProductDetail] No existing review found (expected for new users)');
+            } else {
+              console.log('[ProductDetail] Error checking review (non-critical):', err?.message);
+            }
+          }
         }
       } catch (err: any) {
         console.error('[ProductDetail] Error fetching product:', err);
@@ -65,24 +101,113 @@ export default function ProductDetail() {
     }
   };
 
-  const incrementQuantity = () => setQuantity((q) => q + 1);
+  const updateMaxQuantityForSize = (size: string, productData?: Product) => {
+    const prod = productData || product;
+    if (!prod) return;
+    
+    let availableStock = 0;
+    if (prod.hasSizes && prod.sizeStock) {
+      availableStock = prod.sizeStock[size] || 0;
+    } else {
+      availableStock = prod.stockQuantity || 0;
+    }
+    
+    setMaxQuantity(availableStock);
+    // Reset quantity to 1 if it exceeds available stock
+    if (quantity > availableStock) {
+      setQuantity(1);
+    }
+  };
+
+  const handleSizeChange = (size: string) => {
+    setSelectedSize(size);
+    updateMaxQuantityForSize(size);
+  };
+
+  const incrementQuantity = () => {
+    if (quantity < maxQuantity) {
+      setQuantity((q) => q + 1);
+    }
+  };
+  
   const decrementQuantity = () => setQuantity((q) => (q > 1 ? q - 1 : 1));
 
   const handleAddToBag = async () => {
     try {
       setLoading(true);
-      console.log('Adding to bag:', {
-        productId,
-        size: selectedSize,
-        quantity,
+      
+      if (!product) {
+        showToast('Product information is not loaded', 'warning');
+        return;
+      }
+
+      // Create cart item with product details
+      const cartItem = {
+        _id: product._id,
+        title: product.name,
+        price: product.price,
+        quantity: quantity,
+        image: product.images?.[0] || '/placeholder.svg',
+        category: product.category || 'General',
+        selectedSize: selectedSize,
+      };
+
+      console.log('Adding to bag:', cartItem);
+      
+      // Add to cart context
+      addToCart(cartItem);
+      
+      // Show success message and navigate to cart
+      showToast(`${quantity} ${product.name}(s) added to bag!`, 'success', 3000, {
+        label: 'View Cart',
+        onClick: () => router.push('/cart'),
       });
-      // TODO: Implement add to cart API
-      alert('Added to bag!');
+      
+      // Navigate to cart page after a short delay
+      setTimeout(() => router.push('/cart'), 1500);
     } catch (error) {
       console.error('Error adding to bag:', error);
-      alert('Failed to add to bag');
+      showToast('Failed to add to bag', 'error');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleRatingClick = async (rating: number) => {
+    if (!TokenManager.getToken()) {
+      showToast('Please login to rate this product', 'warning', 3000);
+      return;
+    }
+
+    setRatingLoading(true);
+    try {
+      await ReviewService.createReview({
+        productId,
+        rating,
+        comment: ''
+      });
+
+      // Update display rating and reviews count
+      const newTotalReviews = displayReviewsCount + 1;
+      const newAverageRating = ((displayRating * displayReviewsCount) + rating) / newTotalReviews;
+      
+      setDisplayRating(Math.round(newAverageRating * 10) / 10);
+      setDisplayReviewsCount(newTotalReviews);
+      setUserRating(rating);
+      setUserHasRated(true);
+      
+      showToast('Thank you for rating!', 'success', 2000);
+      console.log('[ProductDetail] Review submitted successfully:', rating);
+    } catch (error: any) {
+      console.error('[ProductDetail] Error submitting review:', error);
+      if (error?.message?.includes('already reviewed')) {
+        showToast('You have already rated this product', 'warning', 2000);
+        setUserHasRated(true);
+      } else {
+        showToast(error?.message || 'Failed to submit review', 'error', 2000);
+      }
+    } finally {
+      setRatingLoading(false);
     }
   };
 
@@ -90,17 +215,33 @@ export default function ProductDetail() {
     if (!product) return;
     try {
       setLoading(true);
+      
+      // Add to cart first
+      const cartItem = {
+        _id: product._id,
+        title: product.name,
+        price: product.price,
+        quantity: quantity,
+        image: product.images?.[0] || '/placeholder.svg',
+        category: product.category || 'General',
+        selectedSize: selectedSize,
+      };
+
+      addToCart(cartItem);
+      
       console.log('Processing payment:', {
         productId,
         size: selectedSize,
         quantity,
         totalPrice: product.price * quantity,
       });
-      // TODO: Implement payment API
-      alert('Redirecting to payment...');
+      
+      // Redirect to cart/checkout
+      showToast('Redirecting to payment...', 'info', 2000);
+      setTimeout(() => router.push('/cart'), 1000);
     } catch (error) {
       console.error('Error processing payment:', error);
-      alert('Payment failed');
+      showToast('Payment failed', 'error');
     } finally {
       setLoading(false);
     }
@@ -115,11 +256,18 @@ export default function ProductDetail() {
           text: product.description,
           url: window.location.href,
         });
+        showToast('Product shared successfully!', 'success', 2000);
       } catch (error) {
         console.error('Error sharing:', error);
+        showToast('Failed to share product', 'error');
       }
     } else {
-      alert('Share this product: ' + window.location.href);
+      // Copy to clipboard instead
+      navigator.clipboard.writeText(window.location.href).then(() => {
+        showToast('Product link copied to clipboard!', 'success', 3000);
+      }).catch(() => {
+        showToast('Failed to copy link', 'error');
+      });
     }
   };
 
@@ -168,7 +316,8 @@ export default function ProductDetail() {
       </div>
     );
   }
-
+  // brandname
+  const brandname = (product?.brandName || 'Unknown').toLowerCase();
   return (
     <div className="min-h-screen bg-white ">
       {/* Header */}
@@ -283,7 +432,8 @@ export default function ProductDetail() {
           {/* Brand */}
           {/* I leave this for another dev that can upgrade to go to the the page of brand. */}
           <div className="text-sm text-purple-600 font-medium ">
-            <button onClick={() => {}} className="text-gray-600 font-medium rounded-full border-2 border-gray-300 px-2 py-1 hover:bg-gray-100 hover:border-purple-600 transition-all duration-200 ease-in-out hover:-translate-y-0.5 hover:shadow-md">
+            
+            <button onClick={() => router.push(`/brands/${brandname}`)} className="text-gray-600 font-medium rounded-full border-2 border-gray-300 px-2 py-1 hover:bg-gray-100 hover:border-purple-600 transition-all duration-200 ease-in-out hover:-translate-y-0.5 hover:shadow-md">
                 by {product?.brandName || 'Unknown'}</button></div>
 
           {/* Ratings */}
@@ -292,12 +442,12 @@ export default function ProductDetail() {
               <div className="flex gap-1">
                 {[...Array(5)].map((_, i) => (
                   <span key={i} className="text-2xl text-yellow-400  ">
-                  {i < Math.floor(product.rating ?? 0) ? '★' : '☆'}
+                  {i < Math.floor(displayRating ?? 0) ? '★' : '☆'}
                   </span>
                 ))}
               </div>
-              <span className="font-semibold">{product.rating}</span>
-              <span className="text-gray-600">({product.reviewsCount ?? 0} reviews)</span>
+              <span className="font-semibold">{displayRating}</span>
+              <span className="text-gray-600">({displayReviewsCount} reviews)</span>
               <span className="bg-green-100 text-green-700 text-xs font-semibold px-2 py-1 rounded">
                 Live Rating
               </span>
@@ -310,15 +460,21 @@ export default function ProductDetail() {
                 {[...Array(5)].map((_, i) => (
                   <button 
                     key={i} 
-                    onClick={() => setUserRating(i + 1)} 
-                    className="text-2xl transition hover:scale-110"
+                    onClick={() => handleRatingClick(i + 1)}
+                    onMouseEnter={() => !userHasRated && setHoverRating(i + 1)}
+                    onMouseLeave={() => setHoverRating(0)}
+                    disabled={ratingLoading || userHasRated}
+                    className="text-2xl transition hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                    <span className={i < userRating ? 'text-yellow-400' : 'text-gray-400'}>
-                        {i < userRating ? '★' : '☆'}
+                    <span className={i < (hoverRating || userRating) ? 'text-yellow-400' : 'text-gray-400'}>
+                        {i < (hoverRating || userRating) ? '★' : '☆'}
                     </span>
                     </button>
                 ))}
               </div>
+              {userHasRated && (
+                <p className="text-xs text-green-600 mt-2 font-medium">Thank you for rating! ✓</p>
+              )}
             </div>
           </div>
 
@@ -335,27 +491,51 @@ export default function ProductDetail() {
           <div className="space-y-3">
             <label className="text-sm font-semibold">Size</label>
             <div className="flex gap-2 flex-wrap">
-              {product.sizes.map((size) => (
-                <button
-                  key={size}
-                  onClick={() => setSelectedSize(size)}
-                  className={`w-12 h-12 border-2 rounded font-semibold transition ${
-                    selectedSize === size ? 'bg-black text-white border-black' : 'border-gray-300 hover:border-gray-400'
-                  }`}
-                >
-                  {size}
-                </button>
-              ))}
+              {product.sizes.map((size) => {
+                const sizeStock:any = product.hasSizes && product.sizeStock 
+                  ? (product.sizeStock[size] || 0)
+                  : product.stockQuantity;
+                const isAvailable = sizeStock > 0;
+                
+                return (
+                  <div key={size} className="flex flex-col items-center gap-1">
+                    <button
+                      onClick={() => handleSizeChange(size)}
+                      disabled={!isAvailable}
+                      className={`w-12 h-12 border-2 rounded font-semibold transition ${
+                        selectedSize === size
+                          ? 'bg-black text-white border-black'
+                          : isAvailable
+                          ? 'border-gray-300 hover:border-gray-400'
+                          : 'border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed'
+                      }`}
+                    >
+                      {size}
+                    </button>
+                    <span className={`text-xs font-medium ${
+                      isAvailable ? 'text-green-600' : 'text-red-600'
+                    }`}>
+                      {isAvailable ? `${sizeStock} left` : 'Out'}
+                    </span>
+                  </div>
+                );
+              })}
             </div>
           </div>
 
           {/* Quantity */}
           <div className="space-y-3">
-            <label className="text-sm font-semibold">Quantity</label>
+            <div className="flex justify-between items-center">
+              <label className="text-sm font-semibold">Quantity</label>
+              <span className="text-xs text-gray-600">
+                {maxQuantity > 0 ? `${maxQuantity} available` : 'Out of stock'}
+              </span>
+            </div>
             <div className="flex items-center gap-4 w-fit">
               <button
                 onClick={decrementQuantity}
-                className="border border-gray-300 rounded-lg p-2 hover:bg-gray-100 transition"
+                disabled={quantity <= 1}
+                className="border border-gray-300 rounded-lg p-2 hover:bg-gray-100 transition disabled:opacity-50 disabled:cursor-not-allowed"
                 aria-label="Decrease quantity"
               >
                 <Minus className="w-4 h-4" />
@@ -363,7 +543,8 @@ export default function ProductDetail() {
               <span className="text-lg font-semibold w-8 text-center">{quantity}</span>
               <button
                 onClick={incrementQuantity}
-                className="border border-gray-300 rounded-lg p-2 hover:bg-gray-100 transition"
+                disabled={quantity >= maxQuantity}
+                className="border border-gray-300 rounded-lg p-2 hover:bg-gray-100 transition disabled:opacity-50 disabled:cursor-not-allowed"
                 aria-label="Increase quantity"
               >
                 <Plus className="w-4 h-4" />
@@ -375,18 +556,18 @@ export default function ProductDetail() {
           <div className="flex gap-4 pt-4">
             <button
               onClick={handleAddToBag}
-              disabled={loading}
-              className="flex-1 border-2 border-black rounded-full py-3 font-semibold hover:bg-gray-50 transition flex items-center justify-center gap-2 disabled:opacity-50"
+              disabled={loading || maxQuantity === 0}
+              className="flex-1 border-2 border-black rounded-full py-3 font-semibold hover:bg-gray-50 transition flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <ShoppingBag className="w-5 h-5" />
-              {loading ? 'ADDING...' : 'ADD TO BAG'}
+              {maxQuantity === 0 ? 'OUT OF STOCK' : loading ? 'ADDING...' : 'ADD TO BAG'}
             </button>
             <button
               onClick={handlePayNow}
-              disabled={loading}
-              className="flex-1 bg-blue-600 text-white rounded-full py-3 font-semibold hover:bg-blue-700 transition disabled:opacity-50"
+              disabled={loading || maxQuantity === 0}
+              className="flex-1 bg-blue-600 text-white rounded-full py-3 font-semibold hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {loading ? 'PROCESSING...' : 'PAY NOW'}
+              {maxQuantity === 0 ? 'OUT OF STOCK' : loading ? 'PROCESSING...' : 'PAY NOW'}
             </button>
           </div>
 
@@ -399,9 +580,9 @@ export default function ProductDetail() {
           <div className="border-t border-gray-200 pt-6 space-y-3">
             <h3 className="text-lg font-bold font-sans">Description</h3>
             <p className="text-gray-700 leading-relaxed">{product.longDescription}</p>
-            <p className="text-gray-500 italic text-sm">
+            {/* <p className="text-gray-500 italic text-sm">
               "eat, sleep, anime, repeat - a warrior's path to eternal inspiration!"
-            </p>
+            </p> */}
           </div>
           <div className="pt-6 space-y-3">
             <h3 className="text-xl font-bold font-sans">Features</h3>

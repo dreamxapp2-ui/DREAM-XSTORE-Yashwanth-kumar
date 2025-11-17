@@ -10,6 +10,7 @@
 const express = require('express');
 const multer = require('multer');
 const auth = require('../middleware/auth');
+const brandAuth = require('../middleware/brandAuth');
 const { uploadImage } = require('../utils/cloudinary');
 
 const router = express.Router();
@@ -221,6 +222,87 @@ router.post('/product', auth, upload.array('images', 10), async (req, res) => {
       error: error.message
     });
   }
+});
+
+/**
+ * POST /api/upload/brand-product
+ * Upload product images for brands
+ * Convenience endpoint specifically for brands
+ * 
+ * Requires: Brand authentication
+ * 
+ * Body (multipart/form-data):
+ *   - images (files): Product image files (up to 10)
+ * 
+ * Response:
+ *   {
+ *     success: true,
+ *     message: "Product images uploaded successfully",
+ *     data: [{ url, publicId }, ...]
+ *   }
+ */
+router.post('/brand-product', brandAuth, upload.array('images', 10), async (req, res) => {
+  try {
+    console.log('[uploadBrandProduct] Request received:', {
+      files: req.files ? req.files.length : 0,
+      body: req.body,
+      headers: req.headers
+    });
+    
+    if (!req.files || req.files.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'No product images provided'
+      });
+    }
+
+    console.log('[uploadBrandProduct] Uploading product images:', {
+      count: req.files.length
+    });
+
+    // Upload all product images in parallel to 'products' folder
+    const uploadPromises = req.files.map(file =>
+      uploadImage(file.buffer, 'products')
+    );
+
+    const results = await Promise.all(uploadPromises);
+
+    console.log('[uploadBrandProduct] Upload successful:', {
+      count: results.length
+    });
+
+    res.json({
+      success: true,
+      message: 'Product images uploaded successfully',
+      data: results
+    });
+
+  } catch (error) {
+    console.error('[uploadBrandProduct] Error:', error.message);
+    console.error('[uploadBrandProduct] Error details:', {
+      name: error.name,
+      message: error.message,
+      code: error.code,
+      status: error.status
+    });
+    res.status(error.status || 500).json({
+      success: false,
+      message: 'Product images upload failed',
+      error: error.message
+    });
+  }
+});
+
+// Error handler for multer
+router.use((err, req, res, next) => {
+  if (err instanceof multer.MulterError) {
+    console.error('[MulterError]:', err.message);
+    return res.status(400).json({
+      success: false,
+      message: 'File upload error: ' + err.message
+    });
+  }
+  next(err);
 });
 
 /**

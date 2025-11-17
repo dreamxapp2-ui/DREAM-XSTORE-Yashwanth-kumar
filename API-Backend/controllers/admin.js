@@ -13,6 +13,89 @@ const { uploadImage, deleteImage } = require('../utils/cloudinary');
 
 const adminController = {
   /**
+   * Brand Login
+   * 
+   * This endpoint authenticates brand users by checking ownerEmail and password
+   * against the Brand collection.
+   */
+  async brandLogin(req, res) {
+    try {
+      const { brandName, ownerEmail, password } = req.body;
+
+      // Input validation
+      if (!brandName || !ownerEmail || !password) {
+        return res.status(400).json({
+          success: false,
+          message: 'Brand name, email, and password are required',
+          field: 'general'
+        });
+      }
+
+      // Find brand by brandName and ownerEmail
+      const brand = await Brand.findOne({
+        brandName: brandName.trim(),
+        ownerEmail: ownerEmail.toLowerCase().trim()
+      });
+
+      if (!brand) {
+        return res.status(401).json({
+          success: false,
+          message: 'Invalid brand name, email, or password',
+          field: 'credentials'
+        });
+      }
+
+      // Check brand status
+      if (brand.status !== 'Active') {
+        return res.status(403).json({
+          success: false,
+          message: `Brand account is ${brand.status.toLowerCase()}. Please contact support.`,
+          field: 'general'
+        });
+      }
+
+      // Compare password
+      const isValidPassword = await bcrypt.compare(password, brand.password);
+      if (!isValidPassword) {
+        return res.status(401).json({
+          success: false,
+          message: 'Invalid brand name, email, or password',
+          field: 'password'
+        });
+      }
+
+      // Generate JWT token
+      const token = jwt.sign(
+        { brandId: brand._id },
+        process.env.JWT_SECRET,
+        { expiresIn: '30d' }
+      );
+
+      res.json({
+        success: true,
+        message: 'Brand login successful',
+        token,
+        brand: {
+          id: brand._id,
+          brandName: brand.brandName,
+          ownerEmail: brand.ownerEmail,
+          status: brand.status,
+          profileImage: brand.profileImage
+        }
+      });
+
+    } catch (error) {
+      console.error('Brand login error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Error logging in',
+        field: 'general',
+        error: error.message
+      });
+    }
+  },
+
+  /**
    * Admin Login (with role check)
    * 
    * This endpoint is specifically for admin/superadmin users.

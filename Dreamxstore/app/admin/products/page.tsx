@@ -4,6 +4,7 @@ import { Plus, Search } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { AdminService } from '@/src/lib/api/admin/adminService';
+import { useToast } from '@/src/contexts/ToastContext';
 
 interface Product {
   id: string;
@@ -17,6 +18,9 @@ interface Product {
   discount: number;
   stockQuantity: number;
   inStock: boolean;
+  hasSizes?: boolean;
+  sizeStock?: { [key: string]: number };
+  sizes?: string[];
 }
 
 export default function ProductsPage() {
@@ -26,6 +30,7 @@ export default function ProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { showToast } = useToast();
 
   // Fetch products on mount
   useEffect(() => {
@@ -48,9 +53,11 @@ export default function ProductsPage() {
       
       console.log('[Products] Extracted products:', productsData);
       setProducts(productsData);
+      showToast('Products loaded successfully', 'success');
     } catch (error: any) {
       console.error('[Products] Error fetching products:', error);
       setError('Failed to load products');
+      showToast('Failed to load products', 'error');
       setProducts([]);
     } finally {
       setLoading(false);
@@ -142,7 +149,7 @@ export default function ProductsPage() {
                   <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Brand</th>
                   <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Category</th>
                   <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Price</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Stock</th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Stock Details</th>
                   <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Status</th>
                   <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Action</th>
                 </tr>
@@ -157,7 +164,41 @@ export default function ProductsPage() {
                       ₹{product.price}
                       <span className="text-gray-500 line-through ml-2">₹{product.originalPrice}</span>
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-600">{product.stockQuantity}</td>
+                    {/* Stock Details Cell */}
+                    <td className="px-6 py-4 text-sm">
+                      {product.hasSizes ? (
+                        /* Size-based Stock */
+                        <div className="space-y-1">
+                          <div className="text-xs font-medium text-gray-700 mb-2">Size Stock:</div>
+                          <div className="grid grid-cols-4 gap-1">
+                            {product.sizes?.map((size: string) => (
+                              <div key={size} className="flex flex-col items-center">
+                                <span className="text-xs font-semibold text-gray-900">{size}</span>
+                                <span className={`text-xs px-2 py-1 rounded ${
+                                  (product.sizeStock?.[size] || 0) > 0
+                                    ? 'bg-green-100 text-green-700'
+                                    : 'bg-red-100 text-red-700'
+                                }`}>
+                                  {product.sizeStock?.[size] || 0}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      ) : (
+                        /* Default Stock */
+                        <div className="space-y-1">
+                          <div className="text-xs font-medium text-gray-700">Total Stock:</div>
+                          <div className={`inline-block px-3 py-1 rounded-full text-sm font-semibold ${
+                            product.stockQuantity > 0
+                              ? 'bg-blue-100 text-blue-700'
+                              : 'bg-red-100 text-red-700'
+                          }`}>
+                            {product.stockQuantity}
+                          </div>
+                        </div>
+                      )}
+                    </td>
                     <td className="px-6 py-4 text-sm">
                       <span
                         className={`px-3 py-1 rounded-full text-xs font-medium ${

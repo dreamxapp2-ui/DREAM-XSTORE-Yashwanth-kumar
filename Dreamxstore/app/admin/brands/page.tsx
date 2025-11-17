@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Search, Filter, Eye, Edit2, Trash2, Plus, X } from 'lucide-react';
 import { AdminService } from '@/src/lib/api/admin/adminService';
+import { useToast } from '@/src/contexts/ToastContext';
 
 interface Brand {
   id: string;
@@ -34,6 +35,7 @@ export default function BrandAccountsPage() {
     state: '',
     country: 'India',
   });
+  const { showToast } = useToast();
 
   useEffect(() => {
     console.log('[BrandsPage] Component mounted');
@@ -65,9 +67,12 @@ export default function BrandAccountsPage() {
       if (paginationData) {
         setPagination(paginationData);
       }
+      
+      showToast('Brands loaded successfully', 'success');
     } catch (error) {
       console.error('Failed to load brands:', error);
       setBrands([]);
+      showToast('Failed to load brands', 'error');
     } finally {
       setLoading(false);
     }
@@ -81,7 +86,7 @@ export default function BrandAccountsPage() {
   const handleSubmitForm = async (e: React.FormEvent) => {
     e.preventDefault();
     if (formData.password !== formData.confirmPassword) {
-      alert('Passwords do not match');
+      showToast('Passwords do not match', 'error');
       return;
     }
     
@@ -102,13 +107,13 @@ export default function BrandAccountsPage() {
       
       const response = await AdminService.createBrand(brandData);
       if (response) {
-        alert('Brand account created successfully!');
+        showToast('Brand account created successfully!', 'success');
         closeModal();
         loadBrands();
       }
     } catch (error) {
       console.error('Error creating brand:', error);
-      alert('Error creating brand account. Please try again.');
+      showToast('Error creating brand account. Please try again.', 'error');
     }
   };
 
@@ -118,10 +123,10 @@ export default function BrandAccountsPage() {
       const brand = await AdminService.getBrandById(brandId);
       console.log('[handleViewBrand] Brand response:', brand);
       const data = (brand as any).data || brand;
-      alert(`Brand: ${data.brandName}\nEmail: ${data.ownerEmail}\nStatus: ${data.status}`);
+      showToast(`Brand: ${data.brandName}\nEmail: ${data.ownerEmail}\nStatus: ${data.status}`, 'info');
     } catch (error) {
       console.error('Error fetching brand:', error);
-      alert('Failed to fetch brand details: ' + (error as any)?.message);
+      showToast('Failed to fetch brand details: ' + (error as any)?.message, 'error');
     }
   };
 
@@ -132,22 +137,22 @@ export default function BrandAccountsPage() {
 
     try {
       await AdminService.deleteBrand(brandId);
-      alert('Brand deleted successfully!');
+      showToast('Brand deleted successfully!', 'success');
       loadBrands();
     } catch (error) {
       console.error('Error deleting brand:', error);
-      alert('Failed to delete brand');
+      showToast('Failed to delete brand', 'error');
     }
   };
 
   const handleUpdateStatus = async (brandId: string, newStatus: string) => {
     try {
       await AdminService.updateBrandStatus(brandId, newStatus as any);
-      alert(`Brand status updated to ${newStatus}!`);
+      showToast(`Brand status updated to ${newStatus}!`, 'success');
       loadBrands();
     } catch (error) {
       console.error('Error updating brand status:', error);
-      alert('Failed to update brand status');
+      showToast('Failed to update brand status', 'error');
     }
   };
 

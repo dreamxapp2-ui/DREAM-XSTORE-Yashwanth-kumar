@@ -405,19 +405,13 @@ export default function BrandProfilePage() {
               <span>DREAM X<br />STORE</span>
             )} */}
             <span>DREAM X<br />STORE</span>
-            <button 
-              onClick={() => {
-                if (isSuperAdmin) {
-                  setIsEditModalOpen(true);
-                } else {
-                  alert('Only superadmin can edit brand profile');
-                }
-              }}
-              className="absolute -top-1 -right-1 bg-purple-600 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity "
-              title={isSuperAdmin ? 'Edit profile image' : 'Only superadmin can edit'}
+            {/* <button 
+              className="absolute -top-1 -right-1 bg-gray-400 text-white rounded-full p-1 opacity-100 cursor-not-allowed"
+              title="Brand owners can edit their profile in the brand dashboard"
+              disabled
             >
               <Edit2 size={12} />
-            </button>
+            </button> */}
           </div>
           <div>
             <h1 className="text-white text-3xl font-bold">{brand.brandName}</h1>
@@ -619,124 +613,8 @@ export default function BrandProfilePage() {
         </div>
       )}
 
-      {/* Edit Modal */}
-      {isEditModalOpen && isSuperAdmin && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-          <div className="bg-white rounded-lg w-full max-w-md mx-4 p-8 relative">
-            {/* Modal Header */}
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-bold text-gray-900">Edit Brand Profile</h2>
-              <button onClick={() => setIsEditModalOpen(false)} className="text-gray-500 hover:text-gray-700">
-                <X size={24} />
-              </button>
-            </div>
-
-            {/* Modal Form */}
-            <form onSubmit={(e) => { e.preventDefault(); handleSaveEdit(); }} className="space-y-6">
-              {/* Profile Image Upload */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Profile Image</label>
-                <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-purple-500 transition-colors cursor-pointer">
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleImageFileChange}
-                    className="hidden"
-                    id="imageUpload"
-                  />
-                  <label htmlFor="imageUpload" className="cursor-pointer block">
-                    {editFormData.image ? (
-                      <div className="space-y-3 flex flex-col items-center">
-                        <img src={editFormData.image} alt="Preview" className="w-24 h-24 rounded-lg object-cover" />
-                        <div>
-                          <p className="text-sm text-purple-600 font-medium">Click to change image</p>
-                          <p className="text-xs text-gray-500 mt-1">or drag and drop</p>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="space-y-2 flex flex-col items-center justify-center py-4">
-                        <Plus className="w-16 h-16 text-gray-400" />
-                        <p className="text-sm text-gray-600 font-medium">Upload Brand Image</p>
-                        <p className="text-xs text-gray-500">PNG, JPG, GIF up to 10MB</p>
-                      </div>
-                    )}
-                  </label>
-                </div>
-              </div>
-
-              {/* About/Description */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">About Brand</label>
-                <textarea
-                  value={editFormData.description}
-                  onChange={(e) => setEditFormData({ ...editFormData, description: e.target.value })}
-                  rows={4}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                  placeholder="Write about your brand..."
-                />
-              </div>
-
-              {/* Social Media Links */}
-              <div className="space-y-4 border-t pt-4">
-                <h3 className="text-sm font-semibold text-gray-900">Social Media Links</h3>
-                
-                {/* Instagram */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Instagram URL</label>
-                  <input
-                    type="url"
-                    value={editFormData.instagram}
-                    onChange={(e) => setEditFormData({ ...editFormData, instagram: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    placeholder="https://instagram.com/brandname"
-                  />
-                </div>
-
-                {/* Facebook */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Facebook URL</label>
-                  <input
-                    type="url"
-                    value={editFormData.facebook}
-                    onChange={(e) => setEditFormData({ ...editFormData, facebook: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    placeholder="https://facebook.com/brandname"
-                  />
-                </div>
-
-                {/* Website */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Twitter URL</label>
-                  <input
-                    type="url"
-                    value={editFormData.twitter}
-                    onChange={(e) => setEditFormData({ ...editFormData, twitter: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    placeholder="https://twitter.com/brandname"
-                  />
-                </div>
-              </div>
-
-              {/* Buttons */}
-              <div className="flex gap-3">
-                <button
-                  type="button"
-                  onClick={() => setIsEditModalOpen(false)}
-                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 font-medium transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="flex-1 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium transition-colors"
-                >
-                  Save Changes
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      {/* Edit Modal - DISABLED FOR PUBLIC BRAND PROFILE */}
+      {/* Brands can only edit their profile from the brand dashboard */}
     </div>
   );
 }

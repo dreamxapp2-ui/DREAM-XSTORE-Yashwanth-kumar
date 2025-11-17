@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ChevronLeft, Eye, Pencil, Search } from 'lucide-react';
+import { useToast } from '@/src/contexts/ToastContext';
 
 interface Order {
   id: string;
@@ -21,6 +22,7 @@ export default function OrdersPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState('orders');
   const router = useRouter();
+  const { showToast } = useToast();
 
   const tabs = ['dashboard', 'brand-accounts', 'orders', 'analytics'];
 

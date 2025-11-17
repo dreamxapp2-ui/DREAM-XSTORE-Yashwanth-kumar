@@ -3,10 +3,12 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ChevronLeft } from 'lucide-react';
+import { useToast } from '@/src/contexts/ToastContext';
 
 export default function AnalyticsPage() {
   const [activeTab, setActiveTab] = useState('analytics');
   const router = useRouter();
+  const { showToast } = useToast();
 
   const tabs = ['dashboard', 'brand-accounts', 'orders', 'analytics'];
 

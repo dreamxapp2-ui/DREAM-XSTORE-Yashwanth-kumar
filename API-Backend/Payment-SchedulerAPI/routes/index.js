@@ -73,7 +73,7 @@ router.post("/getorderid", auth, async (req, res) => {
           .status(200)
           .send({
             orderid: orderId,
-            purchaseid: newOrder._id,
+            order_id: newOrder._id,
             "email:": user.email,
           });
       } else {

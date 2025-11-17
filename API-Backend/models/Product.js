@@ -100,6 +100,32 @@ const productSchema = new mongoose.Schema(
       default: ['S', 'M', 'L', 'XL', 'XXL'],
     },
 
+    // Stock Management
+    hasSizes: {
+      type: Boolean,
+      default: true, // true = size-based stock, false = default stock (books, digital, etc.)
+    },
+    sizeStock: {
+      type: {
+        'XS': { type: Number, default: 0 },
+        'S': { type: Number, default: 0 },
+        'M': { type: Number, default: 0 },
+        'L': { type: Number, default: 0 },
+        'XL': { type: Number, default: 0 },
+        'XXL': { type: Number, default: 0 },
+        'XXXL': { type: Number, default: 0 },
+      },
+      default: {
+        'XS': 0,
+        'S': 0,
+        'M': 0,
+        'L': 0,
+        'XL': 0,
+        'XXL': 0,
+        'XXXL': 0,
+      },
+    },
+
     // Stock
     inStock: {
       type: Boolean,
@@ -137,7 +163,20 @@ const productSchema = new mongoose.Schema(
   }
 );
 
-// Index for better query performance
+// Pre-save middleware to update inStock status based on stockQuantity
+productSchema.pre('save', function (next) {
+  this.inStock = this.stockQuantity > 0;
+  next();
+});
+
+// Pre-updateOne/findByIdAndUpdate middleware to update inStock status
+productSchema.pre(['updateOne', 'findByIdAndUpdate'], function (next) {
+  const update = this.getUpdate();
+  if (update && update.$set && update.$set.stockQuantity !== undefined) {
+    update.$set.inStock = update.$set.stockQuantity > 0;
+  }
+  next();
+});
 productSchema.index({ category: 1, subCategory: 1 });
 productSchema.index({ brandId: 1 });
 productSchema.index({ brandName: 1 });

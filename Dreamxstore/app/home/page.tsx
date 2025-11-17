@@ -3,6 +3,7 @@
 import Header from '@/app/home/components/Header';
 import HeroCarousel from '@/app/home/components/HeroCarousel';
 import FeaturedProducts from '@/app/home/components/FeaturedProducts';
+import { FloatingChatButton } from '@/src/screens/LandingPage/sections/FloatingChatButton';
 
 export default function HomePage() {
   return (
@@ -11,7 +12,7 @@ export default function HomePage() {
       <HeroCarousel />
       {/* <CategorySection /> */}
       <FeaturedProducts />
-      
+      <FloatingChatButton />
       {/* Additional sections will be added here */}
       {/* Best Sellers */}
       {/* Testimonials */}

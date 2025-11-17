@@ -16,6 +16,8 @@ export interface Product {
   images: string[];
   thumbnails?: string[];
   sizes: string[];
+  hasSizes?: boolean;
+  sizeStock?: { [key: string]: number };
   stock?: number;
   stockQuantity?: number;
   inStock?: boolean;

@@ -2,6 +2,8 @@
 
 import React, { useEffect } from "react";
 import { CartProvider } from "../src/contexts/CartContext";
+import { ToastProvider } from "../src/contexts/ToastContext";
+import { ToastDisplay } from "../src/components/Toast/ToastDisplay";
 
 export function Providers({ children }: { children: React.ReactNode }) {
   useEffect(() => {
@@ -19,5 +21,10 @@ export function Providers({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  return <CartProvider>{children}</CartProvider>;
+  return (
+    <ToastProvider>
+      <CartProvider>{children}</CartProvider>
+      <ToastDisplay />
+    </ToastProvider>
+  );
 }

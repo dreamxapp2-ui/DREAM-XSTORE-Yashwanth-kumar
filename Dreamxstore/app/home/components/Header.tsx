@@ -2,11 +2,12 @@
 
 import { Search, User, ShoppingBag } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useCart } from '@/src/contexts/CartContext';
 
 export default function Header() {
   const router = useRouter();
-  const [cartItems, setCartItems] = useState(0);
+  const { cart } = useCart();
+  const totalItems = cart.reduce((total, item) => total + item.quantity, 0);
 
   return (
     <header className="bg-white border-b border-gray-200 sticky top-0 z-40">
@@ -50,9 +51,9 @@ export default function Header() {
             onClick={() => router.push('/cart')}
           >
             <ShoppingBag size={20} className="text-gray-700" />
-            {cartItems > 0 && (
+            {totalItems > 0 && (
               <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center">
-                {cartItems}
+                {totalItems > 99 ? '99+' : totalItems}
               </span>
             )}
           </button>

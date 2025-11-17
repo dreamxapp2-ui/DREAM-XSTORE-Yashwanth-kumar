@@ -1,0 +1,5 @@
+{
+  "ignore": ["*.log", "node_modules/", ".git/", "public/", "views/"],
+  "delay": 500,
+  "ext": "js,json"
+}

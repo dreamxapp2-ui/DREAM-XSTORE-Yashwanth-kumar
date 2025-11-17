@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { ChevronLeft, Upload, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { AdminService } from '@/src/lib/api/admin/adminService';
+import { useToast } from '@/src/contexts/ToastContext';
 
 interface FormData {
   name: string;
@@ -17,6 +18,7 @@ interface FormData {
   originalPrice: number;
   discount: number;
   stockQuantity: number;
+  sizeStock: { [key: string]: number }; // Stock for each size
   sizes: string[];
   features: string[];
   tags: string[];
@@ -40,6 +42,8 @@ export default function AddProductPage() {
   const [uploadProgress, setUploadProgress] = useState<number>(0);
   const [newFeature, setNewFeature] = useState('');
   const [newTag, setNewTag] = useState('');
+  const [hasSizes, setHasSizes] = useState(true); // Toggle for size-based or default stock
+  const { showToast } = useToast();
 
   const [formData, setFormData] = useState<FormData>({
     name: '',
@@ -52,6 +56,15 @@ export default function AddProductPage() {
     originalPrice: 0,
     discount: 0,
     stockQuantity: 0,
+    sizeStock: {
+      'XS': 0,
+      'S': 0,
+      'M': 0,
+      'L': 0,
+      'XL': 0,
+      'XXL': 0,
+      'XXXL': 0,
+    },
     sizes: ['S', 'M', 'L', 'XL', 'XXL'],
     features: [],
     tags: [],
@@ -78,9 +91,11 @@ export default function AddProductPage() {
         }));
         
         setBrands(mappedBrands);
+        showToast('Brands loaded successfully', 'success');
       } catch (error) {
         console.error('[AddProduct] Error fetching brands:', error);
         setError('Failed to load brands');
+        showToast('Failed to load brands', 'error');
       } finally {
         setBrandsLoading(false);
       }
@@ -131,7 +146,15 @@ export default function AddProductPage() {
     }));
   };
 
-  // ... existing code ...
+  const handleSizeStockChange = (size: string, stock: number) => {
+    setFormData((prev) => ({
+      ...prev,
+      sizeStock: {
+        ...prev.sizeStock,
+        [size]: stock,
+      },
+    }));
+  };
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
@@ -167,10 +190,12 @@ export default function AddProductPage() {
       }
 
       setUploadProgress(0);
+      showToast('Images uploaded successfully', 'success');
     } catch (error: any) {
       console.error('[AddProduct] Image upload error:', error);
       setError(error?.message || 'Failed to upload images');
       setUploadProgress(0);
+      showToast('Failed to upload images', 'error');
     } finally {
       setUploading(false);
     }
@@ -225,21 +250,25 @@ export default function AddProductPage() {
     // Validation
     if (!formData.name || !formData.description || !formData.longDescription) {
       setError('Please fill in all required fields');
+      showToast('Please fill in all required fields', 'warning');
       return;
     }
 
     if (formData.images.length === 0) {
       setError('Please add at least one product image');
+      showToast('Please add at least one product image', 'warning');
       return;
     }
 
     if (!formData.category || !formData.brandId) {
       setError('Please select category and brand');
+      showToast('Please select category and brand', 'warning');
       return;
     }
 
     if (formData.price <= 0 || formData.originalPrice <= 0) {
       setError('Price must be greater than 0');
+      showToast('Price must be greater than 0', 'warning');
       return;
     }
 
@@ -247,15 +276,27 @@ export default function AddProductPage() {
       setLoading(true);
       console.log('[AddProduct] Submitting product:', formData);
 
-      const response = await AdminService.addProduct(formData);
+      // Calculate total stock based on stock type
+      const totalStock = hasSizes 
+        ? Object.values(formData.sizeStock).reduce((sum, stock) => sum + stock, 0)
+        : formData.stockQuantity;
+      
+      const submitData = {
+        ...formData,
+        stockQuantity: totalStock, // Total stock
+        hasSizes: hasSizes, // Include stock type info
+      };
+
+      const response = await AdminService.addProduct(submitData);
       console.log('[AddProduct] Product created successfully:', response);
       
-      alert('Product added successfully!');
+      showToast('Product added successfully!', 'success');
       router.push('/admin/products');
     } catch (error: any) {
       console.error('[AddProduct] Error adding product:', error);
       const errorMessage = error?.message || error?.data?.message || 'Failed to add product';
       setError(errorMessage);
+      showToast(errorMessage, 'error');
     } finally {
       setLoading(false);
     }
@@ -383,51 +424,6 @@ export default function AddProductPage() {
 
         {/* Pricing Section */}
         <div>
-          {/* <h2 className="text-xl font-semibold text-gray-900 mb-4">Pricing</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Sale Price (₹) *</label>
-              <input
-                type="number"
-                name="price"
-                value={formData.price}
-                onChange={handleInputChange}
-                placeholder="0"
-                min="0"
-                step="0.1"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Original Price (₹) *</label>
-              <input
-                type="number"
-                name="originalPrice"
-                value={formData.originalPrice}
-                onChange={handleInputChange}
-                placeholder="0"
-                min="0"
-                step="0.01"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Discount (%) *</label>
-              <input
-                type="number"
-                name="discount"
-                value={formData.discount}
-                onChange={handleInputChange}
-                placeholder="0"
-                min="0"
-                max="100"
-                step="0.01"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
-              />
-            </div>
-          </div> */}
           <div>
             <h2 className="text-xl font-semibold text-gray-900 mb-4">Pricing</h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -482,40 +478,106 @@ export default function AddProductPage() {
 
         {/* Stock Section */}
         <div>
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">Stock</h2>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Stock Quantity *</label>
-            <input
-              type="number"
-              name="stockQuantity"
-              value={formData.stockQuantity}
-              onChange={handleInputChange}
-              placeholder="0"
-              min="0"
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
-            />
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">Stock Management</h2>
+          
+          {/* Stock Type Toggle */}
+          <div className="mb-6 flex gap-4">
+            <label className="flex items-center gap-3 cursor-pointer">
+              <input
+                type="radio"
+                name="stockType"
+                checked={hasSizes}
+                onChange={() => setHasSizes(true)}
+                className="w-4 h-4"
+              />
+              <span className="text-sm font-medium text-gray-700">Size-based Stock (S, M, L, XL, etc.)</span>
+            </label>
+            <label className="flex items-center gap-3 cursor-pointer">
+              <input
+                type="radio"
+                name="stockType"
+                checked={!hasSizes}
+                onChange={() => setHasSizes(false)}
+                className="w-4 h-4"
+              />
+              <span className="text-sm font-medium text-gray-700">Default Stock (Books, Digital, etc.)</span>
+            </label>
           </div>
-        </div>
 
-        {/* Sizes Section */}
-        <div>
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">Available Sizes</h2>
-          <div className="flex flex-wrap gap-3">
-            {allSizes.map((size) => (
-              <button
-                key={size}
-                type="button"
-                onClick={() => handleSizeToggle(size)}
-                className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                  formData.sizes.includes(size)
-                    ? 'bg-purple-600 text-white'
-                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                }`}
-              >
-                {size}
-              </button>
-            ))}
-          </div>
+          {/* Size-based Stock */}
+          {hasSizes ? (
+            <div className="bg-gray-50 rounded-lg p-6 space-y-4">
+              {/* Available Sizes */}
+              <div>
+                <h3 className="text-sm font-semibold text-gray-900 mb-3">Select Available Sizes</h3>
+                <div className="flex flex-wrap gap-3 mb-6">
+                  {allSizes.map((size) => (
+                    <button
+                      key={size}
+                      type="button"
+                      onClick={() => handleSizeToggle(size)}
+                      className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                        formData.sizes.includes(size)
+                          ? 'bg-purple-600 text-white'
+                          : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                      }`}
+                    >
+                      {size}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Size-based Stock Input */}
+              {formData.sizes.length > 0 && (
+                <div>
+                  <h3 className="text-sm font-semibold text-gray-900 mb-3">Stock for Each Size</h3>
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                    {formData.sizes.map((size) => (
+                      <div key={size}>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          {size}
+                        </label>
+                        <input
+                          type="number"
+                          value={formData.sizeStock[size] || 0}
+                          onChange={(e) => handleSizeStockChange(size, parseInt(e.target.value) || 0)}
+                          placeholder="0"
+                          min="0"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Total Stock Display */}
+              <div className="mt-6 p-4 bg-purple-50 rounded-lg border border-purple-200">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm font-medium text-gray-700">Total Stock:</span>
+                  <span className="text-2xl font-bold text-purple-600">
+                    {Object.values(formData.sizeStock).reduce((sum, stock) => sum + stock, 0)}
+                  </span>
+                </div>
+              </div>
+            </div>
+          ) : (
+            /* Default Stock */
+            <div className="bg-gray-50 rounded-lg p-6">
+              <label className="block text-sm font-medium text-gray-700 mb-3">Stock Quantity *</label>
+              <input
+                type="number"
+                name="stockQuantity"
+                value={formData.stockQuantity}
+                onChange={handleInputChange}
+                placeholder="Enter total stock quantity"
+                min="0"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+              />
+              <p className="text-xs text-gray-500 mt-2">For products without size variations (books, digital products, etc.)</p>
+            </div>
+          )}
         </div>
 
         {/* Images Section */}

@@ -37,7 +37,38 @@ class ApiClient {
   private setupRequestInterceptor(): void {
     this.axiosInstance.interceptors.request.use(
       (config: InternalAxiosRequestConfig) => {
-        const token = TokenManager.getToken();
+        // ... existing code ...
+        // If sending FormData, let axios set the correct Content-Type with boundary
+        if (config.data instanceof FormData) {
+          delete config.headers['Content-Type'];
+        }
+        
+        const isBrandEndpoint = config.url?.includes('/brand/');
+        
+        let token: string | null = null;
+        if (isBrandEndpoint) {
+          // For brand endpoints, get brand token from localStorage
+          if (typeof window !== 'undefined') {
+            try {
+              const brandData = localStorage.getItem('brand_user');
+              console.log('[API Client] Checking for brand_user in localStorage:', !!brandData);
+              if (brandData) {
+                const brand = JSON.parse(brandData);
+                token = brand.token;
+                // Mark this request as using brand auth (skip token refresh)
+                (config as any).isBrandAuth = true;
+                console.log('[API Client] Using brand auth for brand endpoint:', config.url, 'Token:', token ? 'YES' : 'NO');
+              } else {
+                console.warn('[API Client] No brand_user found in localStorage for endpoint:', config.url);
+              }
+            } catch (e) {
+              console.error('Error parsing brand data:', e);
+            }
+          }
+        } else {
+          // For regular user endpoints, use standard token manager
+          token = TokenManager.getToken();
+        }
         
         // Add auth token if available and not explicitly skipped
         if (token && !(config as any).skipAuth) {
@@ -46,7 +77,10 @@ class ApiClient {
 
         // Log request in development
         if (process.env.NODE_ENV === 'development') {
-          console.log(`[API Request] ${config.method?.toUpperCase()} ${config.url}`);
+          console.log(`[API Request] ${config.method?.toUpperCase()} ${config.url}`, {
+            hasFormData: config.data instanceof FormData,
+            contentType: config.headers['Content-Type']
+          });
         }
 
         return config;
@@ -76,10 +110,25 @@ class ApiClient {
           _retryCount?: number;
           skipAuth?: boolean;
           skipRetry?: boolean;
+          isBrandAuth?: boolean;
         };
 
-        // Handle 401 errors - Token expired
+        // Handle 401 errors - Token expired or invalid
         if (error.response?.status === 401 && !originalRequest._retry) {
+          // Check if this request used brand authentication
+          if (originalRequest.isBrandAuth) {
+            // For brand auth, never attempt refresh - just logout and redirect
+            console.log('[API Client] Brand auth failed, redirecting to brand login');
+            if (typeof window !== 'undefined') {
+              // Clear brand session
+              localStorage.removeItem('brand_user');
+              localStorage.removeItem('token');
+              window.location.href = '/brand-login';
+            }
+            return Promise.reject(error);
+          }
+
+          // For regular user endpoints, attempt token refresh
           if (this.isRefreshing) {
             // Queue the request
             return new Promise((resolve, reject) => {
@@ -278,7 +327,7 @@ class ApiClient {
     try {
       const response = await this.axiosInstance.post<ApiResponse<T>>(url, formData, {
         headers: {
-          'Content-Type': 'multipart/form-data',
+          'Content-Type': undefined,
         },
         onUploadProgress: (progressEvent) => {
           if (onProgress && progressEvent.total) {

@@ -18,6 +18,7 @@ import { Search, Eye, Ban, CheckCircle, Store } from 'lucide-react';
 import { AdminService } from '@/src/lib/api/admin/adminService';
 import { UserStatus } from '@/src/lib/api/admin/types';
 import type { Customer } from '@/src/lib/api/admin/types';
+import { useToast } from '@/src/contexts/ToastContext';
 
 export default function CustomersPage() {
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -25,6 +26,7 @@ export default function CustomersPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<UserStatus | ''>('');
   const [currentPage, setCurrentPage] = useState(1);
+  const { showToast } = useToast();
 
   useEffect(() => {
     loadCustomers();
@@ -40,8 +42,10 @@ export default function CustomersPage() {
         limit: 20,
       });
       setCustomers(response.data || []);
+      showToast('Customers loaded successfully', 'success');
     } catch (error) {
       console.error('Failed to load customers:', error);
+      showToast('Failed to load customers', 'error');
       setCustomers([]);
     } finally {
       setLoading(false);
@@ -56,31 +60,33 @@ export default function CustomersPage() {
   const handleUpdateStatus = async (customerId: string, status: UserStatus) => {
     try {
       await AdminService.updateCustomerStatus(customerId, status);
+      showToast(`Customer status updated to ${status}`, 'success');
       loadCustomers();
     } catch (error) {
       console.error('Failed to update customer status:', error);
+      showToast('Failed to update customer status', 'error');
     }
   };
 
   const handleMakeBrand = async (customerId: string) => {
     try {
       await AdminService.makeCustomerBrand(customerId);
-      alert('Customer is now a brand');
+      showToast('Customer is now a brand', 'success');
       loadCustomers();
     } catch (error) {
       console.error('Failed to make customer a brand:', error);
-      alert('Failed to make customer a brand');
+      showToast('Failed to make customer a brand', 'error');
     }
   };
 
   const handleRevokeBrand = async (customerId: string) => {
     try {
       await AdminService.revokeBrandStatus(customerId);
-      alert('Brand status revoked');
+      showToast('Brand status revoked', 'success');
       loadCustomers();
     } catch (error) {
       console.error('Failed to revoke brand status:', error);
-      alert('Failed to revoke brand status');
+      showToast('Failed to revoke brand status', 'error');
     }
   };
 

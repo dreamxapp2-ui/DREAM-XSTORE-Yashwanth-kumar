@@ -30,6 +30,25 @@ const upload = multer({
 });
 
 /**
+ * POST /api/admin/brand-login
+ * Brand login (checks brand name, email, and password)
+ * Public endpoint - no authentication required
+ * 
+ * Body:
+ *   - brandName (string): brand name
+ *   - ownerEmail (string): brand owner email
+ *   - password (string): brand password
+ * 
+ * Response:
+ *   {
+ *     success: true,
+ *     token: "jwt_token",
+ *     brand: { id, brandName, ownerEmail, status, ... }
+ *   }
+ */
+router.post('/brand-login', adminController.brandLogin);
+
+/**
  * POST /api/admin/login
  * Admin login (checks role)
  * 
@@ -47,7 +66,6 @@ const upload = multer({
 router.post('/login', adminController.adminLogin);
 
 /**
- * GET /api/admin/users
  * Get all users (paginated)
  * Requires: Authentication + superadmin role
  * 

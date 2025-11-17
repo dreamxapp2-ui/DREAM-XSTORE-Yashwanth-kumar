@@ -6,6 +6,7 @@ import { Button } from '@/src/components/ui/button';
 import { Input } from '@/src/components/ui/input';
 import { Save } from 'lucide-react';
 import { AdminService } from '@/src/lib/api/admin/adminService';
+import { useToast } from '@/src/contexts/ToastContext';
 
 export default function SettingsPage() {
   const [commissionRate, setCommissionRate] = useState('15');
@@ -13,6 +14,7 @@ export default function SettingsPage() {
   const [payoutSchedule, setPayoutSchedule] = useState('monthly');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const { showToast } = useToast();
 
   useEffect(() => {
     loadSettings();
@@ -26,8 +28,10 @@ export default function SettingsPage() {
         setMinPayoutAmount(String(settings.settings.minPayoutAmount || 1000));
         setPayoutSchedule(settings.settings.payoutSchedule || 'monthly');
       }
+      showToast('Settings loaded successfully', 'success');
     } catch (error) {
       console.error('Failed to load settings:', error);
+      showToast('Failed to load settings', 'error');
     } finally {
       setLoading(false);
     }
@@ -41,10 +45,10 @@ export default function SettingsPage() {
         minPayoutAmount: parseFloat(minPayoutAmount),
         payoutSchedule
       });
-      alert('Settings saved successfully');
+      showToast('Settings saved successfully', 'success');
     } catch (error) {
       console.error('Failed to save settings:', error);
-      alert('Failed to save settings');
+      showToast('Failed to save settings', 'error');
     } finally {
       setSaving(false);
     }

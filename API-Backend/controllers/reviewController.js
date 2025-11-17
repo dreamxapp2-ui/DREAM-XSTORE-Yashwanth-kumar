@@ -56,10 +56,11 @@ const createReview = async (req, res) => {
     // Update product rating and reviewsCount
     const allReviews = await Review.find({ productId });
     const averageRating = allReviews.reduce((sum, r) => sum + r.rating, 0) / allReviews.length;
+    const BASELINE_REVIEWS = 1500; // 1.5K baseline for startup appearance
     
     await Product.findByIdAndUpdate(productId, {
       rating: Math.round(averageRating * 10) / 10, // Round to 1 decimal
-      reviewsCount: allReviews.length
+      reviewsCount: allReviews.length + BASELINE_REVIEWS // Add baseline to actual reviews
     });
 
     console.log('[createReview] Review created:', review._id);
@@ -104,18 +105,18 @@ const getProductReviews = async (req, res) => {
       .skip(skip)
       .limit(parseInt(limit));
 
+    // Get all reviews for this product
     const total = await Review.countDocuments({ productId });
-
-    console.log('[getProductReviews] Found reviews:', reviews.length);
-
+    const BASELINE_REVIEWS = 1500; // 1.5K baseline for startup appearance
+    
     res.json({
       success: true,
       data: reviews,
       pagination: {
-        total,
+        total: total + BASELINE_REVIEWS, // Add baseline to actual count
         page: parseInt(page),
         limit: parseInt(limit),
-        pages: Math.ceil(total / limit)
+        pages: Math.ceil((total + BASELINE_REVIEWS) / limit)
       }
     });
   } catch (error) {
@@ -207,10 +208,12 @@ const updateReview = async (req, res) => {
 
     // Recalculate product rating
     const allReviews = await Review.find({ productId: review.productId });
+    const BASELINE_REVIEWS = 1500; // 1.5K baseline for startup appearance
     const averageRating = allReviews.reduce((sum, r) => sum + r.rating, 0) / allReviews.length;
     
     await Product.findByIdAndUpdate(review.productId, {
-      rating: Math.round(averageRating * 10) / 10
+      rating: Math.round(averageRating * 10) / 10,
+      reviewsCount: allReviews.length + BASELINE_REVIEWS // Add baseline to actual reviews
     });
 
     console.log('[updateReview] Review updated:', reviewId);
@@ -261,18 +264,19 @@ const deleteReview = async (req, res) => {
 
     // Recalculate product rating
     const allReviews = await Review.find({ productId });
+    const BASELINE_REVIEWS = 1500; // 1.5K baseline for startup appearance
     
     if (allReviews.length === 0) {
-      // No reviews left, reset rating
+      // No reviews left, reset to baseline only
       await Product.findByIdAndUpdate(productId, {
         rating: 0,
-        reviewsCount: 0
+        reviewsCount: BASELINE_REVIEWS
       });
     } else {
       const averageRating = allReviews.reduce((sum, r) => sum + r.rating, 0) / allReviews.length;
       await Product.findByIdAndUpdate(productId, {
         rating: Math.round(averageRating * 10) / 10,
-        reviewsCount: allReviews.length
+        reviewsCount: allReviews.length + BASELINE_REVIEWS // Add baseline to actual reviews
       });
     }
 

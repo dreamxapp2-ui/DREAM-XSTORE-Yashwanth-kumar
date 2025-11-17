@@ -35,10 +35,16 @@ export const HeroSection = () => {
   useEffect(() => {
     const loadProfileData = async () => {
       try {
+        const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+        if (!token) {
+          setUser(null);
+          return;
+        }
         const response = await UserService.getProfile();
         const profile = (response as any)?.user || response;
         setUser(profile);
       } catch (error) {
+        console.log('Profile load error (user may not be logged in):', error);
         setUser(null);
       }
     };
@@ -126,16 +132,7 @@ export const HeroSection = () => {
             ) : (
               <Button
                 className="w-[90px] xl:w-[120px] 2xl:w-[110px] h-[30px] xl:h-[42px] 2xl:h-[34px] bg-[#f0ff7f] rounded-[1px] hover:bg-[#e5f570] transition-colors ml-4 xl:ml-6 2xl:ml-8 flex-shrink-0 flex items-center justify-center"
-                onClick={() => {
-                  console.log("HeroSection navigating to login", { router, location: window.location.href });
-                  try {
-                    console.log("Navigating to /login");
-                    router.push("/login");
-                  } catch (err) {
-                    alert("Navigation error: " + err);
-                    console.error("Navigation error", err);
-                  }
-                }}
+                onClick={() => router.push("/login")}
               >
                 <span className="[font-family:'Azeret_Mono',Helvetica] font-normal text-[#004d84] text-[10px] xl:text-[12px] 2xl:text-[12px] whitespace-nowrap leading-none mr-[0px]">
                   Get Started
@@ -156,7 +153,7 @@ export const HeroSection = () => {
               
               {/* Cart Items Badge - Show only if items > 0 */}
               {totalItems > 0 && (
-                <div className="absolute -top-1 -right-1 w-6 h-6 xl:w-7 xl:h-7 2xl:w-8 2xl:h-8 bg-red-500 text-white text-xs xl:text-sm 2xl:text-base font-bold rounded-full flex items-center justify-center shadow-sm">
+                <div className="absolute -top-1 -right-1 w-4 h-4  bg-red-500 text-white text-xs  font-bold rounded-full flex items-center justify-center shadow-sm">
                   {totalItems > 99 ? '99+' : totalItems}
                 </div>
               )}
@@ -259,16 +256,7 @@ export const HeroSection = () => {
                   ) : (
                     <Button
                       variant="link"
-                      onClick={() => {
-                        console.log("HeroSection navigating to login", { router, location: window.location.href });
-                        try {
-                          console.log("Navigating to /login");
-                          router.push("/login");
-                        } catch (err) {
-                          alert("Navigation error: " + err);
-                          console.error("Navigation error", err);
-                        }
-                      }}
+                      onClick={() => router.push("/login")}
                       className="text-2xl font-bold text-black p-0 h-auto font-mono uppercase tracking-wider hover:text-[#004d84] transition-colors"
                     >
                       GET STARTED

@@ -20,6 +20,8 @@ const productController = {
         discount,
         stockQuantity,
         sizes,
+        sizeStock,
+        hasSizes,
         features,
         tags,
         images,
@@ -32,6 +34,7 @@ const productController = {
         brandName,
         price,
         imagesCount: images?.length,
+        hasSizes,
       });
 
       // Validate brand exists
@@ -56,7 +59,9 @@ const productController = {
         originalPrice,
         discount,
         stockQuantity,
-        sizes,
+        sizes: hasSizes ? sizes : [],
+        sizeStock: hasSizes ? sizeStock : { 'XS': 0, 'S': 0, 'M': 0, 'L': 0, 'XL': 0, 'XXL': 0, 'XXXL': 0 },
+        hasSizes: hasSizes || true,
         features,
         tags,
         images,
