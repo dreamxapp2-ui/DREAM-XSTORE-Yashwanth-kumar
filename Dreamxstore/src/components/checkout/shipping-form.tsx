@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 interface ShippingFormProps {
   onContinue: (data: any) => void;
@@ -20,6 +20,20 @@ export default function ShippingForm({ onContinue, initialData }: ShippingFormPr
     useBillingAddress: true,
   });
 
+  useEffect(() => {
+    // If no initialData is explicitly given (like returning from payment step), try to load from localStorage
+    if (!initialData || Object.keys(initialData).length === 0) {
+      const saved = localStorage.getItem('dreamx_saved_shipping_address');
+      if (saved) {
+        try {
+          setFormData(JSON.parse(saved));
+        } catch (e) {
+          console.error('Failed to parse saved shipping address', e);
+        }
+      }
+    }
+  }, [initialData]);
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
     setFormData((prev: any) => ({
@@ -30,6 +44,8 @@ export default function ShippingForm({ onContinue, initialData }: ShippingFormPr
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    // Save address for future checkout sessions
+    localStorage.setItem('dreamx_saved_shipping_address', JSON.stringify(formData));
     onContinue(formData);
   };
 
@@ -134,10 +150,43 @@ export default function ShippingForm({ onContinue, initialData }: ShippingFormPr
               required
               className="w-full px-4 py-3 border border-blue-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
-              <option>Select State</option>
-              <option>Maharashtra</option>
-              <option>Karnataka</option>
-              <option>Tamil Nadu</option>
+              <option value="" disabled>Select State</option>
+              <option value="Andhra Pradesh">Andhra Pradesh</option>
+              <option value="Arunachal Pradesh">Arunachal Pradesh</option>
+              <option value="Assam">Assam</option>
+              <option value="Bihar">Bihar</option>
+              <option value="Chhattisgarh">Chhattisgarh</option>
+              <option value="Goa">Goa</option>
+              <option value="Gujarat">Gujarat</option>
+              <option value="Haryana">Haryana</option>
+              <option value="Himachal Pradesh">Himachal Pradesh</option>
+              <option value="Jharkhand">Jharkhand</option>
+              <option value="Karnataka">Karnataka</option>
+              <option value="Kerala">Kerala</option>
+              <option value="Madhya Pradesh">Madhya Pradesh</option>
+              <option value="Maharashtra">Maharashtra</option>
+              <option value="Manipur">Manipur</option>
+              <option value="Meghalaya">Meghalaya</option>
+              <option value="Mizoram">Mizoram</option>
+              <option value="Nagaland">Nagaland</option>
+              <option value="Odisha">Odisha</option>
+              <option value="Punjab">Punjab</option>
+              <option value="Rajasthan">Rajasthan</option>
+              <option value="Sikkim">Sikkim</option>
+              <option value="Tamil Nadu">Tamil Nadu</option>
+              <option value="Telangana">Telangana</option>
+              <option value="Tripura">Tripura</option>
+              <option value="Uttar Pradesh">Uttar Pradesh</option>
+              <option value="Uttarakhand">Uttarakhand</option>
+              <option value="West Bengal">West Bengal</option>
+              <option value="Andaman and Nicobar Islands">Andaman and Nicobar Islands</option>
+              <option value="Chandigarh">Chandigarh</option>
+              <option value="Dadra and Nagar Haveli and Daman and Diu">Dadra and Nagar Haveli and Daman and Diu</option>
+              <option value="Delhi">Delhi</option>
+              <option value="Jammu and Kashmir">Jammu and Kashmir</option>
+              <option value="Ladakh">Ladakh</option>
+              <option value="Lakshadweep">Lakshadweep</option>
+              <option value="Puducherry">Puducherry</option>
             </select>
           </div>
           <div>

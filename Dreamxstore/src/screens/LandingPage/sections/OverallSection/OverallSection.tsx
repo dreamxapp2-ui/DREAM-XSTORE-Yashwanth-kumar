@@ -11,7 +11,7 @@ export const OverallSection = (): JSX.Element => {
           <div className="w-1/2 xl:w-[55%]">
             <div className="relative">
               <img
-                src="https://i.pinimg.com/736x/92/9b/df/929bdf0480b8369bf764bd4022539552.jpg"
+                src="https://i.pinimg.com/736x/af/d8/19/afd81915d44b185091fc7ac2242ea724.jpg"
                 alt="Men's Collection"
                 className="w-full h-[400px] lg:h-[450px] xl:h-[500px] object-cover"
               />
@@ -32,7 +32,7 @@ export const OverallSection = (): JSX.Element => {
               <h3 className="text-3xl xl:text-4xl 2xl:text-5xl font-light text-gray-900 leading-tight">
                 Hey, welcome to DreamX!
               </h3>
-              
+
               <div className="space-y-4 xl:space-y-5">
                 <p className="text-lg xl:text-xl 2xl:text-2xl text-gray-800 leading-relaxed">
                   <span className="font-semibold">#GetCustomClothing</span> tailored just for you from your favorite brands and styles.
@@ -54,7 +54,7 @@ export const OverallSection = (): JSX.Element => {
           {/* Image */}
           <div className="relative">
             <img
-              src="https://i.pinimg.com/736x/92/9b/df/929bdf0480b8369bf764bd4022539552.jpg"
+              src="https://i.pinimg.com/736x/af/d8/19/afd81915d44b185091fc7ac2242ea724.jpg"
               alt="Men's Collection"
               className="w-full h-[250px] sm:h-[300px] object-cover "
             />
@@ -73,7 +73,7 @@ export const OverallSection = (): JSX.Element => {
             <h3 className="text-3xl sm:text-4xl md:text-5xl font-light text-gray-900 leading-tight">
               Hey, welcome to DreamX!
             </h3>
-            
+
             <div className="space-y-4">
               <p className="text-xl sm:text-2xl md:text-3xl text-gray-800 leading-relaxed">
                 <span className="font-semibold">#GetCustomClothing</span> tailored just for you from your favorite brands and styles.

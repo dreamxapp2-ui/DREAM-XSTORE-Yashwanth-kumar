@@ -1,4 +1,4 @@
-// File: D:\web Scripting with Ud\Dream\DREAM-XSTORE\Dreamxstore\app\layout.tsx
+// File: C:\Users\vikrant mahar\Downloads\DREAM-XSTORE\DREAM-XSTORE\Dreamxstore\app\layout.tsx
 import * as entry from '../../../app/layout.js'
 import type { ResolvingMetadata, ResolvingViewport } from 'next/dist/lib/metadata/types/metadata-interface.js'
 

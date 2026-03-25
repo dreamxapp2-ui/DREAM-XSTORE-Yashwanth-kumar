@@ -22,6 +22,10 @@ interface FormData {
   features: string[];
   tags: string[];
   images: string[];
+  weight?: number;
+  length?: number;
+  breadth?: number;
+  height?: number;
 }
 
 export default function BrandUploadProductPage() {
@@ -60,6 +64,10 @@ export default function BrandUploadProductPage() {
     features: [],
     tags: [],
     images: [],
+    weight: undefined,
+    length: undefined,
+    breadth: undefined,
+    height: undefined,
   });
 
   // Check authentication and get brand info
@@ -89,8 +97,8 @@ export default function BrandUploadProductPage() {
     const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
-      [name]: name === 'price' || name === 'originalPrice' || name === 'discount' || name === 'stockQuantity' 
-        ? parseFloat(value) || 0 
+      [name]: name === 'price' || name === 'originalPrice' || name === 'discount' || name === 'stockQuantity' || name === 'weight' || name === 'length' || name === 'breadth' || name === 'height'
+        ? parseFloat(value) || (name === 'weight' || name === 'length' || name === 'breadth' || name === 'height' ? undefined : 0)
         : value,
     }));
   };
@@ -595,6 +603,68 @@ export default function BrandUploadProductPage() {
                 </div>
               </div>
             )}
+          </div>
+        </div>
+
+        {/* Weight & Dimensions Section */}
+        <div>
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">Weight & Dimensions</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Weight (kg)</label>
+              <input
+                type="number"
+                name="weight"
+                value={formData.weight || ''}
+                onChange={handleInputChange}
+                placeholder="e.g., 0.5"
+                min="0"
+                step="0.01"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Length (cm)</label>
+              <input
+                type="number"
+                name="length"
+                value={formData.length || ''}
+                onChange={handleInputChange}
+                placeholder="e.g., 25"
+                min="0"
+                step="0.1"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Breadth (cm)</label>
+              <input
+                type="number"
+                name="breadth"
+                value={formData.breadth || ''}
+                onChange={handleInputChange}
+                placeholder="e.g., 20"
+                min="0"
+                step="0.1"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Height (cm)</label>
+              <input
+                type="number"
+                name="height"
+                value={formData.height || ''}
+                onChange={handleInputChange}
+                placeholder="e.g., 30"
+                min="0"
+                step="0.1"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+              />
+            </div>
           </div>
         </div>
 

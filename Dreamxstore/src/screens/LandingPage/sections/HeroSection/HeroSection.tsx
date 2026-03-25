@@ -89,7 +89,7 @@ export const HeroSection = () => {
               <Link
                 key={index}
                 href={link.path}
-                className={`[font-family:'Azeret_Mono',Helvetica] font-normal text-black text-base xl:text-lg hover:text-[#004d84] transition-colors p-0 h-auto whitespace-nowrap ${link.className || ""}`}
+                className={`font-mono font-normal text-black text-base xl:text-lg hover:text-[#004d84] transition-colors p-0 h-auto whitespace-nowrap ${link.className || ""}`}
               >
                 {link.text}
               </Link>
@@ -103,7 +103,7 @@ export const HeroSection = () => {
                   className="min-w-[120px] max-w-[200px] h-[34px] xl:h-[42px] 2xl:h-[34px] rounded-[1px] px-4 flex items-center gap-2 cursor-pointer bg-transparent hover:bg-gray-100"
                   onClick={() => router.push('/profile')}
                 >
-                  <span className="[font-family:'Azeret_Mono',Helvetica] font-normal text-[#004d84] text-[12px] xl:text-[14px] 2xl:text-[14px]">
+                  <span className="font-mono font-normal text-[#004d84] text-[12px] xl:text-[14px] 2xl:text-[14px]">
                     {user.username}
                   </span>
                   <svg className="w-4 h-4 ml-1 text-[#004d84]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>
@@ -134,7 +134,7 @@ export const HeroSection = () => {
                 className="w-[90px] xl:w-[120px] 2xl:w-[110px] h-[30px] xl:h-[42px] 2xl:h-[34px] bg-[#f0ff7f] rounded-[1px] hover:bg-[#e5f570] transition-colors ml-4 xl:ml-6 2xl:ml-8 flex-shrink-0 flex items-center justify-center"
                 onClick={() => router.push("/login")}
               >
-                <span className="[font-family:'Azeret_Mono',Helvetica] font-normal text-[#004d84] text-[10px] xl:text-[12px] 2xl:text-[12px] whitespace-nowrap leading-none mr-[0px]">
+                <span className="font-mono font-normal text-[#004d84] text-[10px] xl:text-[12px] 2xl:text-[12px] whitespace-nowrap leading-none mr-[0px]">
                   Get Started
                 </span>
               </Button>
@@ -249,7 +249,7 @@ export const HeroSection = () => {
                       className="w-auto h-[34px] xl:h-[42px] 2xl:h-[34px] rounded-[1px] px-4 flex items-center gap-2 bg-transparent hover:bg-gray-100"
                       onClick={() => { toggleMobileMenu(); router.push('/profile'); }}
                     >
-                      <span className="[font-family:'Azeret_Mono',Helvetica] font-normal text-[#004d84] text-[12px] xl:text-[14px] 2xl:text-[14px]">
+                      <span className="font-mono font-normal text-[#004d84] text-[12px] xl:text-[14px] 2xl:text-[14px]">
                         {user.username}
                       </span>
                     </Button>

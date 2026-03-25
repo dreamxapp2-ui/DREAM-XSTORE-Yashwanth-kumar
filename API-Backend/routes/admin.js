@@ -10,6 +10,8 @@ const express = require('express');
 const multer = require('multer');
 const router = express.Router();
 const adminController = require('../controllers/admin');
+const productController = require('../controllers/productController');
+const bannerController = require('../controllers/bannerController');
 const auth = require('../middleware/auth');
 const authorize = require('../middleware/authorize');
 
@@ -274,6 +276,20 @@ router.get('/brands/:brandId', auth, authorize(['admin', 'superadmin']), adminCo
 router.patch('/brands/:brandId/status', auth, authorize(['admin', 'superadmin']), adminController.updateBrandStatus);
 
 /**
+ * GET /api/admin/products
+ * Get all products with pagination
+ * Requires: Authentication + admin or superadmin role
+ */
+router.get('/products', auth, authorize(['admin', 'superadmin']), adminController.getProducts);
+
+/**
+ * DELETE /api/admin/products/:productId
+ * Delete a product
+ * Requires: Authentication + admin or superadmin role
+ */
+router.delete('/products/:productId', auth, authorize(['admin', 'superadmin']), productController.deleteProduct);
+
+/**
  * POST /api/admin/products/:productId/approve
  * Approve a product
  * Requires: Authentication + admin or superadmin role
@@ -342,5 +358,40 @@ router.patch('/customers/:userId/brand', auth, authorize(['admin', 'superadmin']
  * Requires: Authentication + admin or superadmin role
  */
 router.patch('/customers/:userId/revoke-brand', auth, authorize(['admin', 'superadmin']), adminController.revokeBrandStatus);
+
+/**
+ * GET /api/admin/banners
+ * Get all banners
+ * Requires: Authentication + admin or superadmin role
+ */
+router.get('/banners', auth, authorize(['admin', 'superadmin']), bannerController.getAllBanners);
+
+/**
+ * POST /api/admin/banners
+ * Create a new banner
+ * Requires: Authentication + admin or superadmin role
+ */
+router.post('/banners', auth, authorize(['admin', 'superadmin']), bannerController.createBanner);
+
+/**
+ * PUT /api/admin/banners/:id
+ * Update a banner
+ * Requires: Authentication + admin or superadmin role
+ */
+router.put('/banners/:id', auth, authorize(['admin', 'superadmin']), bannerController.updateBanner);
+
+/**
+ * DELETE /api/admin/banners/:id
+ * Delete a banner
+ * Requires: Authentication + admin or superadmin role
+ */
+router.delete('/banners/:id', auth, authorize(['admin', 'superadmin']), bannerController.deleteBanner);
+
+/**
+ * PUT /api/admin/banners/:id/toggle
+ * Toggle banner active status
+ * Requires: Authentication + admin or superadmin role
+ */
+router.put('/banners/:id/toggle', auth, authorize(['admin', 'superadmin']), bannerController.toggleBanner);
 
 module.exports = router;

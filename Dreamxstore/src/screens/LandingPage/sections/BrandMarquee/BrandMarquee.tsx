@@ -16,22 +16,22 @@ export const BrandMarquee = ()=> {
     {
       id: 3,
       name: "Nike",
-      logo: "https://logos-world.net/wp-content/uploads/2020/04/Nike-Logo.png",
+      logo: "https://img.icons8.com/?size=100&id=19623&format=png&color=FFFFFF",
     },
     {
       id: 4,
       name: "Adidas",
-      logo: "https://logos-world.net/wp-content/uploads/2020/04/Adidas-Logo.png",
+      logo: "https://img.icons8.com/?size=100&id=34543&format=png&color=FFFFFF",
     },
     {
       id: 5,
       name: "Puma",
-      logo: "https://logos-world.net/wp-content/uploads/2020/04/Puma-Logo.png",
+      logo: "https://img.icons8.com/?size=100&id=3nFQK2eI2Iq4&format=png&color=FFFFFF",
     },
     {
       id: 6,
       name: "Under Armour",
-      logo: "https://logos-world.net/wp-content/uploads/2020/04/Under-Armour-Logo.png",
+      logo: "https://www.logo.wine/a/logo/Under_Armour/Under_Armour-Logo.wine.svg",
     }
   ];
 

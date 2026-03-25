@@ -102,6 +102,34 @@ const userSchema = new mongoose.Schema({
     type : String,
     default : ""
    },
+  addresses: [
+    {
+      type: {
+        type: String,
+        enum: ['shipping', 'billing'],
+        default: 'shipping'
+      },
+      name: String,
+      phone: String,
+      addressLine1: String,
+      addressLine2: String,
+      city: String,
+      state: String,
+      zipCode: String,
+      country: {
+        type: String,
+        default: 'India'
+      },
+      isDefault: {
+        type: Boolean,
+        default: false
+      },
+      createdAt: {
+        type: Date,
+        default: Date.now
+      }
+    }
+  ],
   wishlist: [
     {
       productId: {

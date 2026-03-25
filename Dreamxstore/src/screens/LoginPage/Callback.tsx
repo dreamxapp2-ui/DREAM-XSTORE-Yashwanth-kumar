@@ -78,7 +78,7 @@ const GoogleCallbackPage = () => {
       window.dispatchEvent(new Event("storage"));
 
       // Redirect to home/trending page (Google OAuth users are auto-verified)
-      router.push("/trending");
+      router.push("/");
     } catch (err) {
       setError("Failed to process authentication data");
     }

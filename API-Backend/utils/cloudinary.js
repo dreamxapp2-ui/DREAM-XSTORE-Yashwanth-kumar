@@ -28,6 +28,27 @@ cloudinary.config({
  */
 async function uploadImage(fileBuffer, folder, publicId) {
   return new Promise((resolve, reject) => {
+    // Validate inputs
+    if (!fileBuffer) {
+      return reject(new Error('File buffer is empty'));
+    }
+    
+    if (!process.env.CLOUDINARY_CLOUD_NAME || !process.env.CLOUDINARY_API_KEY || !process.env.CLOUDINARY_API_SECRET) {
+      console.error('[uploadImage] Cloudinary credentials missing:', {
+        cloudName: !!process.env.CLOUDINARY_CLOUD_NAME,
+        apiKey: !!process.env.CLOUDINARY_API_KEY,
+        apiSecret: !!process.env.CLOUDINARY_API_SECRET
+      });
+      return reject(new Error('Cloudinary credentials not configured'));
+    }
+
+    console.log('[uploadImage] Starting upload:', {
+      bufferSize: fileBuffer.length,
+      folder,
+      publicId,
+      cloudName: process.env.CLOUDINARY_CLOUD_NAME
+    });
+
     // Convert buffer to stream for Cloudinary upload
     const stream = Readable.from(fileBuffer);
 
@@ -41,8 +62,19 @@ async function uploadImage(fileBuffer, folder, publicId) {
       },
       (error, result) => {
         if (error) {
+          console.error('[uploadImage] Cloudinary error:', {
+            message: error.message,
+            status: error.http_code,
+            code: error.code,
+            fullError: error
+          });
           reject(new Error(`Cloudinary upload failed: ${error.message}`));
         } else {
+          console.log('[uploadImage] Upload successful:', {
+            url: result.secure_url,
+            publicId: result.public_id,
+            bytes: result.bytes
+          });
           resolve({
             url: result.secure_url,
             publicId: result.public_id
@@ -50,6 +82,17 @@ async function uploadImage(fileBuffer, folder, publicId) {
         }
       }
     );
+
+    // Handle stream errors
+    stream.on('error', (err) => {
+      console.error('[uploadImage] Stream error:', err);
+      reject(new Error(`Stream error: ${err.message}`));
+    });
+    
+    uploadStream.on('error', (err) => {
+      console.error('[uploadImage] Upload stream error:', err);
+      reject(new Error(`Upload stream error: ${err.message}`));
+    });
 
     // Pipe the buffer to the upload stream
     stream.pipe(uploadStream);

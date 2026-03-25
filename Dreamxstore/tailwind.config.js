@@ -48,14 +48,25 @@ module.exports = {
       },
       fontFamily: {
         sans: [
+          '"Manrope"',
+          "Inter",
           "ui-sans-serif",
           "system-ui",
           "sans-serif",
-          '"Apple Color Emoji"',
-          '"Segoe UI Emoji"',
-          '"Segoe UI Symbol"',
-          '"Noto Color Emoji"',
         ],
+        mono: [
+          '"Iosevka Charon Mono"',
+          "ui-monospace",
+          "SFMono-Regular",
+          "Menlo",
+          "Monaco",
+          "Consolas",
+          '"Liberation Mono"',
+          '"Courier New"',
+          "monospace",
+        ],
+        fashion: ['"Iosevka Charon Mono"', "monospace"],
+        modern: ['"Iosevka Charon Mono"', "monospace"],
       },
       keyframes: {
         "accordion-down": {

@@ -7,11 +7,11 @@ export const TrendingFashionCards = (): JSX.Element => {
   const trendingCards = [
     {
       id: 1,
-      image: "https://i.pinimg.com/736x/2b/44/b6/2b44b6e6835f211cc9fe2faea0dc7c7c.jpg",
+      image: "https://i.pinimg.com/736x/0f/e0/06/0fe006c92747d1db94eb089f7b435438.jpg",
     },
     {
       id: 2,
-      image: "https://i.pinimg.com/736x/fc/ca/20/fcca20dbcc95b2fb7cceffe60195a114.jpg",
+      image: "https://i.pinimg.com/736x/30/cd/d2/30cdd28831c703a6f190e3f5f17cca80.jpg",
     },
     {
       id: 3,
@@ -19,7 +19,7 @@ export const TrendingFashionCards = (): JSX.Element => {
     },
     {
       id: 4,
-      image: "https://www.cityapparrels.shop/cdn/shop/files/ALMZV.jpg?height=1018&v=1750023583",
+      image: "https://i.pinimg.com/736x/12/1a/19/121a19547bf539371da903dc253178d1.jpg",
     }
   ];
 
@@ -31,7 +31,7 @@ export const TrendingFashionCards = (): JSX.Element => {
           <h2 className="font-['Shinko_Sans-Regular',Helvetica] font-normal text-black text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl leading-tight">
             Trending Fashion
           </h2>
-          
+
           <div className="flex items-center gap-2 flex-shrink-0">
             <Button
               variant="link"
@@ -39,12 +39,12 @@ export const TrendingFashionCards = (): JSX.Element => {
             >
               View More
             </Button>
-            <svg 
-              className="w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7 lg:w-8 lg:h-8 text-[#0e6eff] flex-shrink-0" 
-              fill="currentColor" 
+            <svg
+              className="w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7 lg:w-8 lg:h-8 text-[#0e6eff] flex-shrink-0"
+              fill="currentColor"
               viewBox="0 0 24 24"
             >
-              <path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/>
+              <path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z" />
             </svg>
           </div>
         </div>
@@ -62,7 +62,7 @@ export const TrendingFashionCards = (): JSX.Element => {
                 />
               </CardContent>
             </Card>
-            
+
             {/* Card 2 - Narrower (40%) */}
             <Card className="relative overflow-hidden border-0 rounded-lg cursor-pointer flex-[2]">
               <CardContent className="p-0 relative h-[120px] sm:h-[180px] md:h-[220px] lg:h-[280px] xl:h-[320px] 2xl:h-[360px]">
@@ -85,7 +85,7 @@ export const TrendingFashionCards = (): JSX.Element => {
                 />
               </CardContent>
             </Card>
-            
+
             {/* Card 4 - Wider (60%) */}
             <Card className="relative overflow-hidden border-0 rounded-lg cursor-pointer flex-[3]">
               <CardContent className="p-0 relative h-[120px] sm:h-[180px] md:h-[220px] lg:h-[280px] xl:h-[320px] 2xl:h-[360px]">

@@ -1,6 +1,10 @@
 const Razorpay = require('razorpay');
+require('dotenv').config();
 const crypto = require('crypto');
 const { validateWebhookSignature } = require('razorpay/dist/utils/razorpay-utils');
+
+console.log('[Razorpay Init] KEY_ID:', process.env.RAZORPAY_KEY_ID ? 'LOADED' : 'UNDEFINED');
+console.log('[Razorpay Init] KEY_SECRET:', process.env.RAZORPAY_KEY_SECRET ? 'LOADED' : 'UNDEFINED');
 
 const razorpay = new Razorpay({
   key_id: process.env.RAZORPAY_KEY_ID,

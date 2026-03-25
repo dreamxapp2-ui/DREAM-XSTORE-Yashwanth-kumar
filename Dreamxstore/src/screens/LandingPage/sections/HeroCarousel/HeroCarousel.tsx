@@ -2,6 +2,14 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Button } from "../../../../components/ui/button";
 
+interface Slide {
+  id?: number;
+  _id?: string;
+  image: string;
+  title: string;
+  buttonText: string;
+  link: string;
+}
 
 export const HeroCarousel = ()=> {
   const [currentSlide, setCurrentSlide] = useState(0);
@@ -10,38 +18,76 @@ export const HeroCarousel = ()=> {
   const [touchEnd, setTouchEnd] = useState(0);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const carouselRef = useRef<HTMLDivElement>(null);
+  const [slides, setSlides] = useState<Slide[]>([]);  const [loading, setLoading] = useState(true);
 
-  // Slide data
-  const slides = [
-    {
-      id: 1,
-      image: "https://i.pinimg.com/736x/79/dc/2d/79dc2d469bd69bf718498a88a4647f33.jpg",
-      title: "AI Racan your Fashion Stylist",
-      buttonText: "Try Racan",
-      link: "https://racan-ai.vercel.app"
-    },
-    {
-      id: 2,
-      image: "https://images.pexels.com/photos/1926769/pexels-photo-1926769.jpeg?auto=compress&cs=tinysrgb&w=1920&h=1080&fit=crop",
-      title: "Urban Style",
-      buttonText: "Shop Now",
-      link: "/urban-style"
-    },
-    {
-      id: 3,
-      image: "https://images.pexels.com/photos/1183266/pexels-photo-1183266.jpeg?auto=compress&cs=tinysrgb&w=1920&h=1080&fit=crop",
-      title: "Premium Quality",
-      buttonText: "Explore",
-      link: "/premium-collection"
-    },
-    {
-      id: 4,
-      image: "https://images.pexels.com/photos/1040881/pexels-photo-1040881.jpeg?auto=compress&cs=tinysrgb&w=1920&h=1080&fit=crop",
-      title: "New Arrivals",
-      buttonText: "View All",
-      link: "/new-arrivals"
-    }
-  ];
+  // Fetch banners from API
+  useEffect(() => {
+    const fetchBanners = async () => {
+      try {
+        const response = await fetch('http://localhost:3000/api/banners');
+        const data = await response.json();
+        
+        if (data.success && data.data.length > 0) {
+          setSlides(data.data);
+        } else {
+          // Fallback to default slides if API fails
+          setSlides([
+            {
+              id: 1,
+              image: "/image/landing_fashion_banner.png",
+              title: "Discover Your Style",
+              buttonText: "Shop Collection",
+              link: "/products"
+            },
+            {
+              id: 2,
+              image: "https://images.pexels.com/photos/1926769/pexels-photo-1926769.jpeg?auto=compress&cs=tinysrgb&w=1920&h=1080&fit=crop",
+              title: "Urban Style",
+              buttonText: "Shop Now",
+              link: "/products?category=urban"
+            },
+            {
+              id: 3,
+              image: "https://images.pexels.com/photos/1183266/pexels-photo-1183266.jpeg?auto=compress&cs=tinysrgb&w=1920&h=1080&fit=crop",
+              title: "Premium Quality",
+              buttonText: "Explore",
+              link: "/products?category=premium"
+            },
+            {
+              id: 4,
+              image: "https://images.pexels.com/photos/1040881/pexels-photo-1040881.jpeg?auto=compress&cs=tinysrgb&w=1920&h=1080&fit=crop",
+              title: "New Arrivals",
+              buttonText: "View All",
+              link: "/products"
+            }
+          ]);
+        }
+      } catch (error) {
+        console.error('[HeroCarousel] Error fetching banners:', error);
+        // Use default slides on error
+        setSlides([
+          {
+            id: 1,
+            image: "/image/landing_fashion_banner.png",
+            title: "Discover Your Style",
+            buttonText: "Shop Collection",
+            link: "/products"
+          },
+          {
+            id: 2,
+            image: "https://images.pexels.com/photos/1926769/pexels-photo-1926769.jpeg?auto=compress&cs=tinysrgb&w=1920&h=1080&fit=crop",
+            title: "Urban Style",
+            buttonText: "Shop Now",
+            link: "/products?category=urban"
+          }
+        ]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchBanners();
+  }, []);
 
   // Auto-advance slides every 6 seconds
   useEffect(() => {
@@ -102,7 +148,7 @@ export const HeroCarousel = ()=> {
     setIsHovered(false);
   };
 
-  const handleButtonClick = (e: React.MouseEvent, slide: typeof slides[0]) => {
+  const handleButtonClick = (e: React.MouseEvent, slide: Slide) => {
     e.preventDefault();
     e.stopPropagation();
     if (slide.link) {
@@ -141,6 +187,20 @@ export const HeroCarousel = ()=> {
     }
   };
 
+  if (loading) {
+    return (
+      <section className="relative w-full h-[400px] sm:h-[500px] md:h-[600px] lg:h-[450px] xl:h-[520px] overflow-hidden z-10 bg-gray-200 animate-pulse">
+        <div className="absolute inset-0 flex items-center justify-center">
+          <p className="text-gray-500">Loading...</p>
+        </div>
+      </section>
+    );
+  }
+
+  if (slides.length === 0) {
+    return null;
+  }
+
   return (
     <section 
       ref={carouselRef}
@@ -156,10 +216,9 @@ export const HeroCarousel = ()=> {
       <div 
         className="flex transition-transform duration-700 ease-in-out h-full"
         style={{ transform: `translateX(-${currentSlide * 100}%) translateZ(0)` }}
-      >
-        {slides.map((slide) => (
+      >        {slides.map((slide, index) => (
           <div
-            key={slide.id}
+            key={slide._id || slide.id || index}
             className="relative w-full h-full flex-shrink-0"
           >
             {/* Background Image */}

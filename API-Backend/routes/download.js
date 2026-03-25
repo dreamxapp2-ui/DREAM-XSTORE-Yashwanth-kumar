@@ -59,7 +59,7 @@ router.get('/order/:orderId/invoice', auth, async (req, res) => {
     }
 
     // Check if user owns this order
-    if (order.User.toString() !== req.user._id.toString()) {
+    if (order.userId.toString() !== req.user._id.toString()) {
       return res.status(403).json({ error: 'Access denied' });
     }
 
@@ -67,14 +67,16 @@ router.get('/order/:orderId/invoice', auth, async (req, res) => {
     const invoiceData = {
       orderId: order._id,
       orderDate: order.createdAt,
-      customerName: order.billing_customer_name,
-      customerEmail: order.billing_email,
+      customerName: `${order.shippingAddressSnapshot?.firstName || ''} ${order.shippingAddressSnapshot?.lastName || ''}`.trim(),
+      customerEmail: order.shippingAddressSnapshot?.email || req.user.email,
+      shippingAddress: order.shippingAddressSnapshot,
       items: order.items,
       subtotal: order.subtotal,
       tax: order.tax,
-      shipping: order.shipping,
+      shippingFee: order.shippingFee,
       total: order.total,
-      status: order.status
+      status: order.orderStatus,
+      paymentMethod: order.paymentMethod
     };
 
     // Set headers for JSON download

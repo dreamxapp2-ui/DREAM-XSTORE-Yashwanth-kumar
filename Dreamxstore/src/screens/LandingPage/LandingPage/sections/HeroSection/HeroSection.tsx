@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { Search, X } from "lucide-react";
 import { Avatar, AvatarImage } from "../../../../../components/ui/avatar";
 import { Button } from "../../../../../components/ui/button";
 
@@ -12,6 +13,8 @@ const getUserFromStorage = () => {
 
 export const HeroSection = (): JSX.Element => {
   const [user, setUser] = useState<any>(getUserFromStorage());
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const router = useRouter();
 
   // Listen for login changes (simulate login event)
@@ -33,7 +36,7 @@ export const HeroSection = (): JSX.Element => {
     <header className="w-full h-[170px] bg-white">
       <div className="max-w-[1920px] h-full mx-auto relative flex items-center justify-between px-[108px]">
         {/* Logo */}
-        <div className="[font-family:'Horizon-Regular',Helvetica] font-normal text-black text-[40px]">
+        <div className="font-sans font-normal text-black text-[40px]">
           Dream X<br />
           Store
         </div>
@@ -44,11 +47,48 @@ export const HeroSection = (): JSX.Element => {
             <Button
               key={index}
               variant="link"
-              className={`[font-family:'Azeret_Mono',Helvetica] font-normal text-black text-2xl p-0 h-auto ${link.className || ""}`}
+              className={`font-mono font-normal text-black text-2xl p-0 h-auto ${link.className || ""}`}
             >
               {link.text}
             </Button>
           ))}
+
+          {/* Expandable Search */}
+          <div className="relative flex items-center h-[50px] transition-all duration-300 ease-in-out">
+            {isSearchOpen ? (
+              <div className="flex items-center bg-gray-100 rounded-full px-4 py-2 w-[300px] border border-gray-300 shadow-sm transition-all duration-300">
+                <Search className="w-5 h-5 text-gray-500 mr-2 flex-shrink-0" />
+                <input
+                  type="text"
+                  placeholder="Search products..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && searchQuery.trim()) {
+                      router.push(`/products?search=${encodeURIComponent(searchQuery)}`);
+                      setIsSearchOpen(false);
+                    }
+                  }}
+                  className="bg-transparent border-none outline-none w-full text-black font-mono text-lg"
+                  autoFocus
+                />
+                <button 
+                  onClick={() => setIsSearchOpen(false)} 
+                  className="ml-2 p-1 rounded-full hover:bg-gray-200 transition-colors"
+                >
+                  <X className="w-5 h-5 text-gray-500 hover:text-black" />
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => setIsSearchOpen(true)}
+                className="p-3 rounded-full hover:bg-gray-100 transition-colors"
+                aria-label="Open search"
+              >
+                <Search className="w-[30px] h-[30px] text-black" />
+              </button>
+            )}
+          </div>
 
           {/* CTA Button or User Avatar with Name */}
           {user ? (
@@ -65,7 +105,7 @@ export const HeroSection = (): JSX.Element => {
                     className="object-cover"
                   />
                 </Avatar>
-                <span className="[font-family:'Azeret_Mono',Helvetica] font-normal text-[#004d84] text-2xl">
+                <span className="font-mono font-normal text-[#004d84] text-2xl">
                   {user.firstName}
                 </span>
               </Button>
@@ -73,19 +113,12 @@ export const HeroSection = (): JSX.Element => {
           ) : (
             <button
               style={{ width: 223, height: 86, background: '#f0ff7f', borderRadius: 0 }}
-              className="rounded-none hover:bg-[#e5f570] [font-family:'Azeret_Mono',Helvetica] font-normal text-[#004d84] text-2xl"
+              className="rounded-none hover:bg-[#e5f570] font-mono font-normal text-[#004d84] text-2xl transition-colors"
               onClick={() => {
-                alert("Hero DEBUG button clicked");
-                console.log("Hero DEBUG button navigating to login", { location: window.location.href });
-                try {
-                  router.push("/login");
-                } catch (err) {
-                  alert("Navigation error: " + err);
-                  console.error("Navigation error", err);
-                }
+                router.push("/login");
               }}
             >
-              Get Started Hero DEBUG
+              Get Started
             </button>
           )}
         </nav>

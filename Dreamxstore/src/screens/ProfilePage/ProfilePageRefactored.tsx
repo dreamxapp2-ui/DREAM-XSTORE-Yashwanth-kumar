@@ -38,23 +38,6 @@ const ProfilePage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'profile' | 'orders' | 'wishlist' | 'settings'>('profile');
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   
-  // Mock data - replace with actual API calls
-  const [addresses] = useState<Array<Record<string, unknown>>>([
-    {
-      id: '1',
-      type: 'shipping',
-      name: 'John Doe',
-      phone: '+91 1234567890',
-      addressLine1: '123 Main Street',
-      addressLine2: 'Apt 4B',
-      city: 'Mumbai',
-      state: 'Maharashtra',
-      zipCode: '400001',
-      country: 'India',
-      isDefault: true
-    }
-  ]);
-
   const [paymentMethods] = useState<Array<Record<string, unknown>>>([
     {
       id: '1',
@@ -110,9 +93,6 @@ const ProfilePage: React.FC = () => {
         // The API response is { success: true, user: {...} }
         const profile = (response as any)?.user || response;
         console.log('[Profile] Extracted profile:', profile);
-        console.log('[Profile] Username:', profile.username);
-        console.log('[Profile] Email:', profile.email);
-        console.log('[Profile] Hero image:', profile.hero_image);
         
         const heroImageUrl = typeof profile.hero_image === 'string' ? profile.hero_image : profile.hero_image?.url;
         const userDataToSet = {
@@ -124,17 +104,39 @@ const ProfilePage: React.FC = () => {
           role: profile.role || '',
           joinedDate: profile.createdAt || '2024-01-15'
         };
-        console.log('[Profile] User data to set:', userDataToSet);
         setUser(userDataToSet);
 
-        // Fetch wishlist
+        // Fetch wishlist and order stats
         const wishlistItems = await UserService.getWishlist();
+        
+        // Fetch order statistics from API
+        const orderStatsResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'}/api/user/orders/stats`, {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          },
+        });
+        
+        let orderStats = {
+          totalOrders: 0,
+          totalSpend: 0,
+        };
+        
+        if (orderStatsResponse.ok) {
+          const statsData = await orderStatsResponse.json();
+          if (statsData.success) {
+            orderStats = {
+              totalOrders: statsData.data.totalOrders || 0,
+              totalSpend: statsData.data.totalSpend || 0,
+            };
+          }
+        }
+        
         const memberSince = profile.createdAt ? new Date(profile.createdAt).toISOString().split('T')[0] : '2024-01-15';
         
         setStats({
-          totalOrders: 12,
+          totalOrders: orderStats.totalOrders,
           wishlistItems: wishlistItems.length,
-          totalSpent: 24999,
+          totalSpent: orderStats.totalSpend,
           memberSince: memberSince
         });
       } catch (error) {
@@ -249,10 +251,7 @@ const ProfilePage: React.FC = () => {
           {activeTab === 'profile' && <ProfileOverview user={user} />}
 
           {/* Orders Tab */}
-          {activeTab === 'orders' && (
-            // @ts-ignore - mock data
-            <OrdersTab orders={orders} />
-          )}
+          {activeTab === 'orders' && <OrdersTab />}
 
           {/* Wishlist Tab */}
           {activeTab === 'wishlist' && <WishlistTab wishlist={wishlist} />}
@@ -260,8 +259,7 @@ const ProfilePage: React.FC = () => {
           {/* Settings Tab */}
           {activeTab === 'settings' && (
             <div className="space-y-6">
-              {/* @ts-ignore - mock data */}
-              <AddressManagement addresses={addresses as any} />
+              <AddressManagement />
               {/* @ts-ignore - mock data */}
               <PaymentMethods paymentMethods={paymentMethods as any} />
               <SecuritySettings 

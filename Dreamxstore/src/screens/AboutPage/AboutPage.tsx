@@ -241,7 +241,7 @@ export const AboutPage = () => {
 
                     <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
                       <Button 
-                        onClick={() => window.location.href = '/trending'}
+                        onClick={() => window.location.href = '/'}
                         className="bg-[#004d84] hover:bg-[#003d6a] text-white font-medium px-6 sm:px-8 py-3 sm:py-4 rounded-[30px] text-sm sm:text-base transition-all duration-300 hover:scale-105 shadow-none"
                       >
                         Shop Now

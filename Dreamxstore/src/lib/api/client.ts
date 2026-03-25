@@ -115,6 +115,11 @@ class ApiClient {
 
         // Handle 401 errors - Token expired or invalid
         if (error.response?.status === 401 && !originalRequest._retry) {
+          // Do not redirect or refresh if the 401 originated from a login/register request
+          if (originalRequest.url?.includes('/login') || originalRequest.url?.includes('/register')) {
+             return Promise.reject(error);
+          }
+
           // Check if this request used brand authentication
           if (originalRequest.isBrandAuth) {
             // For brand auth, never attempt refresh - just logout and redirect
@@ -128,46 +133,13 @@ class ApiClient {
             return Promise.reject(error);
           }
 
-          // For regular user endpoints, attempt token refresh
-          if (this.isRefreshing) {
-            // Queue the request
-            return new Promise((resolve, reject) => {
-              this.failedQueue.push({ resolve, reject });
-            })
-              .then((token) => {
-                originalRequest.headers.Authorization = `Bearer ${token}`;
-                return this.axiosInstance(originalRequest);
-              })
-              .catch((err) => {
-                return Promise.reject(err);
-              });
-          }
-
           originalRequest._retry = true;
           this.isRefreshing = true;
 
           try {
-            // Attempt to refresh token
-            const newToken = await TokenManager.refreshToken(async () => {
-              const response = await axios.post(
-                `${API_CONFIG.baseURL}${ENDPOINTS.REFRESH_TOKEN}`,
-                {
-                  refreshToken: TokenManager.getRefreshToken(),
-                }
-              );
-              return response.data as AuthTokens;
-            });
-
-            if (newToken) {
-              // Process queued requests
-              this.processQueue(null, newToken);
-              
-              // Retry original request
-              originalRequest.headers.Authorization = `Bearer ${newToken}`;
-              return this.axiosInstance(originalRequest);
-            } else {
-              throw new Error('Token refresh failed');
-            }
+            // Backend currently does not have a refresh token implementation
+            // so we immediately log out the user on a 401 to prevent infinite loops
+            throw new Error('Token refresh not supported');
           } catch (refreshError) {
             this.processQueue(refreshError, null);
             TokenManager.logout();
@@ -219,6 +191,8 @@ class ApiClient {
             url: error.config?.url || 'Unknown URL',
           });
         }
+        
+        return Promise.reject(apiError);
       }
     );
   }

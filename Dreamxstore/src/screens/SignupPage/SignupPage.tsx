@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { z } from "zod";
 
 // Define Zod schema for form validation (unchanged, matches backend)
@@ -122,70 +123,86 @@ const SignupPage = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-white to-gray-100 dark:from-gray-900 dark:to-gray-800 bg-cover bg-center bg-no-repeat" style={{ backgroundImage: "url('/image/login-bg.jpg')" }}
->
-      <div className="w-full max-w-md p-8 space-y-8 bg-white dark:bg-gray-900  shadow-lg border border-gray-200 dark:border-gray-800">
-        <h2 className="text-3xl font-bold text-center text-gray-900 dark:text-white">Create your account</h2>
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          {/* Upgrade: Global error display */}
-          {globalError && (
-            <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3  relative" role="alert">
-              <span className="block sm:inline">{globalError}</span>
-            </div>
-          )}
-          <div className="space-y-4">
-            <div>
-              <input
-                type="text"
-                name="username"
-                value={formData.username}
-                onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-                // onBlur={() => checkUsernameAvailability(formData.username)}  // Upgrade stub
-                className={`appearance-none  relative block w-full px-3 py-2 border ${
-                  errors.username ? "border-red-500" : "border-gray-300 dark:border-gray-700"
-                } placeholder-gray-400 dark:placeholder-gray-500 text-gray-900 dark:text-white bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500`}
-                placeholder="Username"
-                aria-invalid={!!errors.username}  // Upgrade: Accessibility
-                aria-describedby={errors.username ? "username-error" : undefined}
-              />
-              {errors.username && (
-                <p id="username-error" className="text-red-500 text-xs mt-1">{errors.username}</p>
-              )}
-            </div>
-            <div>
-              <input
-                type="email"
-                name="email"
-                value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                className={`appearance-none  relative block w-full px-3 py-2 border ${
-                  errors.email ? "border-red-500" : "border-gray-300 dark:border-gray-700"
-                } placeholder-gray-400 dark:placeholder-gray-500 text-gray-900 dark:text-white bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500`}
-                placeholder="Email address"
-                aria-invalid={!!errors.email}
-                aria-describedby={errors.email ? "email-error" : undefined}
-              />
-              {errors.email && <p id="email-error" className="text-red-500 text-xs mt-1">{errors.email}</p>}
-            </div>
-            <div>
+    <div className="min-h-screen bg-[#E5E7EB] dark:bg-gray-900 flex items-center justify-center p-4">
+      <div className="w-full max-w-5xl bg-white dark:bg-gray-900 rounded-[2rem] shadow-2xl overflow-hidden flex flex-col md:flex-row min-h-[600px]">
+        {/* Left Side - Signup Form */}
+        <div className="w-full md:w-1/2 p-8 sm:p-12 md:p-16 flex flex-col justify-center">
+          <div className="mb-4">
+            <h1 className="text-2xl font-black tracking-tight text-gray-900 dark:text-white">DreamXStore</h1>
+          </div>
+          
+          <div className="flex justify-between items-baseline mb-6">
+            <h2 className="text-3xl font-bold text-gray-900 dark:text-white">Create Account</h2>
+          </div>
+
+          <button
+            type="button"
+            onClick={handleGoogleSignup}
+            className="w-full flex items-center justify-center gap-3 py-2.5 px-4 mb-5 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+          >
+            <svg className="w-5 h-5" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M47.5 24.5C47.5 22.6 47.3 20.8 47 19H24V29.5H37.4C36.7 33.1 34.2 36 30.7 37.8V43H38.5C43.1 39 47.5 32.5 47.5 24.5Z" fill="#4285F4" />
+              <path d="M24 48C30.6 48 36.2 45.8 40.2 42.2L32.7 36.8C30.7 38.1 28.1 38.9 24 38.9C17.7 38.9 12.2 34.7 10.3 29.2H2.5V34.8C6.5 42.1 14.6 48 24 48Z" fill="#34A853" />
+              <path d="M10.3 29.2C9.7 27.9 9.3 26.5 9.3 25C9.3 23.5 9.7 22.1 10.3 20.8V15.2H2.5C0.9 18.2 0 21.5 0 25C0 28.5 0.9 31.8 2.5 34.8L10.3 29.2Z" fill="#FBBC05" />
+              <path d="M24 9.1C28.1 9.1 30.7 10.8 32.1 12.1L40.3 4.1C36.2 0.7 30.6-1.5 24-1.5C14.6-1.5 6.5 4.4 2.5 11.7L10.3 17.3C12.2 11.8 17.7 7.6 24 7.6V9.1Z" fill="#EA4335" />
+            </svg>
+            Continue with Google
+          </button>
+
+          <div className="flex items-center my-4">
+            <div className="flex-grow border-t border-gray-100 dark:border-gray-800"></div>
+            <span className="mx-4 text-sm text-gray-400">or</span>
+            <div className="flex-grow border-t border-gray-100 dark:border-gray-800"></div>
+          </div>
+
+          <form className="space-y-4" onSubmit={handleSubmit}>
+            {globalError && (
+              <div className="bg-red-50 text-red-600 px-4 py-3 rounded-lg text-sm" role="alert">
+                {globalError}
+              </div>
+            )}
+            
+            <div className="space-y-3">
+              <div>
+                <input
+                  type="text"
+                  name="username"
+                  required
+                  value={formData.username}
+                  onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+                  className={`w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-800 border-none rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-white placeholder-gray-400`}
+                  placeholder="Username"
+                />
+                {errors.username && <p className="text-red-500 text-xs mt-1 ml-1">{errors.username}</p>}
+              </div>
+
+              <div>
+                <input
+                  type="email"
+                  name="email"
+                  required
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  className={`w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-800 border-none rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-white placeholder-gray-400`}
+                  placeholder="Email address"
+                />
+                {errors.email && <p className="text-red-500 text-xs mt-1 ml-1">{errors.email}</p>}
+              </div>
+              
               <div className="relative">
                 <input
                   type={showPassword ? "text" : "password"}
                   name="password"
+                  required
                   value={formData.password}
                   onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                  className={`appearance-none  relative block w-full px-3 py-2 pr-10 border ${
-                    errors.password ? "border-red-500" : "border-gray-300 dark:border-gray-700"
-                  } placeholder-gray-400 dark:placeholder-gray-500 text-gray-900 dark:text-white bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500`}
+                  className={`w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-800 border-none rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-white placeholder-gray-400`}
                   placeholder="Password"
-                  aria-invalid={!!errors.password}
-                  aria-describedby={errors.password ? "password-error" : undefined}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-                  aria-label={showPassword ? "Hide password" : "Show password"}
+                  className="absolute inset-y-0 right-3 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
                 >
                   {showPassword ? (
                     <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -198,30 +215,23 @@ const SignupPage = () => {
                     </svg>
                   )}
                 </button>
+                {errors.password && <p className="text-red-500 text-xs mt-1 ml-1">{errors.password}</p>}
               </div>
-              {errors.password && (
-                <p id="password-error" className="text-red-500 text-xs mt-1">{errors.password}</p>
-              )}
-            </div>
-            <div>
+
               <div className="relative">
                 <input
                   type={showConfirmPassword ? "text" : "password"}
                   name="confirmPassword"
+                  required
                   value={formData.confirmPassword}
                   onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-                  className={`appearance-none  relative block w-full px-3 py-2 pr-10 border ${
-                    errors.confirmPassword ? "border-red-500" : "border-gray-300 dark:border-gray-700"
-                  } placeholder-gray-400 dark:placeholder-gray-500 text-gray-900 dark:text-white bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500`}
+                  className={`w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-800 border-none rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-white placeholder-gray-400`}
                   placeholder="Confirm Password"
-                  aria-invalid={!!errors.confirmPassword}
-                  aria-describedby={errors.confirmPassword ? "confirm-password-error" : undefined}
                 />
                 <button
                   type="button"
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-                  aria-label={showConfirmPassword ? "Hide confirm password" : "Show confirm password"}
+                  className="absolute inset-y-0 right-3 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
                 >
                   {showConfirmPassword ? (
                     <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -234,82 +244,82 @@ const SignupPage = () => {
                     </svg>
                   )}
                 </button>
+                {errors.confirmPassword && <p className="text-red-500 text-xs mt-1 ml-1">{errors.confirmPassword}</p>}
               </div>
-              {errors.confirmPassword && (
-                <p id="confirm-password-error" className="text-red-500 text-xs mt-1">{errors.confirmPassword}</p>
-              )}
             </div>
-            <label className="flex items-center space-x-2">
+
+            <label className="flex items-center space-x-2 mt-2">
               <input
                 type="checkbox"
                 name="agreeToTerms"
-                className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 dark:border-gray-700 "
+                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
               />
-              <span className="text-gray-900 dark:text-white text-sm">I agree to the Terms of Service</span>
+              <span className="text-gray-600 dark:text-gray-300 text-sm">I agree to the Terms of Service</span>
             </label>
-          </div>
-          <button
-            type="submit"
-            disabled={loading}
-            className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium  text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50"
-            aria-disabled={loading}  // Upgrade: Accessibility
-          >
-            {loading ? (
-              <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-              </svg>  // Upgrade: Spinner
-            ) : null}
-            {loading ? "Signing up..." : "Sign up"}
-          </button>
-        </form>
-        <div className="flex items-center my-4">
-          <div className="flex-grow border-t border-gray-300 dark:border-gray-700"></div>
-          <span className="mx-2 text-gray-400 dark:text-gray-500">or</span>
-          <div className="flex-grow border-t border-gray-300 dark:border-gray-700"></div>
-        </div>
-        <button
-          type="button"
-          onClick={handleGoogleSignup}
-          className="w-full flex items-center justify-center gap-2 py-2 px-4 border border-gray-300 dark:border-gray-700  bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 font-medium hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-        >
-          <svg className="w-5 h-5" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <g clipPath="url(#clip0_17_40)">
-              <path
-                d="M47.5 24.5C47.5 22.6 47.3 20.8 47 19H24V29.5H37.4C36.7 33.1 34.2 36 30.7 37.8V43H38.5C43.1 39 47.5 32.5 47.5 24.5Z"
-                fill="#4285F4"
-              />
-              <path
-                d="M24 48C30.6 48 36.2 45.8 40.2 42.2L32.7 36.8C30.7 38.1 28.1 38.9 24 38.9C17.7 38.9 12.2 34.7 10.3 29.2H2.5V34.8C6.5 42.1 14.6 48 24 48Z"
-                fill="#34A853"
-              />
-              <path
-                d="M10.3 29.2C9.7 27.9 9.3 26.5 9.3 25C9.3 23.5 9.7 22.1 10.3 20.8V15.2H2.5C0.9 18.2 0 21.5 0 25C0 28.5 0.9 31.8 2.5 34.8L10.3 29.2Z"
-                fill="#FBBC05"
-              />
-              <path
-                d="M24 9.1C28.1 9.1 30.7 10.8 32.1 12.1L40.3 4.1C36.2 0.7 30.6-1.5 24-1.5C14.6-1.5 6.5 4.4 2.5 11.7L10.3 17.3C12.2 11.8 17.7 7.6 24 7.6V9.1Z"
-                fill="#EA4335"
-              />
-            </g>
-            <defs>
-              <clipPath id="clip0_17_40">
-                <rect width="48" height="48" fill="white" />
-              </clipPath>
-            </defs>
-          </svg>
-          Sign up with Google
-        </button>
-        <div className="text-center mt-4">
-          <p>
-            Already have an account?{' '}
+
             <button
-              className="text-indigo-600 dark:text-indigo-400 hover:underline"
-              onClick={() => router.push("/login")}
+              type="submit"
+              disabled={loading}
+              className="w-full py-2.5 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-medium transition-colors disabled:opacity-50 flex justify-center items-center mt-4"
             >
+              {loading ? (
+                <svg className="animate-spin h-5 w-5 text-white" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+              ) : "Sign Up"}
+            </button>
+          </form>
+
+          <div className="mt-6 text-center text-sm text-gray-500">
+            Already have an account?{" "}
+            <button onClick={() => router.push("/login")} className="text-blue-600 font-medium hover:underline">
               Sign in
             </button>
-          </p>
+          </div>
+        </div>
+
+        {/* Right Side - Image Background & Testimonial */}
+        <div className="hidden md:flex w-1/2 relative bg-gray-900 overflow-hidden">
+          {/* Main Background Image */}
+          <div className="absolute inset-0 bg-cover bg-center bg-no-repeat transition-transform duration-700 hover:scale-105" 
+               style={{ backgroundImage: "url('/image/auth_fashion_bg.png')" }}>
+          </div>
+          
+          {/* Overlay gradient for readability */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+
+          {/* Close Button Top Right */}
+          <button onClick={() => router.push("/")} className="absolute top-6 right-6 w-8 h-8 flex items-center justify-center rounded-full bg-white/20 backdrop-blur-md text-white hover:bg-white/30 transition-colors z-10">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M13 1L1 13M1 1L13 13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </button>
+
+          {/* Testimonial Glass Card */}
+          <div className="relative z-10 mt-auto mb-16 mx-12 p-6 rounded-2xl bg-white/10 backdrop-blur-xl border border-white/20 shadow-2xl">
+            <p className="text-white text-lg leading-relaxed font-medium mb-6 drop-shadow-sm">
+              "The best fashion discovery platform I've ever used. Beautiful, fast, and completely effortless. DreamXStore nailed it."
+            </p>
+            <div className="flex items-center space-x-4">
+              <div className="w-10 h-10 rounded-full bg-gray-300 overflow-hidden border border-white/30">
+                <Image src="https://i.pravatar.cc/150?img=47" alt="User review" width={40} height={40} className="w-full h-full object-cover" />
+              </div>
+              <div>
+                <div className="flex text-white/90 text-[10px] mb-1">
+                  <span className="text-yellow-400">★</span><span className="text-yellow-400">★</span><span className="text-yellow-400">★</span><span className="text-yellow-400">★</span><span className="text-yellow-400">★</span>
+                </div>
+                <h4 className="text-white text-sm font-medium">Sarah Jenkins</h4>
+                <p className="text-white/70 text-xs">Fashion Blogger</p>
+              </div>
+            </div>
+            {/* Pagination dots */}
+            <div className="flex justify-center mt-6 space-x-1.5">
+              <div className="w-1.5 h-1.5 rounded-full bg-white opacity-100"></div>
+              <div className="w-1.5 h-1.5 rounded-full bg-white opacity-40"></div>
+              <div className="w-1.5 h-1.5 rounded-full bg-white opacity-40"></div>
+            </div>
+          </div>
         </div>
       </div>
     </div>

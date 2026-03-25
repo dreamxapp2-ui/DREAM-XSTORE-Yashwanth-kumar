@@ -2,8 +2,13 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Import Poppins font */
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@100;200;300;400;500;600;700;800;900&display=swap');
+/* Using Iosevka Charon Mono as primary font family */
+.iosevka-charon-mono-medium {
+  font-family: "Iosevka Charon Mono", monospace;
+  font-weight: 500;
+  font-style: normal;
+}
+
 
 @layer base {
   :root {
@@ -98,31 +103,31 @@
     position: relative;
     margin: 0;
     padding: 0;
-    font-family: 'Poppins', 'Inter', 'Helvetica Neue', 'Arial', sans-serif;
+    font-family: 'Manrope', 'Inter', sans-serif;
     -webkit-overflow-scrolling: touch;
     scroll-behavior: auto !important;
   }
 
   h1, h2, h3, h4, h5, h6 {
-    font-family: 'Poppins', 'Georgia', serif;
-    font-weight: 300;
-    letter-spacing: 0.02em;
+    font-family: 'Manrope', sans-serif;
+    font-weight: 600;
+    letter-spacing: -0.01em;
   }
 
   .font-fashion {
-    font-family: 'Poppins', 'Georgia', serif;
-    font-weight: 300;
+    font-family: 'Iosevka Charon Mono', monospace;
+    font-weight: 400;
     letter-spacing: 0.02em;
   }
 
   .font-modern {
-    font-family: 'Poppins', 'Helvetica Neue', 'Arial', sans-serif;
+    font-family: 'Iosevka Charon Mono', monospace;
     font-weight: 400;
     letter-spacing: 0.01em;
   }
 
   .font-accent {
-    font-family: 'Poppins', 'Helvetica', sans-serif;
+    font-family: 'Iosevka Charon Mono', monospace;
     font-weight: 500;
     letter-spacing: 0.05em;
     text-transform: uppercase;
@@ -239,7 +244,7 @@
 
   .btn-fashion {
     @apply bg-[#f1ff8c] hover:bg-[#e9f87a] text-black font-medium border border-black transition-all duration-300 hover:scale-105;
-    font-family: 'Poppins', 'Helvetica', sans-serif;
+    font-family: 'Iosevka Charon Mono', monospace;
     letter-spacing: 0.05em;
     text-transform: uppercase;
   }
@@ -249,20 +254,20 @@
   }
 
   .text-fashion-heading {
-    font-family: 'Poppins', 'Georgia', serif;
-    font-weight: 300;
-    letter-spacing: 0.02em;
+    font-family: 'Manrope', sans-serif;
+    font-weight: 600;
+    letter-spacing: -0.01em;
   }
 
   .text-fashion-body {
-    font-family: 'Poppins', 'Helvetica Neue', 'Arial', sans-serif;
+    font-family: 'Manrope', sans-serif;
     font-weight: 400;
     letter-spacing: 0.01em;
     line-height: 1.6;
   }
 
   .text-fashion-accent {
-    font-family: 'Poppins', 'Helvetica', sans-serif;
+    font-family: 'Manrope', sans-serif;
     font-weight: 500;
     letter-spacing: 0.05em;
     text-transform: uppercase;

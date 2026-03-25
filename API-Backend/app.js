@@ -4,6 +4,8 @@ const cors = require('cors');
 const passport = require('./config/passport');
 require('dotenv').config();
 
+// Triggered nodemon restart for new DB connection
+
 
 // Import routes
 const authRoutes = require('./routes/auth');
@@ -15,6 +17,8 @@ const brandRoutes = require('./routes/brand');
 const productRoutes = require('./routes/products');
 const uploadRoutes = require('./routes/upload');
 const reviewRoutes = require('./routes/reviews');
+const inventoryRoutes = require('./routes/inventory');
+const bannerRoutes = require('./routes/banners');
 var downloadRouter = require('./routes/download');
 
 
@@ -36,7 +40,7 @@ mongoose.connect(process.env.MONGODB_URI)
     })
     .catch((error) => {
         console.error('MongoDB connection error:', error);
-        process.exit(1);
+        // process.exit(1); // Commented out to allow testing without DB
     });
 
 // Routes
@@ -65,6 +69,12 @@ app.use('/api', reviewRoutes);
 //public product routes
 app.use('/api/products', productRoutes);
 
+//inventory routes
+app.use('/api/inventory', inventoryRoutes);
+
+//banner routes (public)
+app.use('/api/banners', bannerRoutes);
+
 app.use('/download', downloadRouter);
 
 
@@ -84,7 +94,7 @@ app.use((req, res) => {
 // Error handling middleware
 app.use((err, req, res, next) => {
     console.error('Error:', err);
-    
+
     res.status(err.status || 500).json({
         success: false,
         message: err.message || 'Internal server error'

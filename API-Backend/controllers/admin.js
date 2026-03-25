@@ -143,6 +143,13 @@ const adminController = {
       }
 
       // Compare password
+      if (!user.password) {
+        return res.status(401).json({
+          success: false,
+          message: 'Please login using your original method',
+          field: 'password'
+        });
+      }
       const isValidPassword = await bcrypt.compare(password, user.password);
       if (!isValidPassword) {
         return res.status(401).json({
@@ -862,24 +869,33 @@ const adminController = {
       const products = await Product.find(filter)
         .limit(parseInt(limit))
         .skip(skip)
-        .sort({ createdAt: -1 })
-        .populate('brand');
+        .sort({ createdAt: -1 });
 
       const total = await Product.countDocuments(filter);
 
       const formattedProducts = products.map(product => ({
         id: product._id,
+        _id: product._id,
         name: product.name,
         description: product.description,
         price: product.price || 0,
-        brandId: product.brand?._id || '',
-        brandName: product.brand?.username || 'Unknown',
+        originalPrice: product.originalPrice || 0,
+        discount: product.discount || 0,
+        brandId: product.brandId,
+        brand: product.brandName,
         category: product.category || 'Uncategorized',
         images: product.images || [],
-        stock: product.stock || 0,
-        status: product.status || 'pending',
-        featured: product.featured || false,
-        sales: 0,
+        stockQuantity: product.stockQuantity || 0,
+        inStock: product.inStock || false,
+        hasSizes: product.hasSizes || false,
+        sizes: product.sizes || [],
+        sizeStock: product.sizeStock || {},
+        isFeatured: product.isFeatured || false,
+        isActive: product.isActive || true,
+        weight: product.weight || null,
+        length: product.length || null,
+        breadth: product.breadth || null,
+        height: product.height || null,
         createdAt: product.createdAt
       }));
 

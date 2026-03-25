@@ -308,9 +308,11 @@ const getUserProductReview = async (req, res) => {
     const review = await Review.findOne({ productId, userId })
       .populate('userId', 'username email hero_image');
 
+    // Return null data instead of 404 when user hasn't reviewed yet
     if (!review) {
-      return res.status(404).json({
-        success: false,
+      return res.json({
+        success: true,
+        data: null,
         message: 'No review found for this product'
       });
     }

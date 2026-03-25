@@ -9,6 +9,7 @@ require('dotenv').config();
 const indexRouter = require('./routes/index');
 const usersRouter = require('./routes/users');
 const paymentRouter = require('./routes/payment');
+const shipmentRouter = require('./routes/shipment');
 
 const app = express();
 
@@ -31,7 +32,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 // Log all requests with Authorization header
 app.use((req, res, next) => {
-  if (req.path.startsWith('/payment')) {
+  if (req.path.startsWith('/payment') || req.path.startsWith('/shipment')) {
     const auth = req.header('Authorization');
     console.log(`[Request] ${req.method} ${req.path}`);
     console.log(`[Auth Header] ${auth ? auth.substring(0, 50) + '...' : 'NOT PROVIDED'}`);
@@ -42,6 +43,7 @@ app.use((req, res, next) => {
 app.use('/', indexRouter);
 app.use('/users', usersRouter);
 app.use('/payment', paymentRouter);
+app.use('/shipment', shipmentRouter);
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {

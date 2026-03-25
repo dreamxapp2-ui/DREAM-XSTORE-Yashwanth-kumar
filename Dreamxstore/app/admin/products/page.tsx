@@ -1,6 +1,6 @@
 'use client';
 
-import { Plus, Search } from 'lucide-react';
+import { Plus, Search, Trash2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { AdminService } from '@/src/lib/api/admin/adminService';
@@ -61,6 +61,27 @@ export default function ProductsPage() {
       setProducts([]);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDeleteProduct = async (productId: string | undefined) => {
+    if (!productId) {
+      showToast('Invalid product ID', 'error');
+      return;
+    }
+
+    if (!confirm('Are you sure you want to delete this product? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      await AdminService.deleteProduct(productId);
+      showToast('Product deleted successfully', 'success');
+      // Refresh the products list
+      fetchProducts();
+    } catch (error: any) {
+      console.error('[Products] Delete error:', error);
+      showToast('Failed to delete product', 'error');
     }
   };
 
@@ -209,12 +230,22 @@ export default function ProductsPage() {
                       </span>
                     </td>
                     <td className="px-6 py-4 text-sm">
-                      <button
-                        onClick={() => router.push(`/admin/products/${product.id || product._id}`)}
-                        className="text-purple-600 hover:text-purple-700 font-medium"
-                      >
-                        Edit
-                      </button>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => router.push(`/admin/products/${product.id || product._id}`)}
+                          className="text-purple-600 hover:text-purple-700 font-medium"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => handleDeleteProduct(product.id || product._id)}
+                          className="text-red-600 hover:text-red-700 font-medium flex items-center gap-1"
+                          title="Delete product"
+                        >
+                          <Trash2 size={16} />
+                          Delete
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}

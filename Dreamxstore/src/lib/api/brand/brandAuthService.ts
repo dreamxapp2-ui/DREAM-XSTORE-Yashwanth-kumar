@@ -99,10 +99,17 @@ export class BrandAuthService {
    */
   static async getBrandProfile(): Promise<BrandUser | null> {
     try {
+      console.log('[getBrandProfile] Fetching fresh profile from backend');
       const response = await apiClient.get<any>('/brand/profile');
       
-      if (response && response.data) {
-        const brandData = response.data;
+      console.log('[getBrandProfile] Raw response:', response);
+      console.log('[getBrandProfile] Response type:', typeof response);
+      console.log('[getBrandProfile] Has profileImage:', !!response?.profileImage);
+      
+      // apiClient.get() already extracts the data, so response IS the brand object
+      if (response && response.id) {
+        const brandData = response;
+        
         // Update localStorage with fresh data
         const currentBrand = this.getCurrentBrand();
         if (currentBrand) {
@@ -118,12 +125,18 @@ export class BrandAuthService {
             twitter: brandData.twitter || currentBrand.twitter,
             token: currentBrand.token
           };
+          
+          console.log('[getBrandProfile] Updated brand with profileImage:', {
+            url: updatedBrand.profileImage?.url || 'N/A',
+            publicId: updatedBrand.profileImage?.publicId || 'N/A'
+          });
+          
           localStorage.setItem('brand_user', JSON.stringify(updatedBrand));
           return updatedBrand;
         }
       }
     } catch (error) {
-      console.error('Error fetching brand profile:', error);
+      console.error('[getBrandProfile] Error fetching brand profile:', error);
     }
     return this.getCurrentBrand();
   }
@@ -169,9 +182,21 @@ export class BrandAuthService {
     try {
       if (data instanceof FormData) {
         // For FormData, use POST to upload endpoint
-        return await apiClient.upload<any>('/brand/profile/upload', data);
+        console.log('[BrandAuthService.updateProfile] Sending FormData');
+        console.log('[BrandAuthService.updateProfile] Brand token:', localStorage.getItem('brand_user') ? 'EXISTS' : 'MISSING');
+        
+        const response = await apiClient.upload<any>('/brand/profile/upload', data);
+        
+        console.log('[BrandAuthService.updateProfile] Response received:', {
+          type: typeof response,
+          isArray: Array.isArray(response),
+          keys: typeof response === 'object' ? Object.keys(response).slice(0, 5) : 'N/A'
+        });
+        
+        return response;
       }
       // For JSON data, use PATCH
+      console.log('[BrandAuthService.updateProfile] Sending JSON');
       return await apiClient.patch<any>('/brand/profile', data);
     } catch (error: any) {
       console.error('Brand profile update failed:', error);

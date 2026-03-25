@@ -14,6 +14,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     { id: 'brand-accounts', label: 'Brand Accounts', path: '/admin/brands' },
     { id: 'products', label: 'Products', path: '/admin/products' },
     { id: 'orders', label: 'Orders', path: '/admin/orders' },
+    { id: 'banners', label: 'Banner Ads', path: '/admin/banners' },
     { id: 'analytics', label: 'Analytics', path: '/admin/analytics' },
   ];
 
@@ -23,6 +24,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     if (pathname.includes('/admin/brands')) return 'brand-accounts';
     if (pathname.includes('/admin/products')) return 'products';
     if (pathname.includes('/admin/orders')) return 'orders';
+    if (pathname.includes('/admin/banners')) return 'banners';
     if (pathname.includes('/admin/analytics')) return 'analytics';
     return 'dashboard';
   };

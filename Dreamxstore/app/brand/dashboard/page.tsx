@@ -36,7 +36,7 @@ export default function BrandDashboard() {
     }
     console.log('[BrandDashboard] Current brand from localStorage:', currentBrand);
     setBrand(currentBrand);
-    
+
     // Fetch fresh brand profile data from backend to get latest image
     const fetchBrandProfile = async () => {
       try {
@@ -53,7 +53,7 @@ export default function BrandDashboard() {
         setLoading(false);
       }
     };
-    
+
     fetchBrandProfile();
   }, [router]);
 
@@ -80,27 +80,27 @@ export default function BrandDashboard() {
 
   const handleFetchProducts = async () => {
     if (!brand) return;
-    
+
     try {
       setProductsLoading(true);
       setProductsError(null);
       console.log('[BrandDashboard] Fetching products for brand:', brand.id);
-      
+
       const response = await ProductService.getProducts({ limit: 100 });
       console.log('[BrandDashboard] Products response:', response);
-      
-      const productsData = Array.isArray(response) 
-        ? response 
+
+      const productsData = Array.isArray(response)
+        ? response
         : (response as any)?.data || [];
-      
+
       // Filter products by brand ID
       const brandProducts = productsData.filter((product: any) => {
-        const productBrandId = typeof product.brandId === 'object' 
-          ? (product.brandId as any)?._id 
+        const productBrandId = typeof product.brandId === 'object'
+          ? (product.brandId as any)?._id
           : product.brandId;
         return productBrandId === brand.id || productBrandId === brand.brandName;
       });
-      
+
       console.log('[BrandDashboard] Filtered brand products:', brandProducts);
       setProducts(brandProducts);
       setIsProductsModalOpen(true);
@@ -134,78 +134,58 @@ export default function BrandDashboard() {
     try {
       setEditFormData((prev) => ({ ...prev, uploading: true }));
 
-      let cloudinaryImageUrl: string | null = null;
-      let cloudinaryPublicId: string | null = null;
+      console.log('[handleSaveEdit] Starting save process');
 
-      // Upload image directly using the brand upload endpoint if file exists
+      let response;
+
+      // Check if we have a new image file to upload
       if (editFormData.imageFile) {
-        try {
-          const formData = new FormData();
-          formData.append('file', editFormData.imageFile);
-          
-          // Use the apiClient directly to upload (not AdminService)
-          const uploadResponse = await apiClient.upload<any>('/brand/profile/upload', formData);
-          
-          if (uploadResponse && uploadResponse.profileImage) {
-            cloudinaryImageUrl = uploadResponse.profileImage.url;
-            cloudinaryPublicId = uploadResponse.profileImage.publicId;
-          }
-        } catch (uploadError: any) {
-          console.error('Image upload error:', uploadError);
-          alert('Error uploading image: ' + (uploadError.message || 'Unknown error'));
-          return;
-        }
-      }
+        console.log('[handleSaveEdit] Uploading image and updating profile via FormData');
+        const formData = new FormData();
+        formData.append('file', editFormData.imageFile);
 
-      // Prepare update data with image from upload if available
-      const updateData: any = {
-        description: editFormData.description,
-        instagram: editFormData.instagram,
-        facebook: editFormData.facebook,
-        twitter: editFormData.twitter,
-      };
+        // Append other fields to FormData
+        if (editFormData.description) formData.append('description', editFormData.description);
+        if (editFormData.instagram) formData.append('instagram', editFormData.instagram);
+        if (editFormData.facebook) formData.append('facebook', editFormData.facebook);
+        if (editFormData.twitter) formData.append('twitter', editFormData.twitter);
 
-      // Only add profileImage if we have a newly uploaded image
-      if (cloudinaryImageUrl) {
-        updateData.profileImage = {
-          url: cloudinaryImageUrl,
-          publicId: cloudinaryPublicId,
+        // Send single request with FormData
+        response = await BrandAuthService.updateProfile(formData);
+      } else {
+        console.log('[handleSaveEdit] Updating profile data via JSON');
+        // No new image, just update text fields
+        const profileUpdateData = {
+          description: editFormData.description,
+          instagram: editFormData.instagram,
+          facebook: editFormData.facebook,
+          twitter: editFormData.twitter,
         };
+
+        // Send single request with JSON
+        response = await BrandAuthService.updateProfile(profileUpdateData);
       }
 
-      // Update profile with PATCH endpoint
-      await BrandAuthService.updateProfile(updateData);
+      console.log('[handleSaveEdit] Update successful:', response);
 
-      // Update local state
-      const updatedBrand = { ...brand };
-      if (cloudinaryImageUrl) {
-        updatedBrand.profileImage = {
-          url: cloudinaryImageUrl,
-          publicId: cloudinaryPublicId,
-        };
+      // Fetch fresh brand profile to get updated data and ensure UI sync
+      const freshBrand = await BrandAuthService.getBrandProfile();
+      if (freshBrand) {
+        setBrand(freshBrand);
+        // Update localStorage with fresh data
+        localStorage.setItem('brand_user', JSON.stringify({
+          id: freshBrand.id,
+          brandName: freshBrand.brandName,
+          ownerEmail: freshBrand.ownerEmail,
+          status: freshBrand.status,
+          profileImage: freshBrand.profileImage,
+          description: freshBrand.description,
+          instagram: freshBrand.instagram,
+          facebook: freshBrand.facebook,
+          twitter: freshBrand.twitter,
+          token: BrandAuthService.getToken()
+        }));
       }
-      
-      // Update description if provided
-      if (editFormData.description) {
-        updatedBrand.description = editFormData.description;
-      }
-      
-      // Update social links
-      updatedBrand.instagram = editFormData.instagram || '';
-      updatedBrand.facebook = editFormData.facebook || '';
-      updatedBrand.twitter = editFormData.twitter || '';
-      
-      setBrand(updatedBrand);
-
-      // Update localStorage with new brand data
-      localStorage.setItem('brand_user', JSON.stringify({
-        id: updatedBrand.id,
-        brandName: updatedBrand.brandName,
-        ownerEmail: updatedBrand.ownerEmail,
-        status: updatedBrand.status,
-        profileImage: updatedBrand.profileImage,
-        token: BrandAuthService.getToken()
-      }));
 
       setIsEditModalOpen(false);
       alert('Brand profile updated successfully!');
@@ -264,8 +244,8 @@ export default function BrandDashboard() {
             {brand.brandName}
           </h2>
           <p className="text-gray-600 dark:text-gray-400 mb-4">
-                {brand.ownerEmail}
-            </p>
+            {brand.ownerEmail}
+          </p>
 
           {/* Status Card */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
@@ -287,6 +267,7 @@ export default function BrandDashboard() {
               <div className="bg-gray-100 dark:bg-gray-700 p-6 rounded-lg flex items-center justify-center">
                 {typeof brand.profileImage === "string" ? (
                   <img
+                    key={brand.profileImage}
                     src={brand.profileImage}
                     alt={brand.brandName}
                     className="max-w-sm h-auto rounded-lg"
@@ -297,6 +278,7 @@ export default function BrandDashboard() {
                   />
                 ) : brand.profileImage?.url ? (
                   <img
+                    key={brand.profileImage.url}
                     src={brand.profileImage.url}
                     alt={brand.brandName}
                     className="max-w-sm h-auto rounded-lg"
@@ -462,11 +444,10 @@ export default function BrandDashboard() {
                         </td>
                         <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{product.stock || product.stockQuantity || 0}</td>
                         <td className="px-4 py-3">
-                          <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                            product.status === 'active' || product.isActive
+                          <span className={`px-3 py-1 rounded-full text-xs font-medium ${product.status === 'active' || product.isActive
                               ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300'
                               : 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300'
-                          }`}>
+                            }`}>
                             {product.status || (product.isActive ? 'Active' : 'Inactive')}
                           </span>
                         </td>

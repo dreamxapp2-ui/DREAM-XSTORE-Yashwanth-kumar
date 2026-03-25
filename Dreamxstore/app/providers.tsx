@@ -7,7 +7,8 @@ import { ToastDisplay } from "../src/components/Toast/ToastDisplay";
 
 export function Providers({ children }: { children: React.ReactNode }) {
   useEffect(() => {
-    // Initialize MSW in development
+    // Initialize MSW in development - Disabled to fix network errors
+    /*
     if (process.env.NODE_ENV === 'development') {
       import('../src/mocks/browser').then(({ worker }) => {
         worker.start({ 
@@ -19,6 +20,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
         console.error('Failed to import MSW:', error);
       });
     }
+    */
   }, []);
 
   return (

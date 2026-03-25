@@ -88,10 +88,6 @@ const productSchema = new mongoose.Schema(
         message: 'At least one image is required',
       },
     },
-    thumbnails: {
-      type: [String],
-      default: [],
-    },
 
     // Sizes
     sizes: {
@@ -146,6 +142,24 @@ const productSchema = new mongoose.Schema(
     tags: {
       type: [String],
       default: [],
+    },
+
+    // Weight and Dimensions
+    weight: {
+      type: Number,
+      default: null,
+    },
+    length: {
+      type: Number,
+      default: null,
+    },
+    breadth: {
+      type: Number,
+      default: null,
+    },
+    height: {
+      type: Number,
+      default: null,
     },
 
     // Status

@@ -5,6 +5,8 @@ import { CheckCircle, Loader } from 'lucide-react';
 import { useCart } from '@/src/contexts/CartContext';
 import { useToast } from '@/src/contexts/ToastContext';
 import PaymentService from '@/src/lib/api/services/paymentService';
+import ShipmentService, { ShipmentOrderData } from '@/src/lib/api/shipmentService';
+import InventoryService from '@/src/lib/api/inventoryService';
 
 interface ReviewOrderProps {
   shippingData: any;
@@ -22,6 +24,8 @@ export default function ReviewOrder({
   const { cart } = useCart();
   const { showToast } = useToast();
   const [isProcessing, setIsProcessing] = useState(false);
+  const [shipmentCreated, setShipmentCreated] = useState(false);
+  const [shipmentId, setShipmentId] = useState<number | null>(null);
 
   const handlePlaceOrder = async () => {
     setIsProcessing(true);
@@ -43,10 +47,33 @@ export default function ReviewOrder({
             );
 
             if (verifyResponse.success) {
-              showToast('Order placed successfully!', 'success', 4000);
+              showToast('Payment successful! Processing order...', 'success', 3000);
+              
+              // Reduce stock after payment verification
+              await reduceInventoryStock();
+              
+              // Create shipment after successful payment
+              await createShipmentOrder(orderId, paymentId);
+              
+              // SAVE ORDER TO DATABASE
+              await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api'}/orders`, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${localStorage.getItem('token')}`
+                },
+                body: JSON.stringify({
+                  items: cart,
+                  shippingData,
+                  total: totalAmount,
+                  paymentStatus: 'completed',
+                  paymentMethod: paymentData?.paymentMethod || 'card'
+                })
+              });
+              
               // Clear cart
               localStorage.removeItem('cart');
-              setTimeout(() => onComplete(), 1500);
+              setTimeout(() => onComplete(), 2000);
             } else {
               showToast(verifyResponse.error || 'Payment verification failed', 'error', 4000);
             }
@@ -67,6 +94,129 @@ export default function ReviewOrder({
       console.error('[ReviewOrder] Error in handlePlaceOrder:', error);
       showToast(error.message || 'Failed to process payment', 'error', 4000);
       setIsProcessing(false);
+    }
+  };
+
+  const handleDummyPayment = async () => {
+    setIsProcessing(true);
+    showToast('Initiating Dummy Payment...', 'info', 2000);
+    
+    try {
+      // Simulate API delay
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      const mockOrderId = `dummy_order_${Date.now()}`;
+      const mockPaymentId = `dummy_pay_${Date.now()}`;
+      
+      console.log('[ReviewOrder] Dummy payment successful:', { mockOrderId, mockPaymentId });
+      showToast('Dummy Payment successful! Processing order...', 'success', 3000);
+      
+      await reduceInventoryStock();
+      await createShipmentOrder(mockOrderId, mockPaymentId);
+      
+      // SAVE ORDER TO DATABASE
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api'}/orders`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({
+          items: cart,
+          shippingData,
+          total: getTotalPrice(),
+          paymentStatus: 'completed',
+          paymentMethod: paymentData?.paymentMethod || 'card'
+        })
+      });
+      
+      localStorage.removeItem('cart');
+      setTimeout(() => onComplete(), 2000);
+      
+    } catch (error) {
+      console.error('[ReviewOrder] Error in dummy payment:', error);
+      showToast('Dummy payment failed', 'error', 4000);
+      setIsProcessing(false);
+    }
+  };
+
+  const reduceInventoryStock = async () => {
+    try {
+      console.log('[ReviewOrder] Reducing inventory stock...');
+
+      // Transform cart items to inventory format
+      const inventoryItems = InventoryService.transformCartToInventory(cart);
+
+      const result = await InventoryService.reduceStock(inventoryItems);
+
+      if (result && result.success) {
+        console.log('[ReviewOrder] Stock reduced successfully:', result.results);
+      } else if (result && result.errors) {
+        console.error('[ReviewOrder] Stock reduction had errors:', result.errors);
+      }
+    } catch (error: any) {
+      console.error('[ReviewOrder] Error reducing stock (non-blocking):', error);
+      // Don't throw - order is already paid, inventory can be adjusted manually
+    }
+  };
+
+  const createShipmentOrder = async (razorpayOrderId: string, razorpayPaymentId: string) => {
+    try {
+      console.log('[ReviewOrder] Creating shipment order...');
+
+      // Calculate total weight and dimensions from cart items
+      const totalWeight = cart.reduce((weight, item) => {
+        // Default weight of 0.5kg per item if not specified
+        return weight + (0.5 * item.quantity);
+      }, 0);
+
+      // Prepare order items for Shiprocket
+      const orderItems = cart.map(item => ({
+        name: item.title,
+        sku: item._id || `SKU-${item.title}`,
+        units: item.quantity,
+        selling_price: item.price,
+      }));
+
+      // Prepare shipment order data
+      const shipmentOrderData: ShipmentOrderData = {
+        order_id: razorpayOrderId,
+        order_date: new Date().toISOString().split('T')[0],
+        pickup_location: 'Main Warehouse', // TODO: Get from settings or config
+        billing_customer_name: shippingData.firstName,
+        billing_last_name: shippingData.lastName,
+        billing_address: shippingData.address,
+        billing_city: shippingData.city,
+        billing_state: shippingData.state,
+        billing_country: shippingData.country || 'India',
+        billing_pincode: shippingData.postalCode,
+        billing_email: shippingData.email || 'customer@example.com',
+        billing_phone: shippingData.phone,
+        shipping_is_billing: true,
+        order_items: orderItems,
+        payment_method: 'Prepaid',
+        sub_total: getTotalPrice(),
+        weight: totalWeight,
+        length: 30, // Default dimensions - can be calculated from cart
+        breadth: 20,
+        height: 10,
+      };
+
+      const shipmentResponse = await ShipmentService.createShipmentOrder(shipmentOrderData);
+      
+      console.log('[ReviewOrder] Shipment created:', shipmentResponse);
+      setShipmentId(shipmentResponse.shipment_id);
+      setShipmentCreated(true);
+      
+      showToast('Shipment created successfully!', 'success', 3000);
+
+      // Optionally assign AWB and request pickup automatically
+      // This can be done in background or by admin
+      
+    } catch (error: any) {
+      console.error('[ReviewOrder] Error creating shipment:', error);
+      showToast('Order placed but shipment creation failed. Contact support.', 'warning', 5000);
+      // Don't throw error - order is already paid
     }
   };
 
@@ -133,23 +283,33 @@ export default function ReviewOrder({
         >
           Previous
         </button>
-        <button
-          onClick={handlePlaceOrder}
-          disabled={isProcessing}
-          className="px-8 py-3 bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white font-medium rounded-lg transition-colors flex items-center gap-2"
-        >
-          {isProcessing ? (
-            <>
-              <Loader size={20} className="animate-spin" />
-              Processing Payment...
-            </>
-          ) : (
-            <>
-              <CheckCircle size={20} />
-              Place Order
-            </>
-          )}
-        </button>
+        <div className="flex gap-4">
+          <button
+            onClick={handleDummyPayment}
+            disabled={isProcessing}
+            className="px-6 py-3 bg-gray-800 hover:bg-gray-900 disabled:opacity-50 text-white font-medium rounded-lg transition-colors flex items-center gap-2"
+          >
+            {isProcessing ? <Loader size={20} className="animate-spin" /> : <CheckCircle size={20} />}
+            Dummy Payment
+          </button>
+          <button
+            onClick={handlePlaceOrder}
+            disabled={isProcessing}
+            className="px-8 py-3 bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white font-medium rounded-lg transition-colors flex items-center gap-2"
+          >
+            {isProcessing ? (
+              <>
+                <Loader size={20} className="animate-spin" />
+                Processing...
+              </>
+            ) : (
+              <>
+                <CheckCircle size={20} />
+                Place Order
+              </>
+            )}
+          </button>
+        </div>
       </div>
     </div>
   );

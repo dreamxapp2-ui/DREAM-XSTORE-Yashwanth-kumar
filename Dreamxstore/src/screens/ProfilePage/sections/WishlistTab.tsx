@@ -130,6 +130,13 @@ export const WishlistTab: React.FC<WishlistTabProps> = ({ wishlist: initialWishl
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {wishlistItems.map((item) => {
             const product = item.productId;
+            
+            // Skip if product has been deleted
+            if (!product) {
+              console.warn('[WishlistTab] Product not found for wishlist item:', item._id);
+              return null;
+            }
+
             const productImage = product.images?.[0] || '/placeholder-product.png';
 
             return (

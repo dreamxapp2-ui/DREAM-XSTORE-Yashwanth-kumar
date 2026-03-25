@@ -106,7 +106,7 @@
 
 //       // Verify token
 //       const decoded = jwt.verify(token, process.env.JWT_SECRET);
-      
+
 //       // Find user by verification token
 //       const user = await User.findOne({ 
 //         email: decoded.email,
@@ -265,7 +265,7 @@ const authController = {
     const hasUppercase = /[A-Z]/.test(password);
     const hasNumber = /\d/.test(password);
     const hasSpecialChar = /[@$!%*?&#\-_.,;:()[\]{}'"<>~`+=|\\\/]/.test(password);
-    
+
     return hasMinLength && hasLowercase && hasUppercase && hasNumber && hasSpecialChar;
   },
 
@@ -275,36 +275,36 @@ const authController = {
 
       // Enhanced input validation (granular, with field-specific errors)
       if (!email || !password || !username) {
-        return res.status(400).json({ 
-          message: 'Email, password, and username are required', 
+        return res.status(400).json({
+          message: 'Email, password, and username are required',
           field: 'general'  // For client to show global error
         });
       }
       if (!authController.isValidEmail(email)) {
-        return res.status(400).json({ 
-          message: 'Invalid email format', 
-          field: 'email' 
+        return res.status(400).json({
+          message: 'Invalid email format',
+          field: 'email'
         });
       }
       if (!authController.isValidPassword(password)) {
-        return res.status(400).json({ 
-          message: 'Password must be at least 8 characters and contain at least one uppercase letter, one lowercase letter, one number, and one special character', 
-          field: 'password' 
+        return res.status(400).json({
+          message: 'Password must be at least 8 characters and contain at least one uppercase letter, one lowercase letter, one number, and one special character',
+          field: 'password'
         });
       }
       if (username.length < 3 || username.length > 20 || !/^[a-zA-Z0-9_]+$/.test(username)) {
-        return res.status(400).json({ 
-          message: 'Username must be 3-20 characters and contain only letters, numbers, and underscores', 
-          field: 'username' 
+        return res.status(400).json({
+          message: 'Username must be 3-20 characters and contain only letters, numbers, and underscores',
+          field: 'username'
         });
       }
 
       // Check if user already exists
       const existingUser = await User.findOne({ email });
       if (existingUser) {
-        return res.status(400).json({ 
-          message: 'Email already registered', 
-          field: 'email' 
+        return res.status(400).json({
+          message: 'Email already registered',
+          field: 'email'
         });
       }
 
@@ -338,7 +338,7 @@ const authController = {
       const verificationUrl = `${process.env.FRONTEND_URL}/verify-email?token=${verificationToken}`;
 
       // Send verification email
-       const emailContent = `
+      const emailContent = `
          Hello ${username || 'there'},
 
          Thank you for registering with DesignersDen! To complete your registration, please verify your email address by clicking the link below:
@@ -361,9 +361,9 @@ const authController = {
         console.error('Failed to send verification email:', emailError);
         // Delete the user if email sending fails
         await User.deleteOne({ _id: user._id });
-        return res.status(500).json({ 
-          message: 'Failed to send verification email. Please try again.', 
-          field: 'general' 
+        return res.status(500).json({
+          message: 'Failed to send verification email. Please try again.',
+          field: 'general'
         });
       }
 
@@ -386,8 +386,8 @@ const authController = {
 
     } catch (error) {
       console.error('Registration error:', error);
-      res.status(500).json({ 
-        message: 'Error registering user', 
+      res.status(500).json({
+        message: 'Error registering user',
         field: 'general',
         error: error.message  // Keep for debugging, but remove in prod if sensitive
       });
@@ -399,26 +399,26 @@ const authController = {
       const { token } = req.body;
 
       if (!token) {
-        return res.status(400).json({ 
-          message: 'Verification token is required', 
-          field: 'token' 
+        return res.status(400).json({
+          message: 'Verification token is required',
+          field: 'token'
         });
       }
 
       // Verify token
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
-      
+
       // Find user by verification token
-      const user = await User.findOne({ 
+      const user = await User.findOne({
         email: decoded.email,
         verificationToken: token,
         verificationTokenExpiry: { $gt: new Date() }
       });
 
       if (!user) {
-        return res.status(400).json({ 
-          message: 'Invalid or expired verification token', 
-          field: 'token' 
+        return res.status(400).json({
+          message: 'Invalid or expired verification token',
+          field: 'token'
         });
       }
 
@@ -450,22 +450,22 @@ const authController = {
     } catch (error) {
       // Handle JWT expiry/invalid token specifically
       if (error.name === 'TokenExpiredError') {
-        return res.status(400).json({ 
-          message: 'Verification token has expired. Please register again.', 
-          field: 'token' 
+        return res.status(400).json({
+          message: 'Verification token has expired. Please register again.',
+          field: 'token'
         });
       }
       if (error.name === 'JsonWebTokenError') {
-        return res.status(400).json({ 
-          message: 'Invalid verification token. Please register again.', 
-          field: 'token' 
+        return res.status(400).json({
+          message: 'Invalid verification token. Please register again.',
+          field: 'token'
         });
       }
       console.error('Email verification error:', error);
-      res.status(500).json({ 
-        message: 'Error verifying email', 
+      res.status(500).json({
+        message: 'Error verifying email',
         field: 'general',
-        error: error.message 
+        error: error.message
       });
     }
   },
@@ -477,42 +477,49 @@ const authController = {
 
       // Enhanced input validation
       if (!email || !password) {
-        return res.status(400).json({ 
-          message: 'Email and password are required', 
-          field: 'general' 
+        return res.status(400).json({
+          message: 'Email and password are required',
+          field: 'general'
         });
       }
       if (!authController.isValidEmail(email)) {
-        return res.status(400).json({ 
-          message: 'Invalid email format', 
-          field: 'email' 
+        return res.status(400).json({
+          message: 'Invalid email format',
+          field: 'email'
         });
       }
 
       // Find user by email
       const user = await User.findOne({ email });
       if (!user) {
-        return res.status(401).json({ 
-          message: 'Invalid email or password', 
-          field: 'email' 
+        return res.status(401).json({
+          message: 'Invalid email or password',
+          field: 'email'
         });
       }
       console.log(user);  // Keep for debugging
+      if (!user.password) {
+        return res.status(401).json({
+          message: 'Please login using your original method (e.g. Google)',
+          field: 'password'
+        });
+      }
+
       // Compare password
       console.log(user.password);  // Keep for debugging
       const isValidPassword = await bcrypt.compare(password, user.password);
       if (!isValidPassword) {
-        return res.status(401).json({ 
-          message: 'Invalid email or password', 
-          field: 'password' 
+        return res.status(401).json({
+          message: 'Invalid email or password',
+          field: 'password'
         });
       }
 
       // Check if verified (add this for security)
       if (!user.isVerified) {
-        return res.status(401).json({ 
-          message: 'Please verify your email before logging in.', 
-          field: 'general' 
+        return res.status(401).json({
+          message: 'Please verify your email before logging in.',
+          field: 'general'
         });
       }
 
@@ -541,10 +548,10 @@ const authController = {
 
     } catch (error) {
       console.error('Login error:', error);
-      res.status(500).json({ 
-        message: 'Error logging in', 
+      res.status(500).json({
+        message: 'Error logging in',
         field: 'general',
-        error: error.message 
+        error: error.message
       });
     }
   },
@@ -556,32 +563,32 @@ const authController = {
       const userId = req.user._id; // From auth middleware
 
       if (!currentPassword || !newPassword) {
-        return res.status(400).json({ 
-          message: 'Current password and new password are required', 
-          field: 'general' 
+        return res.status(400).json({
+          message: 'Current password and new password are required',
+          field: 'general'
         });
       }
       if (!authController.isValidPassword(newPassword)) {
-        return res.status(400).json({ 
-          message: 'New password must meet strength requirements', 
-          field: 'newPassword' 
+        return res.status(400).json({
+          message: 'New password must meet strength requirements',
+          field: 'newPassword'
         });
       }
 
       const user = await User.findById(userId);
       if (!user) {
-        return res.status(404).json({ 
-          message: 'User not found', 
-          field: 'general' 
+        return res.status(404).json({
+          message: 'User not found',
+          field: 'general'
         });
       }
 
       // Verify current password
       const isValidPassword = await bcrypt.compare(currentPassword, user.password);
       if (!isValidPassword) {
-        return res.status(401).json({ 
-          message: 'Current password is incorrect', 
-          field: 'currentPassword' 
+        return res.status(401).json({
+          message: 'Current password is incorrect',
+          field: 'currentPassword'
         });
       }
 
@@ -597,10 +604,10 @@ const authController = {
 
     } catch (error) {
       console.error('Change password error:', error);
-      res.status(500).json({ 
-        message: 'Error changing password', 
+      res.status(500).json({
+        message: 'Error changing password',
         field: 'general',
-        error: error.message 
+        error: error.message
       });
     }
   }
