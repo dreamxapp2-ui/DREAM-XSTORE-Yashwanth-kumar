@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { apiClient } from '@/src/lib/api/client';
+import { ENDPOINTS } from '@/src/lib/api/config';
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { z } from "zod";
@@ -80,7 +81,7 @@ export const LoginPage = () => {
 
   const handleGoogleLogin = () => {
     const authUrl = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000").replace(/\/api$/, "");
-    window.location.href = `${authUrl}/api/auth/google`;
+    window.location.href = `${authUrl}/api${ENDPOINTS.GOOGLE_AUTH}`;
   };
 
   return (
