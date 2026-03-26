@@ -1,6 +1,5 @@
-"use client"
-import React, { useState, useEffect, useRef } from "react";
 import { Button } from "../../../../components/ui/button";
+import { apiClient } from "@/src/lib/api/client";
 
 interface Slide {
   id?: number;
@@ -24,11 +23,10 @@ export const HeroCarousel = ()=> {
   useEffect(() => {
     const fetchBanners = async () => {
       try {
-        const response = await fetch('http://localhost:3000/api/banners');
-        const data = await response.json();
+        const data = await apiClient.get('/banners');
         
-        if (data.success && data.data.length > 0) {
-          setSlides(data.data);
+        if (data && data.length > 0) {
+          setSlides(data);
         } else {
           // Fallback to default slides if API fails
           setSlides([

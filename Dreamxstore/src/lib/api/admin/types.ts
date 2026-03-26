@@ -255,15 +255,15 @@ export interface AnalyticsData {
 // Content Management
 export interface Banner {
   id: string;
+  _id?: string;
   title: string;
-  subtitle?: string;
+  buttonText: string;
   image: string;
-  link?: string;
+  link: string;
   isActive: boolean;
-  position: number;
-  startDate?: string;
-  endDate?: string;
+  order: number;
   createdAt: string;
+  updatedAt?: string;
 }
 
 export interface Coupon {

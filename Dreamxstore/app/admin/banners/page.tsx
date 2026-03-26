@@ -4,18 +4,8 @@ import React, { useState, useEffect } from 'react';
 import { Plus, Edit, Trash2, Eye, EyeOff } from 'lucide-react';
 import { Button } from '@/src/components/ui/button';
 import { Card, CardContent } from '@/src/components/ui/card';
-
-interface Banner {
-  _id: string;
-  image: string;
-  title: string;
-  buttonText: string;
-  link: string;
-  order: number;
-  isActive: boolean;
-  createdAt: string;
-  updatedAt: string;
-}
+import { AdminService } from '@/src/lib/api/admin/adminService';
+import type { Banner } from '@/src/lib/api/admin/types';
 
 export default function BannersPage() {
   const [banners, setBanners] = useState<Banner[]>([]);
@@ -38,17 +28,8 @@ export default function BannersPage() {
   const fetchBanners = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:3000/api/admin/banners', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-
-      const data = await response.json();
-      if (data.success) {
-        setBanners(data.data);
-      }
+      const data = await AdminService.getBanners();
+      setBanners(data);
     } catch (error) {
       console.error('[Banners] Error fetching:', error);
     } finally {
@@ -59,39 +40,25 @@ export default function BannersPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const token = localStorage.getItem('token');
-      const url = editingBanner
-        ? `http://localhost:3000/api/admin/banners/${editingBanner._id}`
-        : 'http://localhost:3000/api/admin/banners';
-      
-      const method = editingBanner ? 'PUT' : 'POST';
-
-      const response = await fetch(url, {
-        method,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(formData)
-      });
-
-      const data = await response.json();
-      if (data.success) {
-        alert(editingBanner ? 'Banner updated successfully!' : 'Banner created successfully!');
-        setShowModal(false);
-        setEditingBanner(null);
-        setFormData({
-          image: '',
-          title: '',
-          buttonText: '',
-          link: '',
-          order: 0,
-          isActive: true
-        });
-        fetchBanners();
+      if (editingBanner) {
+        await AdminService.updateBanner(editingBanner.id || (editingBanner as any)._id, formData);
+        alert('Banner updated successfully!');
       } else {
-        alert(data.message || 'Failed to save banner');
+        await AdminService.createBanner(formData);
+        alert('Banner created successfully!');
       }
+      
+      setShowModal(false);
+      setEditingBanner(null);
+      setFormData({
+        image: '',
+        title: '',
+        buttonText: '',
+        link: '',
+        order: 0,
+        isActive: true
+      });
+      fetchBanners();
     } catch (error) {
       console.error('[Banners] Error saving:', error);
       alert('Failed to save banner');
@@ -102,19 +69,9 @@ export default function BannersPage() {
     if (!confirm('Are you sure you want to delete this banner?')) return;
 
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:3000/api/admin/banners/${id}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-
-      const data = await response.json();
-      if (data.success) {
-        alert('Banner deleted successfully!');
-        fetchBanners();
-      }
+      await AdminService.deleteBanner(id);
+      alert('Banner deleted successfully!');
+      fetchBanners();
     } catch (error) {
       console.error('[Banners] Error deleting:', error);
       alert('Failed to delete banner');
@@ -123,18 +80,8 @@ export default function BannersPage() {
 
   const handleToggle = async (id: string) => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:3000/api/admin/banners/${id}/toggle`, {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-
-      const data = await response.json();
-      if (data.success) {
-        fetchBanners();
-      }
+      await AdminService.toggleBanner(id);
+      fetchBanners();
     } catch (error) {
       console.error('[Banners] Error toggling:', error);
     }
@@ -186,7 +133,7 @@ export default function BannersPage() {
 
       <div className="grid grid-cols-1 gap-6">
         {banners.map((banner) => (
-          <Card key={banner._id}>
+          <Card key={banner.id || (banner as any)._id}>
             <CardContent className="p-6">
               <div className="flex gap-6">
                 <img
@@ -208,27 +155,27 @@ export default function BannersPage() {
                       </div>
                     </div>
                     <div className="flex gap-2">
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        onClick={() => handleToggle(banner._id)}
-                      >
-                        {banner.isActive ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        onClick={() => openEditModal(banner)}
-                      >
-                        <Edit className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        onClick={() => handleDelete(banner._id)}
-                      >
-                        <Trash2 className="w-4 h-4 text-red-600" />
-                      </Button>
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          onClick={() => handleToggle(banner.id || (banner as any)._id)}
+                        >
+                          {banner.isActive ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          onClick={() => openEditModal(banner)}
+                        >
+                          <Edit className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          onClick={() => handleDelete(banner.id || (banner as any)._id)}
+                        >
+                          <Trash2 className="w-4 h-4 text-red-600" />
+                        </Button>
                     </div>
                   </div>
                 </div>

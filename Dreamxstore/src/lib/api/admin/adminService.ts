@@ -534,28 +534,35 @@ export class AdminService {
    * Get all banners
    */
   static async getBanners(): Promise<Banner[]> {
-    return await apiClient.get<Banner[]>('/admin/content/banners');
+    return await apiClient.get<Banner[]>('/admin/banners');
   }
 
   /**
    * Create banner
    */
-  static async createBanner(data: Omit<Banner, 'id' | 'createdAt'>): Promise<Banner> {
-    return await apiClient.post<Banner>('/admin/content/banners', data);
+  static async createBanner(data: Omit<Banner, 'id' | 'createdAt' | 'updatedAt'>): Promise<Banner> {
+    return await apiClient.post<Banner>('/admin/banners', data);
   }
 
   /**
    * Update banner
    */
   static async updateBanner(id: string, data: Partial<Banner>): Promise<Banner> {
-    return await apiClient.put<Banner>(`/admin/content/banners/${id}`, data);
+    return await apiClient.put<Banner>(`/admin/banners/${id}`, data);
   }
 
   /**
    * Delete banner
    */
   static async deleteBanner(id: string): Promise<void> {
-    await apiClient.delete(`/admin/content/banners/${id}`);
+    await apiClient.delete(`/admin/banners/${id}`);
+  }
+
+  /**
+   * Toggle banner status
+   */
+  static async toggleBanner(id: string): Promise<Banner> {
+    return await apiClient.put<Banner>(`/admin/banners/${id}/toggle`);
   }
 
   /**
@@ -564,7 +571,7 @@ export class AdminService {
   static async uploadBannerImage(file: File): Promise<{ url: string }> {
     const formData = new FormData();
     formData.append('image', file);
-    return await apiClient.upload<{ url: string }>('/admin/content/banners/upload', formData);
+    return await apiClient.upload<{ url: string }>('/admin/banners/upload', formData);
   }
 
   /**
