@@ -79,9 +79,13 @@ const googleStrategy = new GoogleStrategy(
   {
     clientID: process.env.GOOGLE_CLIENT_ID,
     clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-    callbackURL: process.env.BACKEND_URL 
-      ? `${process.env.BACKEND_URL.replace(/\/$/, '')}/api/auth/google/callback` 
-      : '/api/auth/google/callback',
+    callbackURL: (() => {
+      const url = process.env.BACKEND_URL 
+        ? `${process.env.BACKEND_URL.replace(/\/$/, '')}/api/auth/google/callback` 
+        : '/api/auth/google/callback';
+      console.log('Constructed Google Callback URL:', url);
+      return url;
+    })(),
     scope: ['profile', 'email'],
     prompt: 'select_account', // force account selection
     passReqToCallback: true
