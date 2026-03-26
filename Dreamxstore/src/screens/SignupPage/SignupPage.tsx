@@ -2,50 +2,30 @@ import React, { useState } from "react";
 import { apiClient } from '@/src/lib/api/client';
 import { ENDPOINTS } from '@/src/lib/api/config';
 import { useRouter } from "next/navigation";
-import Image from "next/image";
 import { z } from "zod";
+import { Eye, EyeOff } from 'lucide-react';
 
-// Define Zod schema for form validation (unchanged, matches backend)
-const signupSchema = z
-  .object({
-    username: z
-      .string()
-      .min(3, "Username must be at least 3 characters")
-      .max(20, "Username cannot exceed 20 characters")
-      .regex(/^[a-zA-Z0-9_]+$/, "Username can only contain letters, numbers, and underscores"),
-    email: z.email("Invalid email address"),
-    password: z
-      .string()
-      .min(8, "Password must be at least 8 characters")
-      .regex(/^(?=.*[a-z])/, "Password must contain at least one lowercase letter")
-      .regex(/^(?=.*[A-Z])/, "Password must contain at least one uppercase letter")
-      .regex(/^(?=.*\d)/, "Password must contain at least one number")
-      .regex(/^(?=.*[@$!%*?&#\-_.,;:()[\]{}'"<>~`+=|\\\/])/, "Password must contain at least one special character"),
-    confirmPassword: z.string(),
-  })
-  .refine((data) => data.password === data.confirmPassword, {
-    message: "Passwords do not match",
-    path: ["confirmPassword"],
-  });
+const signupSchema = z.object({
+  username: z.string().min(3, "Min 3 characters").max(20, "Max 20 characters").regex(/^[a-zA-Z0-9_]+$/, "Letters, numbers & underscores only"),
+  email: z.email("Invalid email address"),
+  password: z.string().min(8, "Min 8 characters")
+    .regex(/^(?=.*[a-z])/, "Must include lowercase")
+    .regex(/^(?=.*[A-Z])/, "Must include uppercase")
+    .regex(/^(?=.*\d)/, "Must include a number")
+    .regex(/^(?=.*[@$!%*?&#\-_.,;:()[\]{}'\"<>~`+=|\\\/])/, "Must include a special character"),
+  confirmPassword: z.string(),
+}).refine((d) => d.password === d.confirmPassword, { message: "Passwords do not match", path: ["confirmPassword"] });
 
-// Infer TypeScript type from Zod schema
 type SignupFormData = z.infer<typeof signupSchema>;
-
-// Extend errors type for global
 type ErrorState = Partial<Record<keyof SignupFormData | 'general', string>>;
 
 const SignupPage = () => {
-  const [formData, setFormData] = useState<SignupFormData>({
-    username: "",
-    email: "",
-    password: "",
-    confirmPassword: "",
-  });
+  const [formData, setFormData] = useState<SignupFormData>({ username: "", email: "", password: "", confirmPassword: "" });
   const [errors, setErrors] = useState<ErrorState>({});
-  const [globalError, setGlobalError] = useState<string | null>(null);  // Upgrade: Global errors
+  const [globalError, setGlobalError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -53,262 +33,160 @@ const SignupPage = () => {
     setErrors({});
     setGlobalError(null);
     setLoading(true);
-
     try {
-      // Validate form data with Zod
-      const validatedData = signupSchema.parse(formData);
-
-      const data = await apiClient.post(ENDPOINTS.SIGNUP, {
-        username: validatedData.username,
-        email: validatedData.email,
-        password: validatedData.password,
-      });
-
-      // Store user data/email for post-signup use if needed
-      if (data.user) {
-        localStorage.setItem("pendingUser", JSON.stringify(data.user));
-      }
-      localStorage.setItem("pendingVerificationEmail", validatedData.email);
-
-      // Redirect to verification link sent page
+      const v = signupSchema.parse(formData);
+      const data = await apiClient.post(ENDPOINTS.SIGNUP, { username: v.username, email: v.email, password: v.password });
+      if (data.user) localStorage.setItem("pendingUser", JSON.stringify(data.user));
+      localStorage.setItem("pendingVerificationEmail", v.email);
       router.push("/verification-link-sent");
     } catch (err: any) {
       if (err instanceof z.ZodError) {
-        const fieldErrors: Partial<Record<keyof SignupFormData, string>> = {};
-        err.issues.forEach((error) => {
-          const field = error.path[0] as keyof SignupFormData;
-          fieldErrors[field] = error.message;
-        });
-        setErrors(fieldErrors);
-      } else {
-        setGlobalError(err.message || "An error occurred during signup");
-      }
-    } finally {
-      setLoading(false);
-    }
+        const fe: Partial<Record<keyof SignupFormData, string>> = {};
+        err.issues.forEach((e) => { fe[e.path[0] as keyof SignupFormData] = e.message; });
+        setErrors(fe);
+      } else { setGlobalError(err.message || "An error occurred during signup"); }
+    } finally { setLoading(false); }
   };
-
-  // Upgrade: Stub for real-time username check (uncomment & implement backend endpoint)
-  // const checkUsernameAvailability = async (username: string) => {
-  //   if (username.length < 3) return;
-  //   const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api";
-  //   const res = await fetch(`${apiUrl}/auth/check-username?username=${username}`);
-  //   if (!res.ok) {
-  //     setErrors({ username: 'Username taken' });
-  //   } else {
-  //     setErrors({ ...errors, username: undefined });
-  //   }
-  // };
 
   const handleGoogleSignup = () => {
     const productionUrl = 'https://dreamx-store.onrender.com';
-    const rawApiUrl = process.env.NEXT_PUBLIC_API_URL || 
-                    (process.env.NODE_ENV === 'production' ? productionUrl : 'http://localhost:3000');
-    const authBaseUrl = rawApiUrl.replace(/\/api$/, "");
-    window.location.href = `${authBaseUrl}/api${ENDPOINTS.GOOGLE_AUTH}`;
+    const rawApiUrl = process.env.NEXT_PUBLIC_API_URL || (process.env.NODE_ENV === 'production' ? productionUrl : 'http://localhost:3000');
+    window.location.href = `${rawApiUrl.replace(/\/api$/, "")}/api${ENDPOINTS.GOOGLE_AUTH}`;
   };
 
   return (
-    <div className="min-h-screen bg-[#E5E7EB] dark:bg-gray-900 flex items-center justify-center p-4">
-      <div className="w-full max-w-5xl bg-white dark:bg-gray-900 rounded-[2rem] shadow-2xl overflow-hidden flex flex-col md:flex-row min-h-[600px]">
-        {/* Left Side - Signup Form */}
-        <div className="w-full md:w-1/2 p-8 sm:p-12 md:p-16 flex flex-col justify-center">
-          <div className="mb-4">
-            <img src="https://i.postimg.cc/sx24cHZb/image-89.png" alt="DreamXStore" className="h-14 w-auto object-contain" />
-          </div>
-          
-          <div className="flex justify-between items-baseline mb-6">
-            <h2 className="text-3xl font-bold text-gray-900 dark:text-white">Create Account</h2>
-          </div>
+    <>
+      <style>{`
+        .auth-page { min-height: 100vh; display: flex; align-items: stretch; justify-content: center; background-color: #fff; padding: 0; font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; }
+        .auth-card { width: 100%; display: flex; overflow: hidden; box-shadow: none; }
+        .auth-form-panel { width: 100%; background: #fff; display: flex; flex-direction: column; justify-content: space-between; padding: 40px 24px; overflow-y: auto; scrollbar-width: none; -ms-overflow-style: none; min-height: 100vh; }
+        .auth-form-panel::-webkit-scrollbar { display: none; }
+        .auth-image-panel { display: none; position: relative; overflow: hidden; background: #111; }
+        .auth-image-panel img { width: 100%; height: 100%; object-fit: cover; filter: grayscale(100%) contrast(1.1); display: block; }
+        .auth-dot-overlay { position: absolute; inset: 0; background-image: radial-gradient(circle, rgba(0,0,0,0.08) 1px, transparent 1px); background-size: 4px 4px; pointer-events: none; }
+        .auth-input { width: 100%; padding: 10px 14px; border: 1.5px solid #e0e0e0; border-radius: 8px; font-size: 13px; color: #333; outline: none; box-sizing: border-box; background: #fff; transition: border-color 0.15s; }
+        .auth-input:focus { border-color: #555; }
+        .auth-submit-btn { width: 100%; padding: 12px; background: #111; color: #fff; border: none; border-radius: 999px; font-size: 14px; font-weight: 600; cursor: pointer; transition: opacity 0.15s; }
+        .auth-submit-btn:hover:not(:disabled) { opacity: 0.85; }
+        .auth-submit-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+        .auth-divider { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+        .auth-divider-line { flex: 1; height: 1px; background: #e8e8e8; }
+        .auth-divider-text { font-size: 12px; color: #aaa; }
+        .auth-footer { display: flex; gap: 14px; align-items: center; padding-top: 14px; flex-wrap: wrap; }
+        .auth-footer-btn { background: none; border: none; font-size: 12px; color: #aaa; cursor: pointer; padding: 0; }
+        .auth-footer-sep { color: #ddd; font-size: 12px; }
+        .auth-field-err { font-size: 11px; color: #dc2626; margin-top: 3px; display: block; }
+        .auth-pw-wrap { position: relative; }
+        .auth-pw-toggle { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: #aaa; padding: 0; display: flex; align-items: center; }
+        @media (min-width: 640px) {
+          .auth-page { background-color: #d1d5db; padding: 2rem; align-items: center; }
+          .auth-card { max-width: 900px; min-height: auto; height: 620px; box-shadow: 0 25px 60px rgba(0,0,0,0.3); }
+          .auth-form-panel { width: 50%; padding: 36px 48px; min-height: auto; }
+          .auth-image-panel { display: block; width: 50%; }
+        }
+      `}</style>
 
-          <button
-            type="button"
-            onClick={handleGoogleSignup}
-            className="w-full flex items-center justify-center gap-3 py-2.5 px-4 mb-5 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-          >
-            <svg className="w-5 h-5" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M47.5 24.5C47.5 22.6 47.3 20.8 47 19H24V29.5H37.4C36.7 33.1 34.2 36 30.7 37.8V43H38.5C43.1 39 47.5 32.5 47.5 24.5Z" fill="#4285F4" />
-              <path d="M24 48C30.6 48 36.2 45.8 40.2 42.2L32.7 36.8C30.7 38.1 28.1 38.9 24 38.9C17.7 38.9 12.2 34.7 10.3 29.2H2.5V34.8C6.5 42.1 14.6 48 24 48Z" fill="#34A853" />
-              <path d="M10.3 29.2C9.7 27.9 9.3 26.5 9.3 25C9.3 23.5 9.7 22.1 10.3 20.8V15.2H2.5C0.9 18.2 0 21.5 0 25C0 28.5 0.9 31.8 2.5 34.8L10.3 29.2Z" fill="#FBBC05" />
-              <path d="M24 9.1C28.1 9.1 30.7 10.8 32.1 12.1L40.3 4.1C36.2 0.7 30.6-1.5 24-1.5C14.6-1.5 6.5 4.4 2.5 11.7L10.3 17.3C12.2 11.8 17.7 7.6 24 7.6V9.1Z" fill="#EA4335" />
-            </svg>
-            Continue with Google
-          </button>
-
-          <div className="flex items-center my-4">
-            <div className="flex-grow border-t border-gray-100 dark:border-gray-800"></div>
-            <span className="mx-4 text-sm text-gray-400">or</span>
-            <div className="flex-grow border-t border-gray-100 dark:border-gray-800"></div>
-          </div>
-
-          <form className="space-y-4" onSubmit={handleSubmit}>
-            {globalError && (
-              <div className="bg-red-50 text-red-600 px-4 py-3 rounded-lg text-sm" role="alert">
-                {globalError}
-              </div>
-            )}
-            
-            <div className="space-y-3">
-              <div>
-                <input
-                  type="text"
-                  name="username"
-                  required
-                  value={formData.username}
-                  onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-                  className={`w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-800 border-none rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-white placeholder-gray-400`}
-                  placeholder="Username"
-                />
-                {errors.username && <p className="text-red-500 text-xs mt-1 ml-1">{errors.username}</p>}
-              </div>
-
-              <div>
-                <input
-                  type="email"
-                  name="email"
-                  required
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  className={`w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-800 border-none rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-white placeholder-gray-400`}
-                  placeholder="Email address"
-                />
-                {errors.email && <p className="text-red-500 text-xs mt-1 ml-1">{errors.email}</p>}
-              </div>
-              
-              <div className="relative">
-                <input
-                  type={showPassword ? "text" : "password"}
-                  name="password"
-                  required
-                  value={formData.password}
-                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                  className={`w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-800 border-none rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-white placeholder-gray-400`}
-                  placeholder="Password"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute inset-y-0 right-3 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-                >
-                  {showPassword ? (
-                    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
-                    </svg>
-                  ) : (
-                    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                    </svg>
-                  )}
-                </button>
-                {errors.password && <p className="text-red-500 text-xs mt-1 ml-1">{errors.password}</p>}
-              </div>
-
-              <div className="relative">
-                <input
-                  type={showConfirmPassword ? "text" : "password"}
-                  name="confirmPassword"
-                  required
-                  value={formData.confirmPassword}
-                  onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-                  className={`w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-800 border-none rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-white placeholder-gray-400`}
-                  placeholder="Confirm Password"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  className="absolute inset-y-0 right-3 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-                >
-                  {showConfirmPassword ? (
-                    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
-                    </svg>
-                  ) : (
-                    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                    </svg>
-                  )}
-                </button>
-                {errors.confirmPassword && <p className="text-red-500 text-xs mt-1 ml-1">{errors.confirmPassword}</p>}
-              </div>
-            </div>
-
-            <label className="flex items-center space-x-2 mt-2">
-              <input
-                type="checkbox"
-                name="agreeToTerms"
-                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-              />
-              <span className="text-gray-600 dark:text-gray-300 text-sm">I agree to the Terms of Service</span>
-            </label>
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full py-2.5 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-medium transition-colors disabled:opacity-50 flex justify-center items-center mt-4"
-            >
-              {loading ? (
-                <svg className="animate-spin h-5 w-5 text-white" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+      <div className="auth-page">
+        <div className="auth-card">
+          {/* LEFT — Form */}
+          <div className="auth-form-panel">
+            <div>
+              {/* Logo */}
+              <div style={{ marginBottom: '28px' }}>
+                <svg width="22" height="24" viewBox="0 0 22 24" fill="none">
+                  <path d="M13 2L4 14H11L9 22L20 10H13L13 2Z" fill="black" stroke="black" strokeWidth="1.5" strokeLinejoin="round"/>
                 </svg>
-              ) : "Sign Up"}
-            </button>
-          </form>
-
-          <div className="mt-6 text-center text-sm text-gray-500">
-            Already have an account?{" "}
-            <button onClick={() => router.push("/login")} className="text-blue-600 font-medium hover:underline">
-              Sign in
-            </button>
-          </div>
-        </div>
-
-        {/* Right Side - Image Background & Testimonial */}
-        <div className="hidden md:flex w-1/2 relative bg-gray-900 overflow-hidden">
-          {/* Main Background Image */}
-          <div className="absolute inset-0 bg-cover bg-center bg-no-repeat transition-transform duration-700 hover:scale-105" 
-               style={{ backgroundImage: "url('/image/auth_fashion_bg.png')" }}>
-          </div>
-          
-          {/* Overlay gradient for readability */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
-
-          {/* Close Button Top Right */}
-          <button onClick={() => router.push("/")} className="absolute top-6 right-6 w-8 h-8 flex items-center justify-center rounded-full bg-white/20 backdrop-blur-md text-white hover:bg-white/30 transition-colors z-10">
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M13 1L1 13M1 1L13 13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-          </button>
-
-          {/* Testimonial Glass Card */}
-          <div className="relative z-10 mt-auto mb-16 mx-12 p-6 rounded-2xl bg-white/10 backdrop-blur-xl border border-white/20 shadow-2xl">
-            <p className="text-white text-lg leading-relaxed font-medium mb-6 drop-shadow-sm">
-              "The best fashion discovery platform I've ever used. Beautiful, fast, and completely effortless. DreamXStore nailed it."
-            </p>
-            <div className="flex items-center space-x-4">
-              <div className="w-10 h-10 rounded-full bg-gray-300 overflow-hidden border border-white/30">
-                <Image src="https://i.pravatar.cc/150?img=47" alt="User review" width={40} height={40} className="w-full h-full object-cover" />
               </div>
-              <div>
-                <div className="flex text-white/90 text-[10px] mb-1">
-                  <span className="text-yellow-400">★</span><span className="text-yellow-400">★</span><span className="text-yellow-400">★</span><span className="text-yellow-400">★</span><span className="text-yellow-400">★</span>
+
+              <div style={{ marginBottom: '18px' }}>
+                <h1 style={{ fontSize: '24px', fontWeight: 700, color: '#111', margin: '0 0 5px', letterSpacing: '-0.5px' }}>Create account</h1>
+                <p style={{ fontSize: '13px', color: '#888', margin: 0 }}>Join DreamXStore — your style, your world.</p>
+              </div>
+
+              {/* Google */}
+              <button onClick={handleGoogleSignup} style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '10px 16px', border: '1.5px solid #e0e0e0', borderRadius: '8px', background: '#fff', fontSize: '13px', fontWeight: 500, color: '#333', cursor: 'pointer', marginBottom: '14px', boxSizing: 'border-box' as const }}
+                onMouseEnter={e => (e.currentTarget.style.background = '#f9f9f9')}
+                onMouseLeave={e => (e.currentTarget.style.background = '#fff')}>
+                <svg width="15" height="15" viewBox="0 0 24 24">
+                  <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                  <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                  <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/>
+                  <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+                </svg>
+                Sign up with Google
+              </button>
+
+              <div className="auth-divider">
+                <div className="auth-divider-line" />
+                <span className="auth-divider-text">Or</span>
+                <div className="auth-divider-line" />
+              </div>
+
+              {globalError && <div style={{ padding: '10px 14px', background: '#fef2f2', color: '#dc2626', fontSize: '12px', borderRadius: '8px', marginBottom: '12px', border: '1px solid #fee2e2' }}>{globalError}</div>}
+
+              <form onSubmit={handleSubmit}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '10px' }}>
+                  <div>
+                    <input type="text" placeholder="Username" className="auth-input" value={formData.username}
+                      onChange={e => setFormData(f => ({ ...f, username: e.target.value }))} />
+                    {errors.username && <span className="auth-field-err">{errors.username}</span>}
+                  </div>
+                  <div>
+                    <input type="email" placeholder="Enter your email" className="auth-input" value={formData.email}
+                      onChange={e => setFormData(f => ({ ...f, email: e.target.value }))} />
+                    {errors.email && <span className="auth-field-err">{errors.email}</span>}
+                  </div>
+                  <div className="auth-pw-wrap">
+                    <input type={showPassword ? "text" : "password"} placeholder="Password" className="auth-input" style={{ paddingRight: '36px' }} value={formData.password}
+                      onChange={e => setFormData(f => ({ ...f, password: e.target.value }))} />
+                    <button type="button" className="auth-pw-toggle" onClick={() => setShowPassword(!showPassword)}>
+                      {showPassword ? <EyeOff size={14} /> : <Eye size={14} />}
+                    </button>
+                    {errors.password && <span className="auth-field-err">{errors.password}</span>}
+                  </div>
+                  <div className="auth-pw-wrap">
+                    <input type={showConfirm ? "text" : "password"} placeholder="Confirm password" className="auth-input" style={{ paddingRight: '36px' }} value={formData.confirmPassword}
+                      onChange={e => setFormData(f => ({ ...f, confirmPassword: e.target.value }))} />
+                    <button type="button" className="auth-pw-toggle" onClick={() => setShowConfirm(!showConfirm)}>
+                      {showConfirm ? <EyeOff size={14} /> : <Eye size={14} />}
+                    </button>
+                    {errors.confirmPassword && <span className="auth-field-err">{errors.confirmPassword}</span>}
+                  </div>
                 </div>
-                <h4 className="text-white text-sm font-medium">Sarah Jenkins</h4>
-                <p className="text-white/70 text-xs">Fashion Blogger</p>
-              </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+                  <input type="checkbox" id="terms" required style={{ width: '14px', height: '14px', cursor: 'pointer', flexShrink: 0 }} />
+                  <label htmlFor="terms" style={{ fontSize: '12px', color: '#888', cursor: 'pointer' }}>I agree to the Terms &amp; Conditions</label>
+                </div>
+                <button type="submit" disabled={loading} className="auth-submit-btn">
+                  {loading ? 'Creating account...' : 'Create account'}
+                </button>
+              </form>
+
+              <p style={{ textAlign: 'center', fontSize: '12.5px', color: '#888', marginTop: '14px', marginBottom: 0 }}>
+                Already have an account?{' '}
+                <button onClick={() => router.push('/login')} style={{ background: 'none', border: 'none', color: '#111', fontWeight: 600, fontSize: '12.5px', cursor: 'pointer', textDecoration: 'underline', padding: 0 }}>
+                  Sign In
+                </button>
+              </p>
             </div>
-            {/* Pagination dots */}
-            <div className="flex justify-center mt-6 space-x-1.5">
-              <div className="w-1.5 h-1.5 rounded-full bg-white opacity-100"></div>
-              <div className="w-1.5 h-1.5 rounded-full bg-white opacity-40"></div>
-              <div className="w-1.5 h-1.5 rounded-full bg-white opacity-40"></div>
+
+            <div className="auth-footer">
+              <button onClick={() => router.push('/help')} className="auth-footer-btn">Help</button>
+              <span className="auth-footer-sep">/</span>
+              <button onClick={() => router.push('/terms')} className="auth-footer-btn">Terms</button>
+              <span className="auth-footer-sep">/</span>
+              <button onClick={() => router.push('/privacy')} className="auth-footer-btn">Privacy</button>
             </div>
+          </div>
+
+          {/* RIGHT — Image (hidden on mobile) */}
+          <div className="auth-image-panel">
+            <img src="https://images.unsplash.com/photo-1469334031218-e382a71b716b?w=800&q=80&auto=format&fit=crop" alt="Fashion" />
+            <div className="auth-dot-overlay" />
           </div>
         </div>
       </div>
-    </div>
+    </>
   );
 };
 

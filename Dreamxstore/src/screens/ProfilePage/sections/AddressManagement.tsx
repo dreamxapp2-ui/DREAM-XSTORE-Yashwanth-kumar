@@ -128,72 +128,76 @@ export const AddressManagement: React.FC = () => {
   }
   return (
     <>
-      <Card className="border border-gray-200 rounded-[1px]">
-        <CardContent className="p-6">
-          <div className="flex justify-between items-center mb-4">
-            <div className="flex items-center gap-2">
-              <MapPin className="w-5 h-5 text-[#004d84]" />
-              <h2 className="text-xl font-semibold text-black">Address Management</h2>
+      <Card className="border border-gray-100 rounded-[2.5rem] bg-white shadow-sm overflow-hidden">
+        <CardContent className="p-8">
+          <div className="flex justify-between items-center mb-8 border-b border-gray-50 pb-6">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-[#bef264]/20 flex items-center justify-center">
+                <MapPin className="w-5 h-5 text-black" />
+              </div>
+              <h2 className="text-xl font-black italic uppercase tracking-tight">Shipping Access</h2>
             </div>
             <Button 
-              className="bg-[#004d84] hover:bg-[#003d6a] text-sm rounded-none"
+              className="bg-black text-[#bef264] hover:bg-black/90 text-xs font-black uppercase italic rounded-full px-6 py-3 transition-all active:scale-95"
               onClick={() => setShowAddModal(true)}
             >
               <Plus className="w-4 h-4 mr-2" />
-              Add Address
+              New Address
             </Button>
           </div>
 
-        <div className="space-y-3">
+        <div className="grid md:grid-cols-2 gap-4">
           {addresses.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
-              <MapPin className="w-12 h-12 mx-auto mb-2 text-gray-300" />
-              <p>No addresses saved yet</p>
-              <p className="text-sm">Add an address to get started</p>
+            <div className="col-span-full text-center py-12 bg-gray-50 rounded-[2rem] border-2 border-dashed border-gray-100">
+              <MapPin className="w-12 h-12 mx-auto mb-4 text-gray-200" />
+              <p className="font-bold text-gray-400 italic">No storage coordinates found yet.</p>
+              <p className="text-xs font-medium text-gray-300 uppercase tracking-widest mt-1">Configure your shipping destination</p>
             </div>
           ) : (
             addresses.map((address) => (
-              <div key={address._id} className="border border-gray-200 rounded-[1px] p-4">
+              <div key={address._id} className="bg-[#fcfcfc] border border-gray-100 rounded-[2rem] p-6 hover:border-black transition-all group relative">
                 <div className="flex justify-between items-start">
                   <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-2">
-                      <h3 className="font-medium text-black">{address.name}</h3>
+                    <div className="flex flex-wrap items-center gap-2 mb-3">
+                      <h3 className="font-black text-gray-900 uppercase italic text-sm">{address.name}</h3>
                       {address.isDefault && (
-                        <span className="px-2 py-1 bg-[#f1ff8c] text-[#004d84] text-xs rounded-full font-medium border border-black">
-                          Default
+                        <span className="px-3 py-0.5 bg-black text-[#bef264] text-[9px] font-black rounded-full uppercase italic">
+                          Primary
                         </span>
                       )}
-                      <span className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-full">
-                        {address.type.charAt(0).toUpperCase() + address.type.slice(1)}
+                      <span className="px-3 py-0.5 bg-gray-100 text-gray-400 text-[9px] font-black rounded-full uppercase italic">
+                        {address.type}
                       </span>
                     </div>
-                    <p className="text-sm text-gray-600">{address.phone}</p>
-                    <p className="text-sm text-gray-700 mt-1">
-                      {address.addressLine1}{address.addressLine2 && `, ${address.addressLine2}`}
-                    </p>
-                    <p className="text-sm text-gray-700">
-                      {address.city}, {address.state} {address.zipCode}, {address.country}
-                    </p>
+                    <div className="space-y-1">
+                       <p className="text-xs font-bold text-gray-400">{address.phone}</p>
+                       <p className="text-sm font-bold text-gray-600 leading-tight">
+                         {address.addressLine1}{address.addressLine2 && `, ${address.addressLine2}`}
+                       </p>
+                       <p className="text-xs font-bold text-gray-500 uppercase tracking-tight">
+                         {address.city}, {address.state} {address.zipCode}
+                       </p>
+                    </div>
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex flex-col gap-2">
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="text-red-400 hover:text-red-600 hover:bg-red-50 rounded-full h-8 w-8"
+                      onClick={() => address._id && handleDelete(address._id)}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
                     {!address.isDefault && (
                       <Button 
-                        variant="outline" 
+                        variant="ghost" 
                         size="sm" 
-                        className="text-xs rounded-none"
+                        className="text-[9px] font-black uppercase italic text-gray-400 hover:text-black p-0 h-auto"
                         onClick={() => address._id && handleSetDefault(address._id)}
                       >
                         Set Default
                       </Button>
                     )}
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      className="text-red-500 rounded-none"
-                      onClick={() => address._id && handleDelete(address._id)}
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
                   </div>
                 </div>
               </div>
@@ -203,202 +207,148 @@ export const AddressManagement: React.FC = () => {
       </CardContent>
     </Card>
 
-    {/* Add Address Modal */}
+    {/* Add Address Modal - REDESIGNED */}
     {showAddModal && (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-        <div className="bg-white rounded-[1px] w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-          <div className="sticky top-0 bg-white border-b border-gray-200 p-4 flex justify-between items-center">
-            <h3 className="text-lg font-semibold text-black">Add New Address</h3>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="rounded-none"
+      <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[200] p-4 animate-in fade-in duration-300">
+        <div className="bg-white rounded-[3rem] w-full max-w-xl max-h-[90vh] overflow-hidden shadow-2xl animate-in zoom-in-95 duration-300">
+          <div className="bg-black p-8 flex justify-between items-center">
+            <h3 className="text-2xl font-black text-[#bef264] italic uppercase">New Destination</h3>
+            <button
+              className="w-10 h-10 rounded-full bg-[#bef264]/10 flex items-center justify-center text-[#bef264] hover:bg-[#bef264] hover:text-black transition-all"
               onClick={() => setShowAddModal(false)}
             >
               <X className="w-5 h-5" />
-            </Button>
+            </button>
           </div>
 
-          <form onSubmit={handleSubmitAddress} className="p-6">
-            <div className="space-y-4">
+          <form onSubmit={handleSubmitAddress} className="p-8 overflow-y-auto max-h-[calc(90vh-100px)]">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Address Type */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Address Type <span className="text-red-500">*</span>
-                </label>
-                <select
-                  name="type"
-                  value={formData.type}
-                  onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-[1px] focus:outline-none focus:ring-2 focus:ring-[#004d84]"
-                  required
-                >
-                  <option value="shipping">Shipping</option>
-                  <option value="billing">Billing</option>
-                </select>
+              <div className="md:col-span-2">
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 block">Configuration Type</label>
+                <div className="flex gap-4">
+                   {['shipping', 'billing'].map((t) => (
+                      <button
+                        key={t}
+                        type="button"
+                        onClick={() => setFormData({...formData, type: t as any})}
+                        className={`flex-1 py-3 rounded-2xl font-black text-xs uppercase italic border transition-all ${
+                           formData.type === t ? 'bg-black text-[#bef264] border-black' : 'bg-white text-gray-400 border-gray-100 hover:border-black'
+                        }`}
+                      >
+                         {t}
+                      </button>
+                   ))}
+                </div>
               </div>
 
               {/* Name */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Full Name <span className="text-red-500">*</span>
-                </label>
+              <div className="md:col-span-2">
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 block">Receiver Name</label>
                 <input
                   type="text"
                   name="name"
                   value={formData.name}
                   onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-[1px] focus:outline-none focus:ring-2 focus:ring-[#004d84]"
-                  placeholder="John Doe"
+                  className="w-full px-6 py-4 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-[#bef264] font-bold text-sm"
+                  placeholder="IDENTITY"
                   required
                 />
               </div>
 
               {/* Phone */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Phone Number <span className="text-red-500">*</span>
-                </label>
+              <div className="md:col-span-2">
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 block">Contact Uplink</label>
                 <input
                   type="tel"
                   name="phone"
                   value={formData.phone}
                   onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-[1px] focus:outline-none focus:ring-2 focus:ring-[#004d84]"
-                  placeholder="+91 1234567890"
+                  className="w-full px-6 py-4 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-[#bef264] font-bold text-sm"
+                  placeholder="+91 MOBILE"
                   required
                 />
               </div>
 
               {/* Address Line 1 */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Address Line 1 <span className="text-red-500">*</span>
-                </label>
+              <div className="md:col-span-2">
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 block">Primary Coordinates</label>
                 <input
                   type="text"
                   name="addressLine1"
                   value={formData.addressLine1}
                   onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-[1px] focus:outline-none focus:ring-2 focus:ring-[#004d84]"
-                  placeholder="123 Main Street"
+                  className="w-full px-6 py-4 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-[#bef264] font-bold text-sm"
+                  placeholder="STREET / BUILDING"
                   required
                 />
               </div>
 
-              {/* Address Line 2 */}
+              {/* City and State */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Address Line 2 (Optional)
-                </label>
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 block">Sector / City</label>
                 <input
                   type="text"
-                  name="addressLine2"
-                  value={formData.addressLine2}
+                  name="city"
+                  value={formData.city}
                   onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-[1px] focus:outline-none focus:ring-2 focus:ring-[#004d84]"
-                  placeholder="Apartment, suite, etc."
+                  className="w-full px-6 py-4 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-[#bef264] font-bold text-sm"
+                  placeholder="CITY"
+                  required
+                />
+              </div>
+              <div>
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 block">Region / State</label>
+                <input
+                  type="text"
+                  name="state"
+                  value={formData.state}
+                  onChange={handleInputChange}
+                  className="w-full px-6 py-4 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-[#bef264] font-bold text-sm"
+                  placeholder="STATE"
+                  required
                 />
               </div>
 
-              {/* City and State */}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    City <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    name="city"
-                    value={formData.city}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-[1px] focus:outline-none focus:ring-2 focus:ring-[#004d84]"
-                    placeholder="Mumbai"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    State <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    name="state"
-                    value={formData.state}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-[1px] focus:outline-none focus:ring-2 focus:ring-[#004d84]"
-                    placeholder="Maharashtra"
-                    required
-                  />
-                </div>
-              </div>
-
-              {/* Zip Code and Country */}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Zip Code <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    name="zipCode"
-                    value={formData.zipCode}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-[1px] focus:outline-none focus:ring-2 focus:ring-[#004d84]"
-                    placeholder="400001"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Country <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    name="country"
-                    value={formData.country}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-[1px] focus:outline-none focus:ring-2 focus:ring-[#004d84]"
-                    placeholder="India"
-                    required
-                  />
-                </div>
+              {/* Zip Code */}
+              <div className="md:col-span-2">
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 block">Index / Zip</label>
+                <input
+                  type="text"
+                  name="zipCode"
+                  value={formData.zipCode}
+                  onChange={handleInputChange}
+                  className="w-full px-6 py-4 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-[#bef264] font-bold text-sm"
+                  placeholder="CODE"
+                  required
+                />
               </div>
 
               {/* Set as Default */}
-              <div className="flex items-center">
+              <div className="md:col-span-2 flex items-center gap-4 bg-gray-50 p-6 rounded-2xl">
                 <input
                   type="checkbox"
                   name="isDefault"
                   id="isDefault"
                   checked={formData.isDefault}
                   onChange={handleInputChange}
-                  className="w-4 h-4 text-[#004d84] border-gray-300 rounded focus:ring-[#004d84]"
+                  className="w-6 h-6 text-black border-none rounded-lg focus:ring-[#bef264] bg-white cursor-pointer"
                 />
-                <label htmlFor="isDefault" className="ml-2 text-sm text-gray-700">
-                  Set as default address
+                <label htmlFor="isDefault" className="text-sm font-black uppercase italic text-gray-600 cursor-pointer">
+                  Mark as Primary Destination
                 </label>
               </div>
             </div>
 
-            {/* Submit Buttons */}
-            <div className="flex gap-3 mt-6">
-              <Button
-                type="button"
-                variant="outline"
-                className="flex-1 rounded-none"
-                onClick={() => setShowAddModal(false)}
-                disabled={isSubmitting}
-              >
-                Cancel
-              </Button>
-              <Button
-                type="submit"
-                className="flex-1 bg-[#004d84] hover:bg-[#003d6a] rounded-none"
-                disabled={isSubmitting}
-              >
-                {isSubmitting ? 'Adding...' : 'Add Address'}
-              </Button>
+            {/* Submit Button */}
+            <div className="mt-10">
+               <Button
+                 type="submit"
+                 disabled={isSubmitting}
+                 className="w-full h-16 bg-[#bef264] text-black hover:bg-black hover:text-[#bef264] rounded-2xl font-black text-lg uppercase italic transition-all shadow-xl shadow-[#bef264]/20"
+               >
+                 {isSubmitting ? 'UPLOADING...' : 'CONFIRM COORDINATES'}
+               </Button>
             </div>
           </form>
         </div>

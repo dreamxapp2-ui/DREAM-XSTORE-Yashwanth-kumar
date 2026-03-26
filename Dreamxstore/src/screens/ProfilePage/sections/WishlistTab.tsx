@@ -84,8 +84,8 @@ export const WishlistTab: React.FC<WishlistTabProps> = ({ wishlist: initialWishl
     return (
       <div className="flex items-center justify-center py-12">
         <div className="text-center">
-          <Loader className="w-8 h-8 animate-spin mx-auto mb-4 text-[#004d84]" />
-          <p className="text-gray-600">Loading your wishlist...</p>
+          <Loader className="w-12 h-12 animate-spin mx-auto mb-4 text-black" />
+          <p className="text-xs font-black uppercase italic tracking-widest text-gray-400">Loading Vault...</p>
         </div>
       </div>
     );
@@ -93,41 +93,43 @@ export const WishlistTab: React.FC<WishlistTabProps> = ({ wishlist: initialWishl
 
   if (error) {
     return (
-      <Card className="border border-gray-200 rounded-[1px]">
-        <CardContent className="p-8 text-center">
-          <p className="text-red-600 font-semibold mb-4">{error}</p>
+      <Card className="border border-gray-100 rounded-[2.5rem] bg-white">
+        <CardContent className="p-12 text-center">
+          <p className="text-red-500 font-black uppercase italic mb-6">{error}</p>
           <Button
             onClick={fetchWishlist}
-            className="bg-[#004d84] hover:bg-[#003d6a] rounded-none"
+            className="bg-black text-[#bef264] hover:bg-black/90 rounded-full px-8 py-3 font-black uppercase italic text-xs"
           >
-            Retry
+            Retry Sync
           </Button>
         </CardContent>
       </Card>
     );
   }
   return (
-    <div className="space-y-4">
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-xl font-semibold text-black">My Wishlist</h2>
-        <span className="text-sm text-gray-600">{wishlistItems.length} items</span>
+    <div className="space-y-6">
+      <div className="flex justify-between items-center mb-8 border-b border-gray-50 pb-6">
+        <h2 className="text-2xl font-black italic uppercase tracking-tight text-black">Saved Vault</h2>
+        <span className="text-[10px] font-black uppercase tracking-widest text-[#bef264] bg-black px-4 py-1.5 rounded-full">{wishlistItems.length} ENTRIES</span>
       </div>
 
       {wishlistItems.length === 0 ? (
-        <Card className="border border-gray-200 rounded-[1px]">
-          <CardContent className="p-12 text-center">
-            <Heart className="w-16 h-16 mx-auto mb-4 text-gray-300" />
-            <p className="text-gray-600">Your wishlist is empty</p>
+        <Card className="border border-gray-50 bg-[#fcfcfc] rounded-[3rem]">
+          <CardContent className="p-16 text-center">
+             <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-6">
+                <Heart className="w-10 h-10 text-gray-200" />
+             </div>
+            <p className="text-sm font-black uppercase italic text-gray-400">Vault currently vacant.</p>
             <Button 
               onClick={() => window.location.href = '/'}
-              className="mt-4 bg-[#004d84] hover:bg-[#003d6a] rounded-none"
+              className="mt-8 bg-black text-[#bef264] hover:bg-[#bef264] hover:text-black rounded-full px-10 py-5 font-black uppercase italic text-xs transition-all shadow-xl shadow-[#bef264]/10"
             >
-              Browse Products
+              Explore Products
             </Button>
           </CardContent>
         </Card>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
           {wishlistItems.map((item) => {
             const product = item.productId;
             
@@ -140,7 +142,7 @@ export const WishlistTab: React.FC<WishlistTabProps> = ({ wishlist: initialWishl
             const productImage = product.images?.[0] || '/placeholder-product.png';
 
             return (
-              <div key={item._id} className="relative">
+              <div key={item._id} className="relative group transition-all duration-500 hover:-translate-y-2">
                 <ProductCard
                   id={product._id}
                   title={product.name}

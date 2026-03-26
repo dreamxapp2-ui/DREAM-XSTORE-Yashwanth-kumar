@@ -47,29 +47,27 @@ export default function ProductCard({
   return (
     <div
       onClick={handleCardClick}
-      className="w-full bg-white rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-200 cursor-pointer"
+      className="w-full bg-[#f8f8f8] rounded-[2.5rem] overflow-hidden group cursor-pointer transition-all hover:shadow-xl hover:-translate-y-1"
     >
       {/* Product Image Section */}
-      <div className="relative bg-gray-200 aspect-square flex items-center justify-center overflow-hidden">
+      <div className="relative bg-white aspect-[4/5] flex items-center justify-center overflow-hidden m-2 rounded-[2rem]">
         <div className="absolute top-4 right-4 z-10">
           {useCustomWishlistHandler ? (
-            // Custom wishlist handler - parent component handles all logic
             <button
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
                 onWishlistToggle?.(id, true);
               }}
-              className="bg-white rounded-full p-2 hover:bg-gray-100 transition-colors"
+              className="bg-white/80 backdrop-blur-sm rounded-full p-2 hover:bg-white transition-colors shadow-sm"
               title="Remove from wishlist"
             >
-              <Heart size={24} className="fill-red-500 stroke-red-500" />
+              <Heart size={20} className="fill-red-500 stroke-red-500" />
             </button>
           ) : (
-            // Default internal wishlist handling via WishlistButton
             <WishlistButton
               productId={id}
-              className="bg-white rounded-full p-2 hover:bg-gray-100 transition-colors"
+              className="bg-white/80 backdrop-blur-sm rounded-full p-2 hover:bg-white transition-colors shadow-sm"
               onWishlistChange={(isWishlisted) => {
                 onWishlistToggle?.(id, isWishlisted);
               }}
@@ -81,35 +79,27 @@ export default function ProductCard({
           alt={title}
           width={400}
           height={400}
-          className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out"
         />
       </div>
 
       {/* Product Details Section */}
-      <div className="p-6 space-y-4">
-        {/* Title */}
-        <h2 className="text-lg font-semibold text-gray-900 line-clamp-2 hover:text-blue-600 transition-colors">
-          {title}
+      <div className="p-4 pt-1 space-y-1">
+        <h2 className="text-sm font-black text-gray-900 line-clamp-1 opacity-80 uppercase tracking-tight">
+          {brand}
         </h2>
-
-        {/* Brand */}
-        <p className="text-sm text-blue-600 font-medium">{`by ${brand}`}</p>
-
-        {/* Pricing */}
-        <div className="flex items-center gap-3 flex-wrap">
-          <span className="text-2xl font-bold text-gray-900">₹{price}</span>
-          <span className="text-lg text-gray-400 line-through">₹{originalPrice}</span>
-          <span className="text-sm font-semibold text-green-600">{discount}% off</span>
+        <h3 className="text-base font-bold text-gray-900 line-clamp-1 leading-tight mb-1">
+          {title}
+        </h3>
+        
+        <div className="flex items-center justify-between mt-2">
+          <span className="text-lg font-black text-black">₹{price}</span>
+          <div className="w-8 h-8 rounded-full bg-black flex items-center justify-center group-hover:scale-110 transition-transform">
+            <span className="text-white text-xs font-black">→</span>
+          </div>
         </div>
-
-        {/* Buy Button */}
-        <button
-          onClick={handleCardClick}
-          className="w-full bg-black text-white py-3 px-4 rounded-full font-medium hover:bg-gray-900 transition-colors active:scale-95 duration-150"
-        >
-          Sale price: ₹{price}
-        </button>
       </div>
     </div>
+
   );
 }

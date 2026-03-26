@@ -8,20 +8,19 @@ interface Slide {
   _id?: string;
   image: string;
   title: string;
+  description?: string;
   buttonText: string;
   link: string;
+  bgColor?: string;
 }
 
 export const HeroCarousel = ()=> {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isHovered, setIsHovered] = useState(false);
-  const [touchStart, setTouchStart] = useState(0);
-  const [touchEnd, setTouchEnd] = useState(0);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
-  const carouselRef = useRef<HTMLDivElement>(null);
-  const [slides, setSlides] = useState<Slide[]>([]);  const [loading, setLoading] = useState(true);
+  const [slides, setSlides] = useState<Slide[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  // Fetch banners from API
   useEffect(() => {
     const fetchBanners = async () => {
       try {
@@ -30,56 +29,38 @@ export const HeroCarousel = ()=> {
         if (data && data.length > 0) {
           setSlides(data);
         } else {
-          // Fallback to default slides if API fails
           setSlides([
             {
               id: 1,
-              image: "/image/landing_fashion_banner.png",
-              title: "Discover Your Style",
-              buttonText: "Shop Collection",
-              link: "/products"
+              image: "https://i.postimg.cc/sx24cHZb/image-89.png", 
+              title: "UP TO 75% OFF WITH CODE",
+              description: "Limited time offer on all premium collections",
+              buttonText: "Get it now",
+              link: "/products",
+              bgColor: "#bef264" 
             },
             {
               id: 2,
-              image: "https://images.pexels.com/photos/1926769/pexels-photo-1926769.jpeg?auto=compress&cs=tinysrgb&w=1920&h=1080&fit=crop",
-              title: "Urban Style",
+              image: "https://i.postimg.cc/sx24cHZb/image-89.png",
+              title: "New Summer Collection",
               buttonText: "Shop Now",
-              link: "/products?category=urban"
-            },
-            {
-              id: 3,
-              image: "https://images.pexels.com/photos/1183266/pexels-photo-1183266.jpeg?auto=compress&cs=tinysrgb&w=1920&h=1080&fit=crop",
-              title: "Premium Quality",
-              buttonText: "Explore",
-              link: "/products?category=premium"
-            },
-            {
-              id: 4,
-              image: "https://images.pexels.com/photos/1040881/pexels-photo-1040881.jpeg?auto=compress&cs=tinysrgb&w=1920&h=1080&fit=crop",
-              title: "New Arrivals",
-              buttonText: "View All",
-              link: "/products"
+              link: "/products",
+              bgColor: "#f3f4f6"
             }
           ]);
         }
       } catch (error) {
         console.error('[HeroCarousel] Error fetching banners:', error);
-        // Use default slides on error
         setSlides([
-          {
-            id: 1,
-            image: "/image/landing_fashion_banner.png",
-            title: "Discover Your Style",
-            buttonText: "Shop Collection",
-            link: "/products"
-          },
-          {
-            id: 2,
-            image: "https://images.pexels.com/photos/1926769/pexels-photo-1926769.jpeg?auto=compress&cs=tinysrgb&w=1920&h=1080&fit=crop",
-            title: "Urban Style",
-            buttonText: "Shop Now",
-            link: "/products?category=urban"
-          }
+           {
+              id: 1,
+              image: "https://i.postimg.cc/sx24cHZb/image-89.png",
+              title: "UP TO 75% OFF WITH CODE",
+              description: "Limited time offer on all premium collections",
+              buttonText: "Get it now",
+              link: "/products",
+              bgColor: "#bef264"
+            }
         ]);
       } finally {
         setLoading(false);
@@ -89,184 +70,76 @@ export const HeroCarousel = ()=> {
     fetchBanners();
   }, []);
 
-  // Auto-advance slides every 6 seconds
   useEffect(() => {
-    if (!isHovered) {
+    if (!isHovered && slides.length > 1) {
       intervalRef.current = setInterval(() => {
         setCurrentSlide((prev) => (prev + 1) % slides.length);
       }, 6000);
     }
-
     return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-      }
+      if (intervalRef.current) clearInterval(intervalRef.current);
     };
   }, [isHovered, slides.length]);
 
-  const nextSlide = () => {
-    setCurrentSlide((prev) => (prev + 1) % slides.length);
-  };
-
-  const prevSlide = () => {
-    setCurrentSlide((prev) => (prev - 1 + slides.length) % slides.length);
-  };
-
-  // Touch handlers for swipe gestures
-  const handleTouchStart = (e: React.TouchEvent) => {
-    setTouchStart(e.targetTouches[0].clientX);
-  };
-
-  const handleTouchMove = (e: React.TouchEvent) => {
-    setTouchEnd(e.targetTouches[0].clientX);
-  };
-
-  const handleTouchEnd = () => {
-    if (!touchStart || !touchEnd) return;
-    
-    const distance = touchStart - touchEnd;
-    const isLeftSwipe = distance > 50;
-    const isRightSwipe = distance < -50;
-
-    if (isLeftSwipe) {
-      nextSlide();
-    }
-    if (isRightSwipe) {
-      prevSlide();
-    }
-
-    // Reset
-    setTouchStart(0);
-    setTouchEnd(0);
-  };
-
-  const handleMouseEnter = () => {
-    setIsHovered(true);
-  };
-
-  const handleMouseLeave = () => {
-    setIsHovered(false);
-  };
-
-  const handleButtonClick = (e: React.MouseEvent, slide: Slide) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (slide.link) {
-      if (slide.link.startsWith('http')) {
-        window.open(slide.link, '_blank');
-      } else {
-        window.location.href = slide.link;
-      }
-    }
-  };
-
-  const handleIndicatorClick = (e: React.MouseEvent, index: number) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setCurrentSlide(index);
-  };
-
-  // Handle background click for navigation on desktop
-  const handleBackgroundClick = (e: React.MouseEvent) => {
-    const target = e.target as HTMLElement;
-    if (target.closest('button') || target.closest('.slide-indicators')) {
-      return;
-    }
-
-    if (carouselRef.current) {
-      const rect = carouselRef.current.getBoundingClientRect();
-      const mouseX = e.clientX - rect.left;
-      const carouselWidth = rect.width;
-      const isLeftSide = mouseX < carouselWidth / 2;
-      
-      if (isLeftSide) {
-        prevSlide();
-      } else {
-        nextSlide();
-      }
-    }
-  };
-
-  if (loading) {
-    return (
-      <section className="relative w-full h-[400px] sm:h-[500px] md:h-[600px] lg:h-[450px] xl:h-[520px] overflow-hidden z-10 bg-gray-200 animate-pulse">
-        <div className="absolute inset-0 flex items-center justify-center">
-          <p className="text-gray-500">Loading...</p>
-        </div>
-      </section>
-    );
-  }
-
-  if (slides.length === 0) {
-    return null;
-  }
+  if (loading) return <div className="w-full h-[200px] bg-gray-100 animate-pulse rounded-2xl mx-auto max-w-7xl mt-4" />;
+  if (slides.length === 0) return null;
 
   return (
     <section 
-      ref={carouselRef}
-      className="relative w-full h-[400px] sm:h-[500px] md:h-[600px] lg:h-[450px] xl:h-[520px] overflow-hidden z-10 cursor-pointer"
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
-      onClick={handleBackgroundClick}
-      onTouchStart={handleTouchStart}
-      onTouchMove={handleTouchMove}
-      onTouchEnd={handleTouchEnd}
+      className="relative w-full px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto mt-6 overflow-hidden"
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
     >
-      {/* Slides Container */}
       <div 
-        className="flex transition-transform duration-700 ease-in-out h-full"
-        style={{ transform: `translateX(-${currentSlide * 100}%) translateZ(0)` }}
-      >        {slides.map((slide, index) => (
+        className="flex transition-transform duration-700 ease-in-out"
+        style={{ transform: `translateX(-${currentSlide * 100}%)` }}
+      >
+        {slides.map((slide, index) => (
           <div
             key={slide._id || slide.id || index}
-            className="relative w-full h-full flex-shrink-0"
+            className="relative w-full flex-shrink-0 bg-[#bef264] rounded-[2rem] overflow-hidden min-h-[160px] sm:min-h-[220px] flex items-center"
+            style={{ backgroundColor: slide.bgColor || '#bef264' }}
           >
-            {/* Background Image */}
-            <div
-              className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-              style={{ backgroundImage: `url(${slide.image})` }}
-            />
-            
-            {/* Dark overlay for better text readability */}
-            <div className="absolute inset-0 bg-black/30" />
-            
-            {/* Content Container */}
-            <div className="absolute inset-0 flex flex-col justify-between p-4 sm:p-6 md:p-8 lg:p-10 xl:p-12 z-20">
-              {/* Title - Top Left */}
-              <div className="flex-shrink-0">
-                <h2 className="text-white text-lg sm:text-xl md:text-2xl lg:text-3xl xl:text-4xl font-light tracking-wide drop-shadow-lg">
-                  {slide.title}
-                </h2>
-              </div>
+            {/* Left Content */}
+            <div className="flex-1 p-6 sm:p-10 z-10">
+              <span className="text-sm font-bold text-gray-800 opacity-80 uppercase tracking-wider">UP TO</span>
+              <h2 className="text-2xl sm:text-3xl md:text-3xl font-extrabold text-black mt-2 leading-tight max-w-[200px] sm:max-w-xs">
+                {slide.title}
+              </h2>
+              <Button 
+                onClick={() => window.location.href = slide.link}
+                className="mt-4 bg-black text-white hover:bg-gray-900 rounded-full px-6 py-4 text-sm font-bold transition-all hover:scale-105"
+              >
+                {slide.buttonText}
+              </Button>
+            </div>
 
-              {/* Action Button - Bottom Left */}
-              <div className="flex-shrink-0 self-start">
-                <Button 
-                  onClick={(e) => handleButtonClick(e, slide)}
-                  className="bg-white text-[#004d84] hover:bg-gray-50 px-4 sm:px-6 md:px-8 lg:px-10 xl:px-12 text-sm sm:text-base md:text-lg lg:text-xl font-semibold rounded-sm shadow-xl transition-all duration-300 hover:shadow-2xl hover:scale-105 h-[48px] sm:h-[56px] md:h-[64px] lg:h-[68px] xl:h-[69px] cursor-pointer border-2 border-transparent hover:border-white/20"
-                >
-                  {slide.buttonText}
-                </Button>
-              </div>
+            {/* Right Image */}
+            <div className="absolute right-0 top-0 bottom-0 w-1/3 sm:w-1/2 flex items-center justify-center overflow-hidden opacity-30 sm:opacity-100">
+              <img 
+                src={slide.image} 
+                alt={slide.title} 
+                className="h-[140%] object-contain rotate-[-15deg] transform translate-x-4 sm:translate-x-10"
+              />
             </div>
           </div>
         ))}
       </div>
 
-      {/* Slide Indicators */}
-      <div className="absolute bottom-2 sm:bottom-3 md:bottom-4 left-1/2 -translate-x-1/2 flex gap-1.5 sm:gap-2 z-20 slide-indicators">
-        {slides.map((_, index) => (
-          <button
-            key={index}
-            onClick={(e) => handleIndicatorClick(e, index)}
-            className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full transition-all duration-300 ${
-              index === currentSlide 
-                ? 'bg-white w-4 sm:w-6' 
-                : 'bg-white/50 hover:bg-white/75'
-            }`}
-          />
-        ))}
-      </div>
+      {/* Indicators */}
+      {slides.length > 1 && (
+        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
+          {slides.map((_, index) => (
+            <button
+              key={index}
+              onClick={() => setCurrentSlide(index)}
+              className={`w-2 h-2 rounded-full transition-all ${
+                index === currentSlide ? 'bg-black w-6' : 'bg-black/20'
+              }`}
+            />
+          ))}
+        </div>
+      )}
     </section>
   );
 }

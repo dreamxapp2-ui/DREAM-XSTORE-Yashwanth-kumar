@@ -1,1 +1,0 @@
-export { TrendingFashionSection } from "./TrendingFashionSection";

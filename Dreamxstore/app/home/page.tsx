@@ -8,11 +8,9 @@ import { FloatingChatButton } from '@/src/screens/LandingPage/sections/FloatingC
 export default function HomePage() {
   return (
     <div className="min-h-screen bg-white">
-      <Header />
       <HeroCarousel />
       {/* <CategorySection /> */}
       <FeaturedProducts />
-      <FloatingChatButton />
       {/* Additional sections will be added here */}
       {/* Best Sellers */}
       {/* Testimonials */}

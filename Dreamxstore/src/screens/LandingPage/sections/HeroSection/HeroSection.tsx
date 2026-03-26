@@ -2,36 +2,19 @@
 
 import React, { useState, useEffect } from "react";
 import { Button } from "../../../../components/ui/button";
-import { X, Menu, ShoppingBag } from "lucide-react";
+import { Search, Bell, ShoppingBag, User, Menu, X, ChevronDown, LogOut } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCart } from "../../../../contexts/CartContext";
 import { UserService } from '@/src/lib/api/services/userService';
 
 export const HeroSection = () => {
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [user, setUser] = useState<any>(null);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isProfileHovered, setIsProfileHovered] = useState(false);
   const { cart } = useCart();
   const router = useRouter();
 
-  // Load user from localStorage on client side only
-  // useEffect(() => {
-  //   const loadUser = () => {
-  //     if (typeof window !== 'undefined') {
-  //       const u = localStorage.getItem("dreamx_user");
-  //       setUser(u ? JSON.parse(u) : null);
-  //     }
-  //   };
-
-  //   loadUser();
-
-  //   const onStorage = () => {
-  //     loadUser();
-  //   };
-
-  //   window.addEventListener("storage", onStorage);
-  //   return () => window.removeEventListener("storage", onStorage);
-  // }, []);
   useEffect(() => {
     const loadProfileData = async () => {
       try {
@@ -44,7 +27,7 @@ export const HeroSection = () => {
         const profile = (response as any)?.user || response;
         setUser(profile);
       } catch (error) {
-        console.log('Profile load error (user may not be logged in):', error);
+        console.log('Profile load error:', error);
         setUser(null);
       }
     };
@@ -52,221 +35,169 @@ export const HeroSection = () => {
     loadProfileData();
   }, []);
 
-
-  const navLinks = [
-    { text: "Home", path: "/home", className: "whitespace-nowrap" },
-    { text: "About us", path: "/about" },
-    { text: "Services", path: "/services" },
-    { text: "Contact", path: "/contact" },
-  ];
-
-  const toggleMobileMenu = () => {
-    setIsMobileMenuOpen(!isMobileMenuOpen);
-  };
-
-  const handleCartClick = () => {
-    router.push('/cart');
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    window.location.href = '/login';
   };
 
   const totalItems = cart.reduce((total, item) => total + item.quantity, 0);
 
+  const navLinks = [
+    { name: "Home", href: "/home" },
+    { name: "About us", href: "/about" },
+    { name: "Services", href: "/services" },
+    { name: "Contact", href: "/contact" }
+  ];
+
   return (
-    <>
-      <header className="w-full h-[65px] bg-white border-b border-gray-100 shadow-sm">
-        <div className="w-full h-full mx-auto relative flex items-center justify-between px-4 sm:px-6 md:px-8 lg:px-12 xl:px-16 2xl:px-20">
-          {/* Logo */}
-          <Link href="/" className="flex items-center flex-shrink-0">
-            <img
-              src="https://i.postimg.cc/sx24cHZb/image-89.png"
-              alt="Dream X Store"
-              className="h-14 sm:h-16 w-auto object-contain py-1"
-            />
-          </Link>
-
-          {/* Desktop Navigation - Properly positioned */}
-          <nav className="hidden lg:flex items-center gap-4 xl:gap-6 2xl:gap-8 flex-shrink-0">
-            {navLinks.map((link, index) => (
-              <Link
-                key={index}
-                href={link.path}
-                className={`font-mono font-normal text-black text-base xl:text-lg hover:text-[#004d84] transition-colors p-0 h-auto whitespace-nowrap ${link.className || ""}`}
-              >
-                {link.text}
-              </Link>
-            ))}
-
-            {/* CTA Button or User Avatar with Name */}
-            {user ? (
-              <div className="relative group">
-                <Button
-                  variant="ghost"
-                  className="min-w-[120px] max-w-[200px] h-[34px] xl:h-[42px] 2xl:h-[34px] rounded-[1px] px-4 flex items-center gap-2 cursor-pointer bg-transparent hover:bg-gray-100"
-                  onClick={() => router.push('/profile')}
-                >
-                  <span className="font-mono font-normal text-[#004d84] text-[12px] xl:text-[14px] 2xl:text-[14px]">
-                    {user.username}
-                  </span>
-                  <svg className="w-4 h-4 ml-1 text-[#004d84]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>
-                </Button>
-                {/* Dropdown */}
-                <div className="absolute right-0 mt-2 w-40 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded shadow-lg z-50 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity duration-150 pointer-events-auto group-hover:pointer-events-auto group-focus-within:pointer-events-auto" tabIndex={-1}>
-                  <button
-                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"
-                    onClick={() => router.push('/profile')}
-                  >
-                    Profile
-                  </button>
-                  <button
-                    className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100 dark:hover:bg-gray-800"
-                    onClick={() => {
-                      localStorage.removeItem('dreamx_user');
-                      setUser(null);
-                      window.dispatchEvent(new Event('storage'));
-                      router.push('/');
-                    }}
-                  >
-                    Logout
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <Button
-                className="w-[90px] xl:w-[120px] 2xl:w-[110px] h-[30px] xl:h-[42px] 2xl:h-[34px] bg-[#f0ff7f] rounded-[1px] hover:bg-[#e5f570] transition-colors ml-4 xl:ml-6 2xl:ml-8 flex-shrink-0 flex items-center justify-center"
-                onClick={() => router.push("/login")}
-              >
-                <span className="font-mono font-normal text-[#004d84] text-[10px] xl:text-[12px] 2xl:text-[12px] whitespace-nowrap leading-none mr-[0px]">
-                  Get Started
-                </span>
-              </Button>
-            )}
-
-            {/* Shopping Bag Icon - Bigger size */}
-            <div className="relative pl-2 group flex-shrink-0 ">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={handleCartClick}
-                className="w-[40px] h-[40px] xl:w-[44px] xl:h-[44px] 2xl:w-[48px] 2xl:h-[48px] hover:bg-gray-100 rounded-full transition-all duration-300 cursor-pointer shadow-md shadow-gray-200 hover:shadow-md"
-              >
-                <ShoppingBag className="w-6 h-6 xl:w-7 xl:h-7 2xl:w-8 2xl:h-8 text-gray-700 hover:text-[#004d84] transition-colors " />
-              </Button>
-
-              {/* Cart Items Badge - Show only if items > 0 */}
-              {totalItems > 0 && (
-                <div className="absolute -top-1 -right-1 w-4 h-4  bg-red-500 text-white text-xs  font-bold rounded-full flex items-center justify-center shadow-sm">
-                  {totalItems > 99 ? '99+' : totalItems}
-                </div>
-              )}
-
-              {/* Hover tooltip */}
-              <div className="absolute top-full right-0 mt-2 w-16 px-2 py-1 bg-gray-900 text-white text-xs rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap">
-                Cart
-                <div className="absolute -top-1 right-3 w-2 h-2 bg-gray-900 rotate-45"></div>
-              </div>
-            </div>
-          </nav>
-
-          {/* Mobile Menu Button - Responsive sizing */}
+    <header className="w-full bg-white border-b border-gray-100 shadow-sm sticky top-0 z-[100]">
+      <div className="w-full h-[70px] mx-auto flex items-center justify-between px-4 sm:px-6 lg:px-8 max-w-7xl">
+        {/* Left: Hamburger & Logo */}
+        <div className="flex items-center gap-4">
           <Button
             variant="ghost"
-            className="lg:hidden p-2 h-auto flex-shrink-0"
-            onClick={toggleMobileMenu}
+            size="icon"
+            onClick={() => setIsMenuOpen(!isMenuOpen)}
+            className="h-10 w-10 text-gray-700 hover:bg-gray-100"
           >
-            <Menu className="w-8 h-8 sm:w-10 sm:h-10 text-black" />
+            {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
           </Button>
+          
+          <Link href="/home" className="flex items-center gap-2">
+            <div className="w-10 h-10 flex items-center justify-center">
+              {/* Logo - Red D shape */}
+              <svg viewBox="0 0 40 40" className="w-8 h-8 fill-red-500">
+                <path d="M10 5 C 10 5, 25 5, 30 15 C 35 25, 25 35, 10 35 L 10 5 Z M 15 10 L 15 30 C 20 30, 25 25, 25 20 C 25 15, 20 10, 15 10 Z" />
+              </svg>
+            </div>
+            <span className="text-xl font-black text-gray-900 hidden sm:block">DREAM X</span>
+          </Link>
         </div>
 
-        {/* Mobile Menu Overlay */}
-        {isMobileMenuOpen && (
-          <div
-            className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
-            onClick={toggleMobileMenu}
-          />
-        )}
+        {/* Center: Desktop Nav */}
+        <div className="hidden md:flex items-center gap-8 ml-8">
+          {navLinks.map((link) => (
+            <Link 
+              key={link.name} 
+              href={link.href}
+              className="text-sm font-bold text-gray-700 hover:text-[#004d84] transition-colors"
+            >
+              {link.name}
+            </Link>
+          ))}
+        </div>
 
-        {/* Mobile Menu - Fixed positioning */}
-        <div className={`fixed top-0 right-0 h-full w-[70vw] max-w-[320px] bg-white shadow-2xl transform transition-transform duration-300 ease-in-out z-50 lg:hidden ${isMobileMenuOpen ? 'translate-x-0' : 'translate-x-full'
-          }`}>
-          {/*  Added fixed to avoid overflow  */}
-          <div className="flex flex-col fixed-h-[calc(100vh-180px)]">
-            {/* Mobile Menu Header with Logo and Cart */}
-            <div className="flex items-center justify-between p-6 border-b border-gray-200">
-              <div className="flex items-center gap-3">
-                <img
-                  src="https://i.postimg.cc/sx24cHZb/image-89.png"
-                  alt="Dream X Store"
-                  className="h-10 w-auto object-contain"
-                />
-
-                {/* Mobile Cart Icon - Bigger */}
-                <div className="relative">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={handleCartClick}
-                    className="w-10 h-10 hover:bg-gray-100 rounded-full "
-                  >
-                    <ShoppingBag className="w-6 h-6 text-gray-700" />
-                  </Button>
-                  {totalItems > 0 && (
-                    <div className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center">
-                      {totalItems > 99 ? '99+' : totalItems}
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <Button
-                variant="ghost"
-                className="p-2 h-auto"
-                onClick={toggleMobileMenu}
-              >
-                <X className="w-6 h-6 text-gray-600" />
-              </Button>
-            </div>
-
-            {/* Mobile Menu Content */}
-            <div className="flex-1 px-6 py-12 flex flex-col justify-center">
-              <div className="space-y-8 text-center">
-                {navLinks.map((link, index) => (
-                  <div key={index} className="border-b border-gray-200 pb-6">
-                    <Link
-                      href={link.path}
-                      onClick={toggleMobileMenu}
-                      className="text-2xl font-bold text-black p-0 h-auto font-mono uppercase tracking-wider hover:text-[#004d84] transition-colors"
-                    >
-                      {link.text.toUpperCase()}
-                    </Link>
-                  </div>
-                ))}
-
-                {/* Get Started Button in Menu */}
-                <div className="pt-4">
-                  {user ? (
-                    <Button
-                      variant="ghost"
-                      className="w-auto h-[34px] xl:h-[42px] 2xl:h-[34px] rounded-[1px] px-4 flex items-center gap-2 bg-transparent hover:bg-gray-100"
-                      onClick={() => { toggleMobileMenu(); router.push('/profile'); }}
-                    >
-                      <span className="font-mono font-normal text-[#004d84] text-[12px] xl:text-[14px] 2xl:text-[14px]">
-                        {user.username}
-                      </span>
-                    </Button>
-                  ) : (
-                    <Button
-                      variant="link"
-                      onClick={() => router.push("/login")}
-                      className="text-2xl font-bold text-black p-0 h-auto font-mono uppercase tracking-wider hover:text-[#004d84] transition-colors"
-                    >
-                      GET STARTED
-                    </Button>
-                  )}
-                </div>
-              </div>
-            </div>
+        {/* Search Bar */}
+        <div className="flex-1 max-w-xs mx-4 hidden lg:block">
+          <div className="relative group">
+            <span className="absolute inset-y-0 left-0 flex items-center pl-3">
+              <Search className="w-4 h-4 text-gray-400" />
+            </span>
+            <input
+              type="text"
+              placeholder="Search..."
+              className="w-full h-10 pl-9 pr-4 rounded-full bg-gray-50 border-none focus:ring-1 focus:ring-[#004d84] text-xs transition-all"
+            />
           </div>
         </div>
-      </header>
-    </>
+
+        {/* Right: Actions */}
+        <div className="flex items-center gap-3">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="w-10 h-10 rounded-full text-gray-600 hover:bg-gray-100 relative hidden sm:flex"
+          >
+            <Bell className="w-5 h-5" />
+            <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white shadow-sm"></span>
+          </Button>
+
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => router.push('/cart')}
+            className="w-10 h-10 rounded-full bg-black text-white hover:bg-gray-800 relative shadow-md shadow-black/10"
+          >
+            <ShoppingBag className="w-5 h-5" />
+            {totalItems > 0 && (
+              <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] bg-[#bef264] text-black text-[10px] font-black rounded-full flex items-center justify-center border-2 border-white shadow-sm">
+                {totalItems}
+              </span>
+            )}
+          </Button>
+
+          {/* Profile Dropdown */}
+          <div 
+            className="relative"
+            onMouseEnter={() => setIsProfileHovered(true)}
+            onMouseLeave={() => setIsProfileHovered(false)}
+          >
+            <div className="flex items-center gap-2 pl-2 py-1 cursor-pointer group">
+              <div className="w-9 h-9 rounded-full bg-[#bef264]/20 border border-[#bef264]/40 flex items-center justify-center overflow-hidden transition-transform group-hover:scale-105">
+                {user?.profilePicture ? (
+                  <img src={user.profilePicture} alt="Profile" className="w-full h-full object-cover" />
+                ) : (
+                  <User className="w-5 h-5 text-[#004d84]" />
+                )}
+              </div>
+              <div className="hidden sm:flex items-center gap-1">
+                <span className="text-xs font-black text-gray-900 group-hover:text-[#004d84]">
+                  {user?.name?.split(' ')[0] || 'Guest'}
+                </span>
+                <ChevronDown className={`w-3 h-3 text-gray-400 transition-transform duration-300 ${isProfileHovered ? 'rotate-180' : ''}`} />
+              </div>
+            </div>
+
+            {/* Hover Menu */}
+            {isProfileHovered && (
+              <div className="absolute right-0 mt-0 pt-2 w-48 transition-all animate-in fade-in slide-in-from-top-2 duration-200">
+                <div className="bg-white rounded-2xl shadow-[0_10px_40px_rgba(0,0,0,0.12)] border border-gray-100 overflow-hidden py-2">
+                  <div className="px-4 py-2 border-b border-gray-50 mb-1">
+                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">User Details</p>
+                    <p className="text-sm font-bold text-gray-900 truncate">{user?.name || 'Guest'}</p>
+                  </div>
+                  <Link href="/profile" className="flex items-center gap-3 px-4 py-2.5 text-sm font-bold text-gray-700 hover:bg-gray-50 hover:text-[#004d84] transition-colors">
+                    <User className="w-4 h-4" />
+                    <span>Profile</span>
+                  </Link>
+                  <button 
+                    onClick={handleLogout}
+                    className="w-full flex items-center gap-3 px-4 py-2.5 text-sm font-bold text-red-500 hover:bg-red-50 transition-colors"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    <span>Logout</span>
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Hamburger Menu Overlay (Animated) */}
+      <div 
+        className={`fixed inset-0 top-[70px] bg-black/50 backdrop-blur-sm z-40 transition-opacity duration-300 ${isMenuOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}
+        onClick={() => setIsMenuOpen(false)}
+      />
+      
+      <div className={`fixed top-[70px] left-0 h-screen w-full sm:w-[350px] bg-white z-[100] transition-transform duration-500 cubic-bezier(0.16, 1, 0.3, 1) ${isMenuOpen ? 'translate-x-0' : '-translate-x-full'} shadow-2xl`}>
+        <div className="flex flex-col p-8 gap-8">
+          <div className="space-y-6">
+            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-100 pb-2">Menu Navigation</p>
+            {navLinks.map((link) => (
+              <Link
+                key={link.name}
+                href={link.href}
+                onClick={() => setIsMenuOpen(false)}
+                className="block text-2xl font-black text-gray-900 hover:text-[#004d84] hover:pl-2 transition-all duration-300"
+              >
+                {link.name}
+              </Link>
+            ))}
+          </div>
+        </div>
+      </div>
+    </header>
   );
 };

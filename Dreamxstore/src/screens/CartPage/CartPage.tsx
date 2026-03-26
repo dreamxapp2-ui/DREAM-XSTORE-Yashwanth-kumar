@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from "axios";
 import { v4 as uuidv4 } from 'uuid';
-import { ArrowLeft, ShoppingBag, Trash2, CheckCircle } from 'lucide-react';
+import { ArrowLeft, ShoppingBag, Trash2, CheckCircle, ChevronRight, LogOut, X } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import { Card, CardContent } from '../../components/ui/card';
 import { useCart } from '../../contexts/CartContext';
@@ -177,201 +177,149 @@ export const CartPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="border-b bg-white">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
-          <button 
-            onClick={() => router.back()}
-            className="text-gray-700 hover:text-gray-900"
-          >
-            <ArrowLeft size={24} />
-          </button>
-          
-          <div className="flex items-center gap-2">
-            <ShoppingBag size={24} className="text-gray-800" />
-            <span className="text-xl font-bold text-gray-900">Shopping Bag</span>
-            {getTotalItems() > 0 && (
-              <span className="flex h-6 w-6 items-center justify-center rounded-full bg-red-500 text-sm font-bold text-white">
-                {getTotalItems()}
-              </span>
-            )}
-          </div>
-          
-          <div className="w-6" />
+    <div className="min-h-screen bg-[#fafafa] flex flex-col items-center justify-center p-4 lg:p-12 relative overflow-hidden">
+      {/* Background Tech Accent (Subtle Grid) */}
+      <div className="absolute inset-0 opacity-[0.03] pointer-events-none" 
+           style={{ backgroundImage: 'radial-gradient(#000 1px, transparent 1px)', backgroundSize: '30px 30px' }}></div>
+
+      <div className="w-full max-w-6xl bg-white rounded-[3rem] shadow-2xl overflow-hidden flex flex-col md:flex-row min-h-[700px] border border-gray-100 relative z-10">
+        
+        {/* LEFT SIDEBAR - Navigation Tabs */}
+        <div className="w-full md:w-64 bg-[#f8f8f8] p-8 flex flex-col gap-4 border-r border-gray-100">
+           <div className="mb-8">
+              <div className="w-12 h-12 bg-black rounded-2xl flex items-center justify-center mb-6">
+                 <ShoppingBag className="text-[#bef264] w-6 h-6" />
+              </div>
+           </div>
+
+           {/* Tab: Your Cart (Active) */}
+           <div className="relative group">
+              <div className="absolute inset-0 bg-gradient-to-r from-black to-gray-800 rounded-2xl shadow-xl transition-transform group-hover:scale-[1.02]"></div>
+              <button className="relative w-full p-5 flex items-center justify-between text-white z-10">
+                 <div className="flex items-center gap-3">
+                    <ShoppingBag className="w-5 h-5" />
+                    <span className="text-xs font-black uppercase tracking-tight">Your Cart</span>
+                 </div>
+                 <ChevronRight className="w-4 h-4 text-white/40" />
+              </button>
+           </div>
+
+           {/* Tab: Auth (Inactive) */}
+           <button 
+             onClick={() => router.push('/login')}
+             className="w-full p-5 flex items-center justify-between text-gray-400 hover:text-black hover:bg-white rounded-2xl transition-all border border-transparent hover:border-gray-100"
+           >
+              <div className="flex items-center gap-3">
+                 <LogOut className="w-5 h-5 rotate-180" />
+                 <span className="text-xs font-black uppercase tracking-tight">Sign In / Sign Up</span>
+              </div>
+              <ChevronRight className="w-4 h-4 text-gray-200" />
+           </button>
+
+           <div className="mt-auto">
+              <button onClick={() => router.push('/home')} className="text-[10px] font-black uppercase tracking-widest text-gray-300 hover:text-black transition-colors flex items-center gap-2">
+                 <ArrowLeft className="w-3 h-3" /> Back to Store
+              </button>
+           </div>
         </div>
-      </header>
 
-      {/* Main Content */}
-      <main className="mx-auto max-w-7xl px-6 py-8">
-        {cart.length === 0 ? (
-          /* Empty Cart State */
-          <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
-            <ShoppingBag className="w-24 h-24 text-gray-300 mb-6" />
-            <h2 className="text-2xl font-medium text-gray-900 mb-2">Your bag is empty</h2>
-            <p className="text-gray-500 mb-6 max-w-md">
-              Looks like you haven't added anything to your bag yet. Start shopping to fill it up!
-            </p>
-            <button 
-              onClick={handleContinueShopping}
-              className="bg-blue-600 text-white px-8 py-3 rounded-full hover:bg-blue-700 font-semibold"
-            >
-              Continue Shopping
-            </button>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
-            {/* Left Column - Items */}
-            <div className="lg:col-span-2">
-              <div className="mb-6 flex items-center justify-between">
-                <h2 className="text-2xl font-bold text-gray-900">Items in your bag</h2>
-                <button 
-                  onClick={clearCart}
-                  className="text-red-500 hover:text-red-600 font-semibold"
-                >
-                  Clear all
-                </button>
+        {/* RIGHT CONTENT - Cart Items */}
+        <div className="flex-1 flex flex-col bg-white">
+           {/* Header */}
+           <div className="p-10 pb-6 flex justify-between items-center">
+              <div>
+                 <h2 className="text-4xl font-black text-gray-900 leading-none">Your Cart</h2>
+                 <p className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] mt-2">Inventory Management</p>
               </div>
+              <button onClick={() => router.push('/home')} className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center hover:bg-gray-100 transition-colors">
+                 <X className="w-5 h-5 text-gray-400" />
+              </button>
+           </div>
 
-              {/* Product Cards */}
-              <div className="space-y-4">
-                {cart.map((item) => (
-                  <div key={item._id} className="rounded-lg border border-gray-200 bg-white p-6">
-                    <div className="flex gap-6">
-                      {/* Product Image */}
-                      <div className="flex-shrink-0">
-                        <img
-                          src={item.image}
-                          alt={item.title}
-                          className="h-32 w-32 rounded-lg object-cover"
-                        />
-                      </div>
+           {/* List Area */}
+           <div className="flex-1 overflow-y-auto px-10 py-4 custom-scrollbar">
+              {cart.length === 0 ? (
+                <div className="h-full flex flex-col items-center justify-center text-center py-20">
+                  <div className="w-24 h-24 bg-gray-50 rounded-full flex items-center justify-center mb-6">
+                    <ShoppingBag className="w-10 h-10 text-gray-200" />
+                  </div>
+                  <h3 className="text-xl font-black text-gray-900 mb-2 uppercase">Empty Chamber</h3>
+                  <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-8">No utility selected for deployment</p>
+                  <Button onClick={() => router.push('/home')} className="bg-black text-[#bef264] rounded-full px-10 font-black italic uppercase">Deploy Shopping</Button>
+                </div>
+              ) : (
+                <div className="space-y-8">
+                  {cart.map((item) => (
+                    <div key={item._id} className="flex items-center gap-8 group">
+                       {/* Item Image */}
+                       <div className="w-24 h-24 bg-[#f8f8f8] rounded-[1.5rem] p-2 flex-shrink-0 overflow-hidden group-hover:scale-105 transition-transform">
+                          <img src={item.image} alt={item.title} className="w-full h-full object-contain mix-blend-multiply" />
+                       </div>
 
-                      {/* Product Details */}
-                      <div className="flex-1">
-                        <div className="flex items-start justify-between">
-                          <div>
-                            <h3 className="text-lg font-semibold text-gray-900">
-                              {item.title}
-                            </h3>
-                            {item.selectedSize && (
-                              <p className="mt-1 text-sm text-gray-600">Size: {item.selectedSize}</p>
-                            )}
-                            <p className="mt-3 text-xl font-bold text-gray-900">₹{item.price}</p>
+                       {/* Item Info */}
+                       <div className="flex-1 min-w-0">
+                          <h3 className="font-black text-lg text-gray-900 uppercase truncate leading-tight">{item.title}</h3>
+                          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">
+                             {item.selectedSize ? `Size: ${item.selectedSize}` : 'Universal Fit'}
+                          </p>
+                          
+                          {/* Quantity Controls */}
+                          <div className="mt-4 flex items-center gap-1 bg-gray-50 w-fit p-1 rounded-xl border border-gray-100">
+                             <button onClick={() => removeFromCart(item._id)} className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-red-500 transition-colors">
+                                <Trash2 className="w-4 h-4" />
+                             </button>
+                             <div className="w-8 h-8 flex items-center justify-center text-xs font-black">{item.quantity}</div>
+                             <button onClick={() => updateQuantity(item._id, item.quantity + 1)} className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-black transition-colors font-black">
+                                +
+                             </button>
                           </div>
-                          <button 
-                            onClick={() => removeFromCart(item._id)}
-                            className="text-red-500 hover:text-red-600"
-                          >
-                            <Trash2 size={20} />
-                          </button>
-                        </div>
+                       </div>
 
-                        {/* Quantity Display */}
-                        <div className="mt-4">
-                          <p className="text-sm text-gray-600">Quantity: <span className="font-semibold text-gray-900">{item.quantity}</span></p>
-                        </div>
-                      </div>
+                       {/* Item Price */}
+                       <div className="text-right">
+                          <p className="text-xl font-black text-gray-900 tracking-tight">₹{item.price * item.quantity}</p>
+                       </div>
                     </div>
-                  </div>
-                ))}
-              </div>
-            </div>
+                  ))}
+                </div>
+              )}
+           </div>
 
-            {/* Right Column - Order Summary */}
-            <div className="lg:col-span-1">
-              <div className="sticky top-8 rounded-lg border border-gray-200 bg-white p-6">
-                <h3 className="text-xl font-bold text-gray-900">Order Summary</h3>
-
-                {/* Summary Items */}
-                <div className="mt-6 space-y-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-gray-700">Subtotal ({getTotalItems()} items)</span>
-                    <span className="font-semibold text-gray-900">₹{getTotalPrice()}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-gray-700">Shipping</span>
-                    <span className="font-semibold text-green-500">Free</span>
-                  </div>
-                  <div className="flex items-center justify-between border-b border-gray-200 pb-4">
-                    <span className="text-gray-700">Tax</span>
-                    <span className="font-semibold text-gray-900">₹0</span>
-                  </div>
-
-                  {/* Total */}
-                  <div className="flex items-center justify-between">
-                    <span className="text-lg font-bold text-gray-900">Total</span>
-                    <span className="text-lg font-bold text-gray-900">₹{getTotalPrice()}</span>
-                  </div>
+           {/* Footer / Summary */}
+           {cart.length > 0 && (
+             <div className="p-10 pt-6 border-t border-gray-50">
+                <div className="flex items-center justify-center gap-3 mb-10">
+                   <div className="w-8 h-8 rounded-full bg-[#bef264]/10 flex items-center justify-center text-black">
+                      <CheckCircle className="w-4 h-4" />
+                   </div>
+                   <p className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 italic">Free US Delivery Applied</p>
                 </div>
 
-                {/* Buttons */}
-                <div className="mt-6 space-y-3">
-                  <button 
-                    onClick={handleCheckout}
-                    disabled={isProcessing}
-                    className="w-full rounded-full bg-blue-600 py-3 font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
-                  >
-                    {isProcessing ? 'Processing...' : 'Proceed to Checkout'}
-                  </button>
-                  <button 
-                    onClick={handleContinueShopping}
-                    className="w-full rounded-full border-2 border-gray-900 py-3 font-semibold text-gray-900 hover:bg-gray-50"
-                  >
-                    Continue Shopping
-                  </button>
+                <div className="flex items-center justify-between">
+                   <div className="flex items-baseline gap-4">
+                      <span className="text-xl font-bold text-gray-400 uppercase tracking-[0.2em] italic">Total</span>
+                      <span className="text-4xl font-black text-gray-900 tracking-tighter">₹{getTotalPrice()}</span>
+                   </div>
+
+                   <button 
+                     onClick={handleCheckout}
+                     className="bg-black text-[#bef264] px-12 h-16 rounded-[2rem] flex items-center gap-4 font-black uppercase italic hover:scale-105 active:scale-95 transition-all shadow-xl shadow-black/10"
+                   >
+                     <span>Check Out</span>
+                     <ChevronRight className="w-5 h-5" />
+                   </button>
                 </div>
+             </div>
+           )}
+        </div>
+      </div>
 
-                {/* Error/Status Message */}
-                {statusMessage && (
-                  <div className={`mt-4 p-3 rounded text-center text-sm ${isError ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
-                    {statusMessage}
-                  </div>
-                )}
-
-                {/* Download Options */}
-                <div className="mt-6 border-t border-gray-200 pt-4">
-                  <h4 className="text-sm font-medium text-gray-700 mb-2">Download Options</h4>
-                  <div className="flex gap-2">
-                    <DownloadButton
-                      type="catalog"
-                      variant="outline"
-                      size="sm"
-                      className="text-xs"
-                    >
-                      Catalog
-                    </DownloadButton>
-                    <DownloadButton
-                      type="user-data"
-                      variant="outline"
-                      size="sm"
-                      className="text-xs"
-                    >
-                      My Data
-                    </DownloadButton>
-                  </div>
-                </div>
-
-                {/* Success Message */}
-                {orderSuccess && (
-                  <div className="mt-4 flex items-center justify-center py-2 text-green-600 font-medium">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
-                    Order placed successfully!
-                  </div>
-                )}
-
-                {/* Security Badge */}
-                <div className="mt-6 flex items-center gap-2 rounded-lg bg-gray-50 p-3">
-                  <CheckCircle size={20} className="text-green-500 flex-shrink-0" />
-                  <span className="text-sm text-gray-700">Secure checkout guaranteed</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-      </main>
+      {/* Legacy/Floating items if any */}
+      {statusMessage && (
+        <div className={`fixed bottom-8 right-8 p-4 rounded-2xl font-black uppercase italic shadow-2xl z-[100] ${isError ? 'bg-red-500 text-white' : 'bg-[#bef264] text-black animate-bounce'}`}>
+          {statusMessage}
+        </div>
+      )}
     </div>
   );
 };

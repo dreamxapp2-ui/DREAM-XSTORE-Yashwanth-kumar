@@ -381,3 +381,13 @@
     will-change: scroll-position;
   }
 }
+
+/* Hide scrollbars on auth pages */
+.auth-scroll-hide {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.auth-scroll-hide::-webkit-scrollbar {
+  display: none;
+}
+

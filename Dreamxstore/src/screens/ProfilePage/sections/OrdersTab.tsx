@@ -87,7 +87,7 @@ export const OrdersTab: React.FC<OrdersTabProps> = () => {
   if (loading) {
     return (
       <div className="flex justify-center items-center py-12">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black"></div>
       </div>
     );
   }
@@ -122,7 +122,7 @@ export const OrdersTab: React.FC<OrdersTabProps> = () => {
             <p className="text-gray-600">No orders yet</p>
             <Button 
               onClick={() => window.location.href = '/'}
-              className="mt-4 bg-[#004d84] hover:bg-[#003d6a] rounded-none"
+              className="mt-6 bg-[#bef264] text-black hover:bg-black hover:text-[#bef264] rounded-full px-8 py-6 font-black uppercase italic italic text-xs transition-all shadow-lg shadow-[#bef264]/20"
             >
               Start Shopping
             </Button>
@@ -130,7 +130,7 @@ export const OrdersTab: React.FC<OrdersTabProps> = () => {
         </Card>
       ) : (
         orders.map((order) => (
-          <Card key={order._id} className="border border-gray-200 rounded-[1px] hover:shadow-lg transition-shadow">
+          <Card key={order._id} className="border border-gray-100 rounded-[2.5rem] hover:shadow-xl transition-all duration-300 overflow-hidden bg-white group">
             <CardContent className="p-6">
               <div className="flex flex-col md:flex-row justify-between gap-4">
                 <div className="flex-1 space-y-2">
@@ -157,14 +157,14 @@ export const OrdersTab: React.FC<OrdersTabProps> = () => {
                   <Button 
                     variant="outline"
                     onClick={() => window.location.href = `/orders/${order._id}`}
-                    className="border-[#004d84] text-[#004d84] hover:bg-[#004d84] hover:text-white rounded-none w-full sm:w-auto"
+                    className="border-black text-black hover:bg-black hover:text-[#bef264] rounded-full w-full sm:w-auto font-black italic uppercase italic text-[10px]"
                   >
                     View Details
                   </Button>
                   <Button 
                     variant="outline"
                     onClick={() => handleDownloadInvoice(order._id)}
-                    className="border-green-600 text-green-600 hover:bg-green-600 hover:text-white rounded-none w-full sm:w-auto"
+                    className="border-[#bef264] text-black bg-[#bef264]/10 hover:bg-[#bef264] rounded-full w-full sm:w-auto font-black italic uppercase italic text-[10px]"
                   >
                     Download Invoice
                   </Button>

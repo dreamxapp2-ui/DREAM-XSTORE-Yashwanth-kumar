@@ -12,17 +12,21 @@ interface EditProfileModalProps {
     lastName?: string;
     bio?: string;
     isBrand?: boolean;
-    hero_image?: string;
+    hero_image?: string | { url: string; publicId: string };
+    profilePicture?: string;
     phone?: string;
     firstName?: string;
     displayName?: string;
   };
+  onUpdateSuccess?: () => void;
 }
 
-const EditProfileModal: React.FC<EditProfileModalProps> = ({ isOpen, onClose, currentUser }) => {
+const EditProfileModal: React.FC<EditProfileModalProps> = ({ isOpen, onClose, currentUser, onUpdateSuccess }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [profileImage, setProfileImage] = useState<string>(currentUser?.hero_image || '');
-  const [imagePreview, setImagePreview] = useState<string>(currentUser?.hero_image || '');
+  const getImageUrl = (img: any) => typeof img === 'string' ? img : img?.url || '';
+  
+  const [profileImage, setProfileImage] = useState<string>(getImageUrl(currentUser?.hero_image) || currentUser?.profilePicture || '');
+  const [imagePreview, setImagePreview] = useState<string>(getImageUrl(currentUser?.hero_image) || currentUser?.profilePicture || '');
   const [formData, setFormData] = useState({
     email: currentUser?.email || '',
     firstName: currentUser?.firstName || '',
@@ -49,8 +53,8 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({ isOpen, onClose, cu
         phone: currentUser.phone || '',
         bio: currentUser.bio || '',
       });
-      setProfileImage(currentUser.hero_image || '');
-      setImagePreview(currentUser.hero_image || '');
+      setProfileImage(getImageUrl(currentUser.hero_image) || currentUser.profilePicture || '');
+      setImagePreview(getImageUrl(currentUser.hero_image) || currentUser.profilePicture || '');
     }
   }, [currentUser]);
 
@@ -77,7 +81,7 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({ isOpen, onClose, cu
     e.preventDefault();
     try {
       setError('');
-      let heroImageUrl = currentUser?.hero_image || '';
+      let heroImageUrl = getImageUrl(currentUser?.hero_image) || '';
       let heroImagePublicId = '';
 
       // Upload image to Cloudinary if a new file was selected
@@ -131,6 +135,12 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({ isOpen, onClose, cu
       
       setSuccess('Profile updated successfully!');
       window.dispatchEvent(new Event('storage'));
+      
+      // Notify parent to refresh data
+      if (onUpdateSuccess) {
+        onUpdateSuccess();
+      }
+
       setTimeout(() => {
         setSuccess('');
         setUploading(false);

@@ -52,7 +52,7 @@ class AddressService {
   async getAddresses(): Promise<Address[]> {
     try {
       console.log('[AddressService] Fetching addresses...');
-      const response = await apiClient.get('/api/user/addresses');
+      const response = await apiClient.get('/user/addresses');
       
       console.log('[AddressService] Addresses response:', response);
       
@@ -73,7 +73,7 @@ class AddressService {
   async addAddress(addressData: AddAddressData): Promise<Address[]> {
     try {
       console.log('[AddressService] Adding address:', addressData);
-      const response = await apiClient.post('/api/user/addresses', addressData);
+      const response = await apiClient.post('/user/addresses', addressData);
       
       console.log('[AddressService] Add address response:', response);
       
@@ -94,7 +94,7 @@ class AddressService {
   async updateAddress(addressId: string, addressData: UpdateAddressData): Promise<Address[]> {
     try {
       console.log('[AddressService] Updating address:', addressId, addressData);
-      const response = await apiClient.put(`/api/user/addresses/${addressId}`, addressData);
+      const response = await apiClient.put(`/user/addresses/${addressId}`, addressData);
       
       if (response.success) {
         return response.data || [];
@@ -113,7 +113,7 @@ class AddressService {
   async deleteAddress(addressId: string): Promise<Address[]> {
     try {
       console.log('[AddressService] Deleting address:', addressId);
-      const response = await apiClient.delete(`/api/user/addresses/${addressId}`);
+      const response = await apiClient.delete(`/user/addresses/${addressId}`);
       
       if (response.success) {
         return response.data || [];
@@ -132,7 +132,7 @@ class AddressService {
   async setDefaultAddress(addressId: string): Promise<Address[]> {
     try {
       console.log('[AddressService] Setting default address:', addressId);
-      const response = await apiClient.put(`/api/user/addresses/${addressId}/default`, {});
+      const response = await apiClient.put(`/user/addresses/${addressId}/default`, {});
       
       if (response.success) {
         return response.data || [];

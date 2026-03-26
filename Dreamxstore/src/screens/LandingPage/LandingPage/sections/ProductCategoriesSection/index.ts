@@ -1,1 +1,0 @@
-export { ProductCategoriesSection } from "./ProductCategoriesSection";

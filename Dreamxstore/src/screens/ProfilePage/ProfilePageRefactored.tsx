@@ -1,22 +1,21 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
-import EditProfileModal from '../../components/EditProfileModal';
-import { Card, CardContent } from '../../components/ui/card';
-import { User, Package, Settings, Heart, ArrowLeft } from 'lucide-react';
-import { Button } from '../../components/ui/button';
-import { UserService } from '../../lib/api/services/userService';
-import UserOrderService from '../../lib/api/services/orderService';
+import React, { useState, useEffect } from "react";
+import { User, Package, Settings, Heart, ArrowLeft, LogOut, Calendar, MapPin, CreditCard, Bell, Shield, Edit3, ChevronRight } from "lucide-react";
+import { Button } from "../../components/ui/button";
+import { Card, CardContent } from "../../components/ui/card";
+import { UserService } from "../../lib/api/services/userService";
+import UserOrderService from "../../lib/api/services/orderService";
+import EditProfileModal from "../../components/EditProfileModal";
 import {
-  ProfileHeader,
-  ProfileOverview,
   OrdersTab,
   WishlistTab,
   AddressManagement,
   PaymentMethods,
   SecuritySettings,
   NotificationPreferences
-} from './sections';
+} from "./sections";
+import { useToast } from "../../contexts/ToastContext";
 
 interface UserProfile {
   email: string;
@@ -31,249 +30,248 @@ interface UserProfile {
   id?: string;
   role?: string;
   createdAt?: string;
+  profilePicture?: string;
+  name?: string;
 }
 
 const ProfilePage: React.FC = () => {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'profile' | 'orders' | 'wishlist' | 'settings'>('profile');
+  const [activeTab, setActiveTab] = useState<'profile' | 'orders' | 'settings'>('profile');
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  
-  const [paymentMethods] = useState<Array<Record<string, unknown>>>([
-    {
-      id: '1',
-      type: 'card',
-      lastFour: '4242',
-      cardBrand: 'Visa',
-      expiryDate: '12/25',
-      isDefault: true
-    }
-  ]);
-
-  const [orders] = useState<Array<Record<string, unknown>>>([
-    {
-      id: '1',
-      orderNumber: 'ORD-2024-001',
-      date: '2024-10-15',
-      status: 'delivered',
-      total: 2499,
-      items: 3
-    },
-    {
-      id: '2',
-      orderNumber: 'ORD-2024-002',
-      date: '2024-10-20',
-      status: 'shipped',
-      total: 1299,
-      items: 1
-    }
-  ]);
-
-  const [wishlist] = useState<Array<Record<string, unknown>>>([]);
-
   const [stats, setStats] = useState({
-    totalOrders: 12,
-    wishlistItems: 6,
-    totalSpent: 24999,
-    memberSince: '2024-01-15'
+    totalOrders: 0,
+    wishlistItems: 0,
+    totalSpent: 0,
+    memberSince: "Jan 2024",
   });
+  const { showToast } = useToast();
 
-  // Settings states
-  const [emailNotifications, setEmailNotifications] = useState(true);
-  const [orderUpdates, setOrderUpdates] = useState(true);
-  const [promotionalEmails, setPromotionalEmails] = useState(false);
-  const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
+  const loadProfileData = async () => {
+    try {
+      const response = await UserService.getProfile();
+      const profile = (response as any)?.user || response;
+      setUser(profile);
 
-  useEffect(() => {
-    const loadProfileData = async () => {
-      try {
-        // Fetch user profile from API
-        const response = await UserService.getProfile();
-        console.log('[Profile] Raw API Response:', response);
-        
-        // The API response is { success: true, user: {...} }
-        const profile = (response as any)?.user || response;
-        console.log('[Profile] Extracted profile:', profile);
-        
-        const heroImageUrl = typeof profile.hero_image === 'string' ? profile.hero_image : profile.hero_image?.url;
-        const userDataToSet = {
-          ...profile,
-          hero_image: heroImageUrl,
-          username: profile.username || '',
-          email: profile.email || '',
-          phone: profile.phone || '',
-          role: profile.role || '',
-          joinedDate: profile.createdAt || '2024-01-15'
-        };
-        setUser(userDataToSet);
+      const wishlistItems = await UserService.getWishlist();
+      const statsData = await UserOrderService.getOrderStats();
+      
+      const memberDate = profile.createdAt 
+        ? new Date(profile.createdAt).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
+        : "Jan 2024";
 
-        // Fetch wishlist and order stats
-        const wishlistItems = await UserService.getWishlist();
-        
-        // Fetch order statistics from API
-        const statsData = await UserOrderService.getOrderStats();
-        
-        let orderStats = {
-          totalOrders: 0,
-          totalSpend: 0,
-        };
-        
-        if (statsData.success) {
-          orderStats = {
-            totalOrders: statsData.data.totalOrders || 0,
-            totalSpend: statsData.data.totalSpend || 0,
-          };
-        }
-        
-        const memberSince = profile.createdAt ? new Date(profile.createdAt).toISOString().split('T')[0] : '2024-01-15';
-        
-        setStats({
-          totalOrders: orderStats.totalOrders,
-          wishlistItems: wishlistItems.length,
-          totalSpent: orderStats.totalSpend,
-          memberSince: memberSince
-        });
-      } catch (error) {
-        console.error('[Profile] Error loading profile:', error);
-        setUser(null);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    loadProfileData();
-  }, []);
-  const handleLogout = () => {
-    localStorage.removeItem('dreamx_user');
-    localStorage.removeItem('token');
-    window.dispatchEvent(new Event('storage'));
-    window.location.href = '/login';
+      setStats({
+        totalOrders: statsData.data?.totalOrders || 0,
+        wishlistItems: wishlistItems.length,
+        totalSpent: statsData.data?.totalSpend || 0,
+        memberSince: memberDate
+      });
+    } catch (error) {
+      console.error("Profile load error:", error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  // Show loading state
+  useEffect(() => {
+    loadProfileData();
+  }, []);
+
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    window.location.href = "/login";
+  };
+
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center space-y-4">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#004d84] mx-auto"></div>
-          <p className="text-gray-600">Loading profile...</p>
-        </div>
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black"></div>
       </div>
     );
   }
 
-  if (!user) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <Card className="w-full max-w-md">
-          <CardContent className="p-8 text-center space-y-4">
-            <h2 className="text-2xl font-semibold">No Profile Found</h2>
-            <p className="text-gray-600">Please log in or sign up to view your profile.</p>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
-  const tabs = [
-    { id: 'profile' as const, label: 'Profile', icon: User },
-    { id: 'orders' as const, label: 'My Orders', icon: Package },
-    { id: 'wishlist' as const, label: 'Wishlist', icon: Heart },
-    { id: 'settings' as const, label: 'Settings', icon: Settings }
-  ];
+  if (!user) return null;
 
   return (
-    <div className="bg-white w-full min-h-screen">
-      {/* Simple Header with Back Button */}
-      <div className="border-b border-gray-200 bg-white sticky top-0 z-40">
-        <div className="container mx-auto px-4 sm:px-6 md:px-8 lg:px-12 xl:px-16 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Button
-                onClick={() => window.location.href = '/'}
-                variant="ghost"
-                className="rounded-none hover:bg-gray-100"
-                size="icon"
-              >
-                <ArrowLeft className="w-5 h-5" />
-              </Button>
-              <h1 className="text-xl font-semibold text-black">My Profile</h1>
+    <div className="min-h-screen bg-[#fafafa] pb-32">
+      {/* 1. MODERN HEADER */}
+      <div className="bg-white border-b border-gray-100 z-50 sticky top-0">
+         <div className="max-w-7xl mx-auto h-20 px-6 flex items-center justify-between">
+            <div className="flex items-center gap-4">
+               <button onClick={() => window.location.href = '/home'} className="w-10 h-10 rounded-full border border-gray-100 flex items-center justify-center hover:bg-gray-50 transition-colors">
+                  <ArrowLeft className="w-5 h-5" />
+               </button>
+               <h1 className="text-xl font-black italic uppercase tracking-tight">Account</h1>
             </div>
-            {/* <Button
-              onClick={() => window.location.href = '/'}
-              variant="outline"
-              className="border-[#004d84] text-[#004d84] hover:bg-[#004d84] hover:text-white rounded-none"
-            >
-              <Home className="w-4 h-4 mr-2" />
-              Home
-            </Button> */}
-          </div>
-        </div>
-      </div>
-      
-      <main className="container mx-auto px-4 sm:px-6 md:px-8 lg:px-12 xl:px-16 py-8 sm:py-12">
-        {/* Profile Header */}
-      
-        <ProfileHeader 
-          user={user}
-          stats={stats}
-          onEditProfile={() => setIsEditModalOpen(true)}
-          onLogout={handleLogout}
-        />
-        
-        {/* Tabs Navigation */}
-        <div className="flex flex-wrap gap-2 mb-6 border-b border-gray-200">
-          {tabs.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-2 px-4 py-3 font-medium transition-colors border-b-2 ${
-                activeTab === tab.id
-                  ? 'border-[#004d84] text-[#004d84]'
-                  : 'border-transparent text-gray-600 hover:text-black'
-              }`}
-            >
-              <tab.icon className="w-5 h-5" />
-              {tab.label}
+            <button onClick={handleLogout} className="flex items-center gap-2 text-xs font-black text-red-500 uppercase italic hover:bg-red-50 px-4 py-2 rounded-full transition-colors">
+               <LogOut className="w-4 h-4" />
+               Log out
             </button>
-          ))}
-        </div>
+         </div>
+      </div>
 
-        {/* Tab Content */}
-        <div className="min-h-[400px]">
-          {/* Profile Tab */}
-          {activeTab === 'profile' && <ProfileOverview user={user} />}
+      <main className="max-w-7xl mx-auto px-6 py-10">
+        <div className="flex flex-col lg:flex-row gap-8 items-start">
+          
+          {/* 2. SIDEBAR - Profile Overview */}
+          <div className="w-full lg:w-1/3 sticky lg:top-32">
+             <div className="bg-white rounded-[2.5rem] p-8 shadow-sm border border-gray-100 space-y-8">
+                {/* Profile Meta */}
+                <div className="flex flex-col items-center text-center space-y-4">
+                   <div className="relative group">
+                      <div className="w-32 h-32 rounded-full border-4 border-[#bef264] p-1 overflow-hidden transition-transform group-hover:scale-105">
+                         <img 
+                           src={(user as any).hero_image?.url || user.profilePicture || "https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=200"} 
+                           className="w-full h-full object-cover rounded-full" 
+                           alt="Profile" 
+                         />
+                      </div>
+                      <button onClick={() => setIsEditModalOpen(true)} className="absolute bottom-0 right-0 w-10 h-10 bg-black text-white rounded-full flex items-center justify-center border-4 border-white active:scale-95 transition-all">
+                         <Edit3 className="w-4 h-4" />
+                      </button>
+                   </div>
+                   <div>
+                      <h2 className="text-2xl font-black text-gray-900">{user.name || user.username}</h2>
+                      <p className="text-sm font-bold text-gray-400">{user.email}</p>
+                   </div>
+                   <div className="px-4 py-1 bg-[#bef264]/20 text-[#bef264] text-[10px] font-black rounded-full uppercase italic">
+                      {user.role || 'Elite Member'}
+                   </div>
+                </div>
 
-          {/* Orders Tab */}
-          {activeTab === 'orders' && <OrdersTab />}
+                {/* Account Stats */}
+                <div className="grid grid-cols-2 gap-4">
+                   <div className="bg-[#f8f8f8] p-4 rounded-2xl flex flex-col">
+                      <span className="text-2xl font-black text-gray-900">{stats.totalOrders}</span>
+                      <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Total Orders</span>
+                   </div>
+                   <div className="bg-[#f8f8f8] p-4 rounded-2xl flex flex-col">
+                      <span className="text-2xl font-black text-gray-900">{stats.wishlistItems}</span>
+                      <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Wishlisted</span>
+                   </div>
+                </div>
 
-          {/* Wishlist Tab */}
-          {activeTab === 'wishlist' && <WishlistTab wishlist={wishlist} />}
+                {/* Sub Meta */}
+                <div className="space-y-4 pt-4 border-t border-gray-50">
+                   <div className="flex items-center gap-3 text-sm font-bold text-gray-600">
+                      <Calendar className="w-4 h-4 text-[#bef264]" />
+                      Joined {stats.memberSince}
+                   </div>
+                   {user.phone && (
+                      <div className="flex items-center gap-3 text-sm font-bold text-gray-600">
+                        <MapPin className="w-4 h-4 text-[#bef264]" />
+                        {user.phone}
+                      </div>
+                   )}
+                </div>
+             </div>
+          </div>
 
-          {/* Settings Tab */}
-          {activeTab === 'settings' && (
-            <div className="space-y-6">
-              <AddressManagement />
-              {/* @ts-ignore - mock data */}
-              <PaymentMethods paymentMethods={paymentMethods as any} />
-              <SecuritySettings 
-                twoFactorEnabled={twoFactorEnabled}
-                onToggle2FA={() => setTwoFactorEnabled(!twoFactorEnabled)}
-              />
-              <NotificationPreferences
-                emailNotifications={emailNotifications}
-                orderUpdates={orderUpdates}
-                promotionalEmails={promotionalEmails}
-                onToggleEmail={() => setEmailNotifications(!emailNotifications)}
-                onToggleOrders={() => setOrderUpdates(!orderUpdates)}
-                onTogglePromotional={() => setPromotionalEmails(!promotionalEmails)}
-              />
-            </div>
-          )}
+          {/* 3. MAIN CONTENT - Tabs & Views */}
+          <div className="w-full lg:w-2/3 space-y-8">
+             {/* Navigation Tabs */}
+             <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide">
+                {[
+                  { id: 'profile', icon: User, label: 'Overview' },
+                  { id: 'orders', icon: Package, label: 'My Orders' },
+                  { id: 'settings', icon: Settings, label: 'Preferences' }
+                ].map((tab) => (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id as any)}
+                    className={`flex items-center gap-3 px-6 py-4 rounded-2xl font-black text-sm uppercase italic transition-all whitespace-nowrap ${
+                      activeTab === tab.id 
+                        ? 'bg-black text-[#bef264] shadow-xl' 
+                        : 'bg-white text-gray-400 hover:text-black border border-gray-100 hover:border-black'
+                    }`}
+                  >
+                    <tab.icon className="w-5 h-5" />
+                    {tab.label}
+                  </button>
+                ))}
+             </div>
+
+             {/* Dynamic Content Views */}
+             <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                {activeTab === 'profile' && (
+                  <div className="space-y-6">
+                     <div className="bg-white rounded-[2.5rem] p-8 border border-gray-100 shadow-sm">
+                        <h3 className="text-xl font-black mb-6 italic uppercase underline underline-offset-8 decoration-[#bef264]">Personal Story</h3>
+                        <p className="text-gray-600 font-bold leading-relaxed italic">
+                           {user.bio || "No biography provided yet. Start your story with DREAM-X."}
+                        </p>
+                     </div>
+                     <div className="grid md:grid-cols-2 gap-6">
+                        <div className="bg-[#bef264] p-8 rounded-[2.5rem] flex flex-col justify-between aspect-square group cursor-pointer hover:rotate-1 transition-transform">
+                           <div>
+                              <Package className="w-12 h-12 text-black mb-4 group-hover:scale-110 transition-transform" />
+                              <h4 className="text-2xl font-black text-black leading-tight">TRACK YOUR<br/>VIBES.</h4>
+                           </div>
+                           <button onClick={() => setActiveTab('orders')} className="flex items-center gap-2 text-xs font-black text-black/60 uppercase italic group-hover:text-black">
+                              View all orders <ChevronRight className="w-4 h-4" />
+                           </button>
+                        </div>
+                        <div className="bg-white border-4 border-black p-8 rounded-[2.5rem] flex flex-col justify-between aspect-square group cursor-pointer hover:-rotate-1 transition-transform">
+                           <div>
+                              <Settings className="w-12 h-12 text-[#bef264] mb-4 group-hover:scale-110 transition-transform" />
+                              <h4 className="text-2xl font-black text-black leading-tight">IDENTITY<br/>TUNING.</h4>
+                           </div>
+                           <button onClick={() => setActiveTab('settings')} className="flex items-center gap-2 text-xs font-black text-black/60 uppercase italic group-hover:text-black">
+                              Adjust settings <ChevronRight className="w-4 h-4" />
+                           </button>
+                        </div>
+                     </div>
+                  </div>
+                )}
+
+                {activeTab === 'orders' && (
+                  <div className="bg-white rounded-[2.5rem] p-4 lg:p-8 border border-gray-100 shadow-sm">
+                     <OrdersTab />
+                  </div>
+                )}
+
+                {activeTab === 'settings' && (
+                  <div className="space-y-8">
+                     <div className="bg-white rounded-[2.5rem] p-8 border border-gray-100 shadow-sm">
+                        <h3 className="text-xl font-black mb-6 italic uppercase">Shipping Access</h3>
+                        <AddressManagement />
+                     </div>
+                     <div className="bg-white rounded-[2.5rem] p-8 border border-gray-100 shadow-sm">
+                        <h3 className="text-xl font-black mb-6 italic uppercase">Secured Assets</h3>
+                        <PaymentMethods paymentMethods={[]} />
+                     </div>
+                     <div className="grid md:grid-cols-2 gap-8">
+                        <div className="bg-white rounded-[3rem] p-8 border border-gray-100 shadow-sm">
+                           <SecuritySettings 
+                             twoFactorEnabled={false}
+                             onToggle2FA={() => {}}
+                           />
+                        </div>
+                        <div className="bg-white rounded-[3rem] p-8 border border-gray-100 shadow-sm">
+                           <NotificationPreferences
+                             emailNotifications={true}
+                             orderUpdates={true}
+                             promotionalEmails={false}
+                             onToggleEmail={() => {}}
+                             onToggleOrders={() => {}}
+                             onTogglePromotional={() => {}}
+                           />
+                        </div>
+                     </div>
+                  </div>
+                )}
+             </div>
+          </div>
         </div>
       </main>
 
-      <EditProfileModal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)} currentUser={user} />
+      <EditProfileModal 
+        isOpen={isEditModalOpen} 
+        onClose={() => setIsEditModalOpen(false)} 
+        currentUser={user as any}
+        onUpdateSuccess={loadProfileData}
+      />
     </div>
   );
 };
