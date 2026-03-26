@@ -78,12 +78,12 @@ const googleStrategy = new GoogleStrategy(
     clientSecret: process.env.GOOGLE_CLIENT_SECRET,
     callbackURL: (() => {
       // Prioritize absolute URL from BACKEND_URL to avoid "undefined" relative issues
-      let baseUrl = (process.env.BACKEND_URL || 'https://dream-xstore.onrender.com').replace(/\/$/, '');
+      let baseUrl = (process.env.BACKEND_URL || 'https://dreamx-store.onrender.com').replace(/\/$/, '');
       
       // Explicitly catch the "undefined" error seen in production
       if (baseUrl.includes('undefined') || !baseUrl.startsWith('http')) {
         console.log('Warning: BACKEND_URL invalid, forcing production default');
-        baseUrl = 'https://dream-xstore.onrender.com';
+        baseUrl = 'https://dreamx-store.onrender.com';
       }
       
       // Force https for Render

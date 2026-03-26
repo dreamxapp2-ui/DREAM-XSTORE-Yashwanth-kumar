@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: dreamx-monolith
+    name: dreamx-store
     runtime: node
     # Root directory is now the project root to manage sub-service builds
     rootDir: .
