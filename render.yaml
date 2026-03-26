@@ -1,0 +1,44 @@
+services:
+  # Backend API Service
+  - type: web
+    name: dream-xstore-api
+    runtime: node
+    rootDir: API-Backend
+    buildCommand: npm install
+    startCommand: node app.js
+    envVars:
+      - key: MONGODB_URI
+        sync: false # User must provide this in Render dashboard
+      - key: FRONTEND_URL
+        fromService:
+          name: dream-xstore-frontend
+          type: web
+          property: url
+      - key: NODE_ENV
+        value: production
+
+  # Frontend Next.js Service
+  - type: web
+    name: dream-xstore-frontend
+    runtime: node
+    rootDir: Dreamxstore
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NEXT_PUBLIC_API_URL
+        fromService:
+          name: dream-xstore-api
+          type: web
+          property: url
+        # Append /api if your backend routes are prefixed with /api
+        # In render.yaml, you might need to handle the suffix manually or in your code.
+        # Your current code uses NEXT_PUBLIC_API_URL directly.
+      - key: NEXT_PUBLIC_AUTH_URL
+        fromService:
+          name: dream-xstore-api
+          type: web
+          property: url
+      - key: NEXT_PUBLIC_RAZORPAY_KEY_ID
+        sync: false # User must provide this
+      - key: NODE_ENV
+        value: production
