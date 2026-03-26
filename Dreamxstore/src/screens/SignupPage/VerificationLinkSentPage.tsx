@@ -1,7 +1,11 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 
 const VerificationLinkSentPage = () => {
-  const email = localStorage.getItem("pendingVerificationEmail");
+  const [email, setEmail] = useState<string | null>(null);
+
+  useEffect(() => {
+    setEmail(localStorage.getItem("pendingVerificationEmail"));
+  }, []);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-white to-gray-100 dark:from-gray-900 dark:to-gray-800">
