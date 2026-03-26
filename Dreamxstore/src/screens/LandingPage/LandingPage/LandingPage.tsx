@@ -112,9 +112,11 @@ export const LandingPage = (): JSX.Element => {
 
         {/* Brand Banner */}
         <div className="w-full h-32 bg-gray-50 flex items-center justify-center border-b border-gray-100">
-          <div className="font-sans font-black text-[#004d84] text-4xl tracking-tighter italic">
-            DREAM X <span className="text-black not-italic opacity-20 px-2">|</span> OFFICIAL STORE
-          </div>
+          <img 
+            src="https://i.postimg.cc/sx24cHZb/image-89.png" 
+            alt="Dream X Store" 
+            className="h-16 w-auto object-contain"
+          />
         </div>
 
         {/* Main Banner Section */}

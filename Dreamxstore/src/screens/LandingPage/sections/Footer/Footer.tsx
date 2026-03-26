@@ -75,9 +75,11 @@ export const Footer = () => {
           {/* Logo and Brand Section */}
           <div className="lg:col-span-1 space-y-6">
             <div className="space-y-4">
-              <h3 className="text-2xl sm:text-3xl md:text-4xl font-['Poppins',sans-serif] font-light tracking-wider">
-                Dream X Store
-              </h3>
+              <img 
+                src="https://i.postimg.cc/sx24cHZb/image-89.png" 
+                alt="Dream X Store" 
+                className="h-12 w-auto object-contain brightness-0 invert" 
+              />
             </div>
 
             {/* Social Media Links */}
