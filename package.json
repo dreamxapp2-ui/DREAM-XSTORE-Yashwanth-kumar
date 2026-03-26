@@ -1,0 +1,13 @@
+{
+  "name": "dream-xstore-root",
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "concurrently \"npm run dev --prefix API-Backend\" \"npm run dev --prefix Dreamxstore\"",
+    "start": "concurrently \"npm start --prefix API-Backend\" \"npm run start --prefix Dreamxstore\"",
+    "start:render": "node API-Backend/app.js & npm start --prefix Dreamxstore",
+    "install-all": "npm install && npm install --prefix API-Backend && npm install --prefix Dreamxstore"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
