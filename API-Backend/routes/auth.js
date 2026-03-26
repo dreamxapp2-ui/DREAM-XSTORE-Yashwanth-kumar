@@ -6,6 +6,7 @@ const authMiddleware = require('../middleware/auth');
 
 // Public routes
 router.post('/register', authController.register);
+router.post('/signup', authController.register); // Alias for frontend compatibility
 router.post('/login', authController.login);
 router.post('/verify-email', authController.verifyEmail);
 

@@ -1,8 +1,8 @@
+require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const passport = require('./config/passport');
-require('dotenv').config();
 
 // Triggered nodemon restart for new DB connection
 
@@ -25,6 +25,7 @@ const shipmentRoutes = require('./payment-api/routes/shipment');
 
 
 const app = express();
+app.set('trust proxy', 1);
 
 // Middleware
 const allowedOrigins = [

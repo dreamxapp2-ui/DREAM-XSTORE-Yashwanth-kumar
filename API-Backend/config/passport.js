@@ -1,8 +1,8 @@
-// //config/passport.js
-// const passport = require('passport');
-// require('dotenv').config();
-// const GoogleStrategy = require('passport-google-oauth20').Strategy;
-// const User = require('../models/User');
+require('dotenv').config();
+const passport = require('passport');
+const GoogleStrategy = require('passport-google-oauth20').Strategy;
+const User = require('../models/User');
+const Brand = require('../models/Brand');
 
 
 // const googleStrategy = new GoogleStrategy(
@@ -66,25 +66,27 @@
 
 // module.exports = passport;
 
-const passport = require('passport');
-require('dotenv').config();
-const GoogleStrategy = require('passport-google-oauth20').Strategy;
-const User = require('../models/User');
-const Brand = require('../models/Brand');
 
-console.log('Google Client ID:', process.env.GOOGLE_CLIENT_ID);
-console.log('Callback URL:', `${process.env.BACKEND_URL}/api/auth/google/callback`);
+console.log('--- Passport Initialization ---');
+console.log('Google Client ID:', process.env.GOOGLE_CLIENT_ID ? 'LOADED' : 'MISSING');
+console.log('BACKEND_URL:', process.env.BACKEND_URL || 'NOT SET (using relative paths)');
+
 
 const googleStrategy = new GoogleStrategy(
   {
     clientID: process.env.GOOGLE_CLIENT_ID,
     clientSecret: process.env.GOOGLE_CLIENT_SECRET,
     callbackURL: (() => {
-      const url = process.env.BACKEND_URL 
-        ? `${process.env.BACKEND_URL.replace(/\/$/, '')}/api/auth/google/callback` 
-        : '/api/auth/google/callback';
-      console.log('Constructed Google Callback URL:', url);
-      return url;
+      // Prioritize absolute URL from BACKEND_URL to avoid "undefined" relative issues
+      if (process.env.BACKEND_URL) {
+        const baseUrl = process.env.BACKEND_URL.replace(/\/$/, '');
+        const url = `${baseUrl}/api/auth/google/callback`;
+        console.log('Constructed Absolute Callback URL:', url);
+        return url;
+      }
+      // Fallback to relative path if BACKEND_URL is not set
+      console.log('Warning: BACKEND_URL not set, falling back to relative callback path');
+      return '/api/auth/google/callback';
     })(),
     scope: ['profile', 'email'],
     prompt: 'select_account', // force account selection
