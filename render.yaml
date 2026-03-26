@@ -1,17 +1,17 @@
 services:
   # Backend API Service
   - type: web
-    name: dream-xstore-api
+    name: dream-xstore
     runtime: node
     rootDir: API-Backend
     buildCommand: npm install
     startCommand: node app.js
     envVars:
       - key: MONGODB_URI
-        sync: false # User must provide this in Render dashboard
+        sync: false # REQUIRED: You must add your MongoDB Atlas connection string in the Render Dashboard!
       - key: FRONTEND_URL
         fromService:
-          name: dream-xstore-frontend
+          name: dreamx-store
           type: web
           property: url
       - key: NODE_ENV
@@ -19,7 +19,7 @@ services:
 
   # Frontend Next.js Service
   - type: web
-    name: dream-xstore-frontend
+    name: dreamx-store
     runtime: node
     rootDir: Dreamxstore
     buildCommand: npm install && npm run build
@@ -27,15 +27,15 @@ services:
     envVars:
       - key: NEXT_PUBLIC_API_URL
         fromService:
-          name: dream-xstore-api
+          name: dream-xstore
           type: web
           property: url
-        # Append /api if your backend routes are prefixed with /api
-        # In render.yaml, you might need to handle the suffix manually or in your code.
-        # Your current code uses NEXT_PUBLIC_API_URL directly.
+        # IMPORTANT: Next.js needs the full URL including /api
+        # If your backend is at https://xxx.onrender.com, set this to https://xxx.onrender.com/api
+        # Render's auto-wiring (fromService) might not append /api automatically.
       - key: NEXT_PUBLIC_AUTH_URL
         fromService:
-          name: dream-xstore-api
+          name: dream-xstore
           type: web
           property: url
       - key: NEXT_PUBLIC_RAZORPAY_KEY_ID

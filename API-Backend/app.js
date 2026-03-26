@@ -25,8 +25,24 @@ var downloadRouter = require('./routes/download');
 const app = express();
 
 // Middleware
+const allowedOrigins = [
+    process.env.FRONTEND_URL,
+    'https://dreamx-store.onrender.com',
+    'http://localhost:3001',
+    'http://localhost:3000'
+].filter(Boolean);
+
 app.use(cors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:3001',
+    origin: (origin, callback) => {
+        // Allow requests with no origin (like mobile apps or curl)
+        if (!origin) return callback(null, true);
+        if (allowedOrigins.indexOf(origin) !== -1 || allowedOrigins.some(o => origin.startsWith(o))) {
+            callback(null, true);
+        } else {
+            console.warn(`[CORS] Request from origin ${origin} blocked. Allowed:`, allowedOrigins);
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
     credentials: true
 }));
 app.use(express.json());
