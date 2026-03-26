@@ -659,9 +659,12 @@ router.post("/api/orders", authenticate, async (req, res) => {
 router.post("/api/orders/latest", authenticate, async (req, res) => {
   try {
     // Fetch orders of the authenticated user, sorted by most recent first
-    const orders = await Order.find({ User: req.user._id })
+    console.log(`[Orders] Fetching latest orders for user: ${req.user._id}`);
+    const orders = await Order.find({ userId: req.user._id })
       .sort({ createdAt: -1 }) // Sort in descending order
       .limit(10); // Adjust limit as needed
+    
+    console.log(`[Orders] Found ${orders.length} latest orders`);
 
     res.status(200).json(orders);
   } catch (error) {
@@ -737,12 +740,16 @@ router.get("/api/user/orders", authenticate, async (req, res) => {
       filter.orderStatus = status;
     }
 
+    console.log(`[getUserOrders] Fetching orders for user: ${req.user._id}, filter:`, filter);
+
     const orders = await Order.find(filter)
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(parseInt(limit))
       .populate('items.productId', 'name images price')
       .lean();
+
+    console.log(`[getUserOrders] Found ${orders.length} orders`);
 
     const total = await Order.countDocuments(filter);
 
@@ -773,9 +780,11 @@ router.get("/api/user/orders", authenticate, async (req, res) => {
 router.get("/api/user/orders/stats", authenticate, async (req, res) => {
   try {
     const userId = req.user._id;
+    console.log(`[getUserOrderStats] Fetching stats for user: ${userId}`);
 
     // Get total orders count
     const totalOrders = await Order.countDocuments({ userId });
+    console.log(`[getUserOrderStats] Total orders: ${totalOrders}`);
 
     // Calculate total spend (only completed orders)
     const completedOrders = await Order.find({

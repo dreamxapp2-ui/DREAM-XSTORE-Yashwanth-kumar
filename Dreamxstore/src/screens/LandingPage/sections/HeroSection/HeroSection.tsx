@@ -22,13 +22,13 @@ export const HeroSection = () => {
   //       setUser(u ? JSON.parse(u) : null);
   //     }
   //   };
-    
+
   //   loadUser();
-    
+
   //   const onStorage = () => {
   //     loadUser();
   //   };
-    
+
   //   window.addEventListener("storage", onStorage);
   //   return () => window.removeEventListener("storage", onStorage);
   // }, []);
@@ -77,9 +77,9 @@ export const HeroSection = () => {
           {/* Logo */}
           <Link href="/" className="flex items-center flex-shrink-0">
             <img
-              src="https://i.postimg.cc/xTVNmCps/Dream-X-Store.png"
+              src="https://i.postimg.cc/sx24cHZb/image-89.png"
               alt="Dream X Store"
-              className="h-10 sm:h-12 w-auto object-contain"
+              className="h-14 sm:h-16 w-auto object-contain py-1"
             />
           </Link>
 
@@ -150,14 +150,14 @@ export const HeroSection = () => {
               >
                 <ShoppingBag className="w-6 h-6 xl:w-7 xl:h-7 2xl:w-8 2xl:h-8 text-gray-700 hover:text-[#004d84] transition-colors " />
               </Button>
-              
+
               {/* Cart Items Badge - Show only if items > 0 */}
               {totalItems > 0 && (
                 <div className="absolute -top-1 -right-1 w-4 h-4  bg-red-500 text-white text-xs  font-bold rounded-full flex items-center justify-center shadow-sm">
                   {totalItems > 99 ? '99+' : totalItems}
                 </div>
               )}
-              
+
               {/* Hover tooltip */}
               <div className="absolute top-full right-0 mt-2 w-16 px-2 py-1 bg-gray-900 text-white text-xs rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap">
                 Cart
@@ -178,27 +178,26 @@ export const HeroSection = () => {
 
         {/* Mobile Menu Overlay */}
         {isMobileMenuOpen && (
-          <div 
-            className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden" 
-            onClick={toggleMobileMenu} 
+          <div
+            className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
+            onClick={toggleMobileMenu}
           />
         )}
 
         {/* Mobile Menu - Fixed positioning */}
-        <div className={`fixed top-0 right-0 h-full w-[70vw] max-w-[320px] bg-white shadow-2xl transform transition-transform duration-300 ease-in-out z-50 lg:hidden ${
-          isMobileMenuOpen ? 'translate-x-0' : 'translate-x-full'
-        }`}>
+        <div className={`fixed top-0 right-0 h-full w-[70vw] max-w-[320px] bg-white shadow-2xl transform transition-transform duration-300 ease-in-out z-50 lg:hidden ${isMobileMenuOpen ? 'translate-x-0' : 'translate-x-full'
+          }`}>
           {/*  Added fixed to avoid overflow  */}
-           <div className="flex flex-col fixed-h-[calc(100vh-180px)]"> 
+          <div className="flex flex-col fixed-h-[calc(100vh-180px)]">
             {/* Mobile Menu Header with Logo and Cart */}
             <div className="flex items-center justify-between p-6 border-b border-gray-200">
               <div className="flex items-center gap-3">
                 <img
-                  src="https://i.postimg.cc/xTVNmCps/Dream-X-Store.png"
+                  src="https://i.postimg.cc/sx24cHZb/image-89.png"
                   alt="Dream X Store"
-                  className="h-7 w-auto object-contain"
+                  className="h-10 w-auto object-contain"
                 />
-                
+
                 {/* Mobile Cart Icon - Bigger */}
                 <div className="relative">
                   <Button
@@ -216,7 +215,7 @@ export const HeroSection = () => {
                   )}
                 </div>
               </div>
-              
+
               <Button
                 variant="ghost"
                 className="p-2 h-auto"
@@ -240,7 +239,7 @@ export const HeroSection = () => {
                     </Link>
                   </div>
                 ))}
-                
+
                 {/* Get Started Button in Menu */}
                 <div className="pt-4">
                   {user ? (
@@ -266,7 +265,7 @@ export const HeroSection = () => {
               </div>
             </div>
           </div>
-        </div> 
+        </div>
       </header>
     </>
   );

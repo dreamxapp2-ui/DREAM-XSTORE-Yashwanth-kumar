@@ -102,7 +102,7 @@ router.get('/user/data', auth, async (req, res) => {
     delete userData.password; // Remove sensitive data
     
     // Get user's orders
-    const orders = await Order.find({ User: userId }).lean();
+    const orders = await Order.find({ userId: userId }).lean();
     
     // Get user's designs (if any)
     const designs = await Design.find({ designer: userId }).lean();

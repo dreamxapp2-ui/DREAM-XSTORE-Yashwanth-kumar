@@ -261,7 +261,7 @@ export const Footer = () => {
           <div className="text-center">
             <div className="flex items-center justify-center">
               <img
-                src="https://i.postimg.cc/xTVNmCps/Dream-X-Store.png"
+                src="https://i.postimg.cc/sx24cHZb/image-89.png"
                 alt="Dream X Store Logo"
                 className="h-16 sm:h-20 md:h-24 lg:h-32 xl:h-40 w-auto object-contain opacity-30 filter brightness-0"
                 style={{ filter: 'brightness(0) opacity(0.3)' }}

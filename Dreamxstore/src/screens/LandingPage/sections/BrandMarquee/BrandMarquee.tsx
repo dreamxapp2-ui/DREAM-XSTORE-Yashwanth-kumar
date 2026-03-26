@@ -6,7 +6,7 @@ export const BrandMarquee = ()=> {
     {
       id: 1,
       name: "Dream X Store",
-      logo: "https://i.postimg.cc/nzjMpJ7C/Dream-X-Store.png",
+      logo: "https://i.postimg.cc/sx24cHZb/image-89.png",
     },
     {
       id: 2,

@@ -6,9 +6,9 @@ export const metadata: Metadata = {
   title: "Dream X Store - Custom Clothing & Fashion",
   description: "Dream X Store - Custom Clothing & Fashion ecommerce platform",
   icons: {
-    icon: "https://i.postimg.cc/15mjf5Cn/Instagram-post-1.png",
-    shortcut: "https://i.postimg.cc/15mjf5Cn/Instagram-post-1.png",
-    apple: "https://i.postimg.cc/15mjf5Cn/Instagram-post-1.png",
+    icon: "https://i.postimg.cc/Kv1zypB5/Frame-2.png",
+    shortcut: "https://i.postimg.cc/Kv1zypB5/Frame-2.png",
+    apple: "https://i.postimg.cc/Kv1zypB5/Frame-2.png",
   },
   viewport: {
     width: "device-width",

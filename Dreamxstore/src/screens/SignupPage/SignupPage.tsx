@@ -111,7 +111,7 @@ const SignupPage = () => {
         {/* Left Side - Signup Form */}
         <div className="w-full md:w-1/2 p-8 sm:p-12 md:p-16 flex flex-col justify-center">
           <div className="mb-4">
-            <h1 className="text-2xl font-black tracking-tight text-gray-900 dark:text-white">DreamXStore</h1>
+            <img src="https://i.postimg.cc/sx24cHZb/image-89.png" alt="DreamXStore" className="h-14 w-auto object-contain" />
           </div>
           
           <div className="flex justify-between items-baseline mb-6">

@@ -39,15 +39,15 @@ router.post("/getorderid", auth, async (req, res) => {
     }
 
     const newOrder = new Order({
-      User: req.user._id,
-      vendor : pickupUserId,
+      userId: req.user._id,
+      brandId : pickupUserId,
       address,
       items,
       subtotal: totals.subtotal,
       tax: totals.tax,
       shipping: totals.shipping,
       total: totals.total,
-      status: "Pending", // Default status (no payment integration for now)
+      orderStatus: "pending", // Default status (no payment integration for now)
       pickup_location: billdetails.pickup_location,
       billing_customer_name: billdetails.billing_customer_name,
       billing_address: billdetails.billing_address,
@@ -135,7 +135,7 @@ router.post("/verifypayment", async (req, res) => {
         if (!booking) {
           return res.status(404).json({ error: "Booking not found" });
         }
-        booking.status = "confirmed";
+        booking.orderStatus = "processing";
         booking.paymentid = req.body.razorpay_order_id;
 
         let tk = shiprocketHelper.checktoken();

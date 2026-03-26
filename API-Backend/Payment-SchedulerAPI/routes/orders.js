@@ -174,7 +174,7 @@ router.get('/track-shipment/:shipmentId', async (req, res) => {
 router.get('/delivered-orders', async (req, res) => {
   try {
     const allOrders = await shiprocketHelper.getAllOrders();
-    const deliveredOrders = allOrders.data.filter(order => order.status === 'Delivered');
+    const deliveredOrders = allOrders.data.filter(order => order.orderStatus === 'delivered' || order.status === 'Delivered');
     res.json(deliveredOrders);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -197,13 +197,13 @@ router.post('/vendor-sales',auth, async (req, res) => {
     }
 
     // Debug: print all orders for this vendor
-    const vendorOrders = await order.find({ vendor: vendorid });
+    const vendorOrders = await order.find({ brandId: vendorid });
     // console.log('Vendor Orders:', vendorOrders);
     const orderCount = vendorOrders.length;
 
     // Aggregate sales data grouped by date for the vendor
     const salesData = await order.aggregate([
-      { $match: { vendor: vendorid } },
+      { $match: { brandId: vendorid } },
       {
         $group: {
           _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } },
@@ -216,7 +216,7 @@ router.post('/vendor-sales',auth, async (req, res) => {
 
     // Aggregate total payment for the vendor
     const totalResult = await order.aggregate([
-      { $match: { vendor: vendorid } },
+      { $match: { brandId: vendorid } },
       { $group: { _id: null, totalPayment: { $sum: "$subtotal" } } }
     ]);
     
@@ -246,7 +246,7 @@ router.post('/vendor-orders', auth, async (req, res) => {
     }
 
     const orders = await order.find(
-      { vendor: vendorid },
+      { brandId: vendorid },
       { subtotal: 1, shipment_id: 1, createdAt: 1, items: 1, _id: 0 }
     ).sort({ createdAt: -1 });
 

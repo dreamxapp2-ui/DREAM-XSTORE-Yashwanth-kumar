@@ -6,7 +6,7 @@ export const FloatingChatButton = (): JSX.Element => {
 
   const handleChatClick = () => {
     // Open the chatbot in the same page
-    window.location.href = "https://chat-with-racan.vercel.app";
+    window.location.href = "https://lookbook-psus.onrender.com/";
   };
 
   return (

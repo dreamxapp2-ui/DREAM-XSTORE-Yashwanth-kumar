@@ -3,6 +3,7 @@ import { useRouter } from "next/navigation";
 import { Search, X } from "lucide-react";
 import { Avatar, AvatarImage } from "../../../../../components/ui/avatar";
 import { Button } from "../../../../../components/ui/button";
+import Link from "next/link";
 
 
 // Simulate user authentication state (replace with real auth logic)
@@ -35,11 +36,13 @@ export const HeroSection = (): JSX.Element => {
   return (
     <header className="w-full h-[170px] bg-white">
       <div className="max-w-[1920px] h-full mx-auto relative flex items-center justify-between px-[108px]">
-        {/* Logo */}
-        <div className="font-sans font-normal text-black text-[40px]">
-          Dream X<br />
-          Store
-        </div>
+        <Link href="/" className="flex items-center flex-shrink-0">
+          <img
+            src="https://i.postimg.cc/sx24cHZb/image-89.png"
+            alt="Dream X Store"
+            className="h-10 sm:h-12 w-auto object-contain"
+          />
+        </Link>
 
         {/* Navigation */}
         <nav className="flex items-center gap-8">

@@ -384,15 +384,15 @@ const adminController = {
       const orders = await Order.find()
         .sort({ createdAt: -1 })
         .limit(parseInt(limit))
-        .populate('customer')
+        .populate('userId')
         .exec();
 
       const recentOrders = orders.map(order => ({
         id: order._id,
-        customerName: order.customer?.username || 'Unknown',
-        customerEmail: order.customer?.email || 'unknown@email.com',
-        total: order.totalAmount || 0,
-        status: order.status || 'pending'
+        customerName: order.userId?.username || 'Unknown',
+        customerEmail: order.userId?.email || 'unknown@email.com',
+        total: order.total || 0,
+        status: order.orderStatus || 'pending'
       }));
 
       res.json({
@@ -1018,28 +1018,28 @@ const adminController = {
         .limit(parseInt(limit))
         .skip(skip)
         .sort({ createdAt: -1 })
-        .populate('customer')
-        .populate('brand');
+        .populate('userId')
+        .populate('brandId');
 
       const total = await Order.countDocuments(filter);
 
       const formattedOrders = orders.map(order => ({
         id: order._id,
-        customerId: order.customer?._id || '',
-        customerName: order.customer?.username || 'Unknown',
-        customerEmail: order.customer?.email || 'unknown@email.com',
-        brandId: order.brand?._id || '',
-        brandName: order.brand?.username || 'Unknown Brand',
+        customerId: order.userId?._id || '',
+        customerName: order.userId?.username || 'Unknown',
+        customerEmail: order.userId?.email || 'unknown@email.com',
+        brandId: order.brandId?._id || '',
+        brandName: order.brandId?.username || 'Unknown Brand',
         items: order.items || [],
         subtotal: order.subtotal || 0,
         tax: order.tax || 0,
-        shipping: order.shipping || 0,
-        total: order.totalAmount || 0,
+        shipping: order.shippingFee || 0,
+        total: order.total || 0,
         platformCommission: 0,
         brandPayout: 0,
-        orderStatus: order.status || 'pending',
+        orderStatus: order.orderStatus || 'pending',
         paymentStatus: order.paymentStatus || 'pending',
-        shippingAddress: order.shippingAddress || {},
+        shippingAddress: order.shippingAddressSnapshot || {},
         createdAt: order.createdAt
       }));
 

@@ -78,15 +78,22 @@ const googleStrategy = new GoogleStrategy(
     clientSecret: process.env.GOOGLE_CLIENT_SECRET,
     callbackURL: (() => {
       // Prioritize absolute URL from BACKEND_URL to avoid "undefined" relative issues
-      if (process.env.BACKEND_URL) {
-        const baseUrl = process.env.BACKEND_URL.replace(/\/$/, '');
-        const url = `${baseUrl}/api/auth/google/callback`;
-        console.log('Constructed Absolute Callback URL:', url);
-        return url;
+      let baseUrl = (process.env.BACKEND_URL || 'https://dream-xstore.onrender.com').replace(/\/$/, '');
+      
+      // Explicitly catch the "undefined" error seen in production
+      if (baseUrl.includes('undefined') || !baseUrl.startsWith('http')) {
+        console.log('Warning: BACKEND_URL invalid, forcing production default');
+        baseUrl = 'https://dream-xstore.onrender.com';
       }
-      // Fallback to relative path if BACKEND_URL is not set
-      console.log('Warning: BACKEND_URL not set, falling back to relative callback path');
-      return '/api/auth/google/callback';
+      
+      // Force https for Render
+      if (baseUrl.includes('onrender.com')) {
+        baseUrl = baseUrl.replace('http://', 'https://');
+      }
+
+      const url = `${baseUrl}/api/auth/google/callback`;
+      console.log('Constructed Callback URL:', url);
+      return url;
     })(),
     scope: ['profile', 'email'],
     prompt: 'select_account', // force account selection
