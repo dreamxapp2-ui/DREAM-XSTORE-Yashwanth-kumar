@@ -25,6 +25,8 @@ const shipmentRoutes = require('./payment-api/routes/shipment');
 
 
 const app = express();
+console.log('[Backend] Starting server initialization...');
+console.log('[Backend] Environment:', process.env.NODE_ENV);
 app.set('trust proxy', 1);
 
 // Middleware
@@ -53,14 +55,19 @@ app.use(express.urlencoded({ extended: true }));
 app.use(passport.initialize());
 
 // MongoDB Connection
-mongoose.connect(process.env.MONGODB_URI)
-    .then(() => {
-        console.log('Connected to MongoDB');
-    })
-    .catch((error) => {
-        console.error('MongoDB connection error:', error);
-        // process.exit(1); // Commented out to allow testing without DB
-    });
+if (!process.env.MONGODB_URI) {
+    console.error('[Backend] CRITICAL ERROR: MONGODB_URI is not defined in environment variables!');
+} else {
+    console.log('[Backend] Attempting to connect to MongoDB...');
+    mongoose.connect(process.env.MONGODB_URI)
+        .then(() => {
+            console.log('[Backend] Successfully connected to MongoDB');
+        })
+        .catch((error) => {
+            console.error('[Backend] MongoDB connection error:', error);
+            // process.exit(1); // Commented out to allow testing without DB
+        });
+}
 
 // Routes
 
@@ -124,9 +131,12 @@ app.use((err, req, res, next) => {
 });
 
 // Start server
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
+// In production (Render monolith), we use port 5000 for the backend
+// while the frontend takes the primary Render port ($PORT).
+const PORT = process.env.NODE_ENV === 'production' ? 5000 : 3001;
+
+app.listen(PORT, '0.0.0.0', () => {
+    console.log(`[Backend] Server is running on port ${PORT}`);
 });
 
 module.exports = app;

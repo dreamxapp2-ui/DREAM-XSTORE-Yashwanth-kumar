@@ -29,7 +29,7 @@ const googleAuthController = {
             }));
 
 
-            res.redirect(`${process.env.FRONTEND_URL}/api/auth/google/callback?token=${token}&user=${encodedUser}`);
+            res.redirect(`${process.env.FRONTEND_URL}/auth/google/callback?token=${token}&user=${encodedUser}`);
             
 
         } catch (error) {

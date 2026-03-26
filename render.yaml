@@ -5,8 +5,8 @@ services:
     # Root directory is now the project root to manage sub-service builds
     rootDir: .
     buildCommand: npm run install-all && npm run build --prefix Dreamxstore
-    # Start both services: Backend on internal port 5000, Frontend on Render's $PORT
-    startCommand: PORT=5000 node API-Backend/app.js & npm start --prefix Dreamxstore
+    # Start both services via root package.json for better orchestration
+    startCommand: npm start
     envVars:
       # Database and Core
       - key: MONGODB_URI
