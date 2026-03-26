@@ -101,7 +101,10 @@ const SignupPage = () => {
   // };
 
   const handleGoogleSignup = () => {
-    const authBaseUrl = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000").replace(/\/api$/, "");
+    const productionUrl = 'https://dream-xstore.onrender.com';
+    const rawApiUrl = process.env.NEXT_PUBLIC_API_URL || 
+                    (process.env.NODE_ENV === 'production' ? productionUrl : 'http://localhost:3000');
+    const authBaseUrl = rawApiUrl.replace(/\/api$/, "");
     window.location.href = `${authBaseUrl}/api${ENDPOINTS.GOOGLE_AUTH}`;
   };
 

@@ -2,7 +2,14 @@
 
 export const API_CONFIG = {
   baseURL: (() => {
-    const url = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+    // Priority: 
+    // 1. NEXT_PUBLIC_API_URL environment variable
+    // 2. Production Render Backend URL (if in production)
+    // 3. Localhost (fallback for development)
+    const productionUrl = 'https://dream-xstore.onrender.com';
+    const url = process.env.NEXT_PUBLIC_API_URL || 
+                (process.env.NODE_ENV === 'production' ? productionUrl : 'http://localhost:3000');
+    
     return url.endsWith('/api') ? url : `${url}/api`;
   })(),
   timeout: 30000, // 30 seconds

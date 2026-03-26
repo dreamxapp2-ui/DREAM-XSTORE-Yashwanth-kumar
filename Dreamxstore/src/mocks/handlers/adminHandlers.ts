@@ -20,7 +20,9 @@ import {
 } from '../data/mockData';
 import { BrandStatus, ProductStatus, OrderStatus } from '../../lib/api/admin/types';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api';
+const productionUrl = 'https://dream-xstore.onrender.com';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 
+                (process.env.NODE_ENV === 'production' ? `${productionUrl}/api` : 'http://localhost:3000/api');
 
 if (typeof window !== 'undefined') {
   console.log('[MSW] Initializing admin handlers with API_URL:', API_URL);
