@@ -1,8 +1,12 @@
 "use client";
 
-import React from "react";
+import React, { Suspense } from "react";
 import Callback from "../../../../../src/screens/LoginPage/Callback";
 
 export default function Page() {
-  return <Callback />;
+  return (
+    <Suspense fallback={<div>Loading authentication...</div>}>
+      <Callback />
+    </Suspense>
+  );
 }
