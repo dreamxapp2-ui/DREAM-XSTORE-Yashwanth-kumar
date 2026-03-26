@@ -4,8 +4,8 @@
   "scripts": {
     "dev": "concurrently \"npm run dev --prefix API-Backend\" \"npm run dev --prefix Dreamxstore\"",
     "build": "npm run install-all && npm run build --prefix Dreamxstore",
-    "start": "node API-Backend/app.js & npm start --prefix Dreamxstore",
-    "start:render": "node API-Backend/app.js & npm start --prefix Dreamxstore",
+    "start": "PORT=5000 node API-Backend/app.js & npm start --prefix Dreamxstore",
+    "start:render": "PORT=5000 node API-Backend/app.js & npm start --prefix Dreamxstore",
     "install-all": "npm install && npm install --prefix API-Backend && npm install --prefix Dreamxstore"
   },
   "devDependencies": {
