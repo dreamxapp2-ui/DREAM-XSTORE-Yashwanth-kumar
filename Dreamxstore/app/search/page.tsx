@@ -21,7 +21,9 @@ interface Product {
   reviewsCount?: number;
 }
 
-export default function SearchPage() {
+import { Suspense } from 'react';
+
+function SearchPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
@@ -203,5 +205,13 @@ export default function SearchPage() {
         </AnimatePresence>
       </div>
     </div>
+  );
+}
+
+export default function SearchPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex text-center items-center justify-center py-12">Loading search...</div>}>
+      <SearchPageContent />
+    </Suspense>
   );
 }
