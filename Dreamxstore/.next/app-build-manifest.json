@@ -16,10 +16,10 @@
       "static/chunks/main-app.js",
       "static/chunks/app/login/page.js"
     ],
-    "/api/auth/google/callback/page": [
+    "/auth/google/callback/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/api/auth/google/callback/page.js"
+      "static/chunks/app/auth/google/callback/page.js"
     ],
     "/profile/page": [
       "static/chunks/webpack.js",
@@ -35,11 +35,6 @@
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
       "static/chunks/app/home/page.js"
-    ],
-    "/about/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/about/page.js"
     ],
     "/products/[productId]/page": [
       "static/chunks/webpack.js",

@@ -77,23 +77,16 @@ const googleStrategy = new GoogleStrategy(
     clientID: process.env.GOOGLE_CLIENT_ID,
     clientSecret: process.env.GOOGLE_CLIENT_SECRET,
     callbackURL: (() => {
-      // Prioritize absolute URL from BACKEND_URL to avoid "undefined" relative issues
+      // Use GOOGLE_CALLBACK_URL if explicitly set
+      if (process.env.GOOGLE_CALLBACK_URL) return process.env.GOOGLE_CALLBACK_URL;
+      
+      // Otherwise construct from BACKEND_URL (which points to the proxy root in monolith setup)
       let baseUrl = (process.env.BACKEND_URL || 'https://dreamx-store.onrender.com').replace(/\/$/, '');
       
-      // Explicitly catch the "undefined" error seen in production
-      if (baseUrl.includes('undefined') || !baseUrl.startsWith('http')) {
-        console.log('Warning: BACKEND_URL invalid, forcing production default');
-        baseUrl = 'https://dreamx-store.onrender.com';
-      }
-      
-      // Force https for Render
-      if (baseUrl.includes('onrender.com')) {
-        baseUrl = baseUrl.replace('http://', 'https://');
-      }
+      // Force https for production
+      if (baseUrl.includes('onrender.com')) baseUrl = baseUrl.replace('http://', 'https://');
 
-      const url = `${baseUrl}/api/auth/google/callback`;
-      console.log('Constructed Callback URL:', url);
-      return url;
+      return `${baseUrl}/api/auth/google/callback`;
     })(),
     scope: ['profile', 'email'],
     prompt: 'select_account', // force account selection

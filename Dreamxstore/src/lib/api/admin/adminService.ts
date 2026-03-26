@@ -77,6 +77,24 @@ export class AdminService {
   }
 
   /**
+   * Get all brands using public endpoint (no auth required)
+   */
+  static async getPublicBrands(filters?: BrandFilters): Promise<any> {
+    const params = new URLSearchParams();
+    if (filters) {
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          params.append(key, String(value));
+        }
+      });
+    }
+    
+    return await apiClient.get<any>(
+      `/admin/public/brands?${params.toString()}`
+    );
+  }
+
+  /**
    * Get brand by ID
    */
   static async getBrandById(id: string): Promise<Brand> {

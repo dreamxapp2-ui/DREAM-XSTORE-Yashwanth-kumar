@@ -2783,9 +2783,6 @@ video {
 .italic {
   font-style: italic;
 }
-.not-italic {
-  font-style: normal;
-}
 .leading-\[1\.3\] {
   line-height: 1.3;
 }

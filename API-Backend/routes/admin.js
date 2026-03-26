@@ -49,6 +49,7 @@ const upload = multer({
  *   }
  */
 router.post('/brand-login', adminController.brandLogin);
+router.get('/public/brands', adminController.getBrands);
 
 /**
  * POST /api/admin/login

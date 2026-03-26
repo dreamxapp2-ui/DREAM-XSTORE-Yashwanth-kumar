@@ -136,9 +136,8 @@ export default function BrandProfilePage() {
       setError(null);
       console.log('[BrandProfile] Loading brand:', brandSlug);
       
-      // Fetch brand by slug - assuming the API endpoint or we can use getBrands and filter
-      // For now, we'll fetch all brands and filter by slug
-      const brandsResponse = await AdminService.getBrands({ limit: 100 });
+      // Use the public brand endpoint which doesn't require admin auth
+      const brandsResponse = await AdminService.getPublicBrands({ limit: 100 });
       console.log('[BrandProfile] Raw brands response:', brandsResponse);
       
       const brandsData = Array.isArray(brandsResponse) ? brandsResponse : (brandsResponse as any)?.data || [];

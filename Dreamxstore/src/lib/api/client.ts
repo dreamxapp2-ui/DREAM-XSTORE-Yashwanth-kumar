@@ -221,6 +221,11 @@ class ApiClient {
   ): Promise<T> {
     try {
       const response = await this.axiosInstance.get<ApiResponse<T>>(url, config);
+      // Return the full data object if it contains pagination data, 
+      // otherwise fallback to returning the extracted .data field or the object itself
+      if (response.data && (response.data as any).pagination) {
+        return response.data as T;
+      }
       return (response.data?.data || response.data) as T;
     } catch (error) {
       throw ApiErrorHandler.handleError(error);
@@ -237,6 +242,9 @@ class ApiClient {
   ): Promise<T> {
     try {
       const response = await this.axiosInstance.post<ApiResponse<T>>(url, data, config);
+      if (response.data && (response.data as any).pagination) {
+        return response.data as T;
+      }
       return (response.data?.data || response.data) as T;
     } catch (error) {
       throw ApiErrorHandler.handleError(error);
@@ -253,6 +261,9 @@ class ApiClient {
   ): Promise<T> {
     try {
       const response = await this.axiosInstance.put<ApiResponse<T>>(url, data, config);
+      if (response.data && (response.data as any).pagination) {
+        return response.data as T;
+      }
       return (response.data?.data || response.data) as T;
     } catch (error) {
       throw ApiErrorHandler.handleError(error);
@@ -269,6 +280,9 @@ class ApiClient {
   ): Promise<T> {
     try {
       const response = await this.axiosInstance.patch<ApiResponse<T>>(url, data, config);
+      if (response.data && (response.data as any).pagination) {
+        return response.data as T;
+      }
       return (response.data?.data || response.data) as T;
     } catch (error) {
       throw ApiErrorHandler.handleError(error);
@@ -284,6 +298,9 @@ class ApiClient {
   ): Promise<T> {
     try {
       const response = await this.axiosInstance.delete<ApiResponse<T>>(url, config);
+      if (response.data && (response.data as any).pagination) {
+        return response.data as T;
+      }
       return (response.data?.data || response.data) as T;
     } catch (error) {
       throw ApiErrorHandler.handleError(error);
@@ -310,6 +327,9 @@ class ApiClient {
           }
         },
       });
+      if (response.data && (response.data as any).pagination) {
+        return response.data as T;
+      }
       return (response.data?.data || response.data) as T;
     } catch (error) {
       throw ApiErrorHandler.handleError(error);
