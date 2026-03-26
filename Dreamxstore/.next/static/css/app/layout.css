@@ -802,9 +802,6 @@ video {
 .left-\[115px\] {
   left: 115px;
 }
-.left-\[1208px\] {
-  left: 1208px;
-}
 .left-\[1809px\] {
   left: 1809px;
 }
@@ -825,12 +822,6 @@ video {
 }
 .left-\[695px\] {
   left: 695px;
-}
-.left-\[767px\] {
-  left: 767px;
-}
-.left-\[84px\] {
-  left: 84px;
 }
 .left-\[86px\] {
   left: 86px;
@@ -913,14 +904,8 @@ video {
 .top-\[426px\] {
   top: 426px;
 }
-.top-\[4286px\] {
-  top: 4286px;
-}
 .top-\[436px\] {
   top: 436px;
-}
-.top-\[5029px\] {
-  top: 5029px;
 }
 .top-\[505px\] {
   top: 505px;
@@ -967,14 +952,14 @@ video {
 .order-2 {
   order: 2;
 }
-.col-span-full {
-  grid-column: 1 / -1;
-}
 .col-span-4 {
   grid-column: span 4 / span 4;
 }
 .col-span-8 {
   grid-column: span 8 / span 8;
+}
+.col-span-full {
+  grid-column: 1 / -1;
 }
 .-mx-6 {
   margin-left: -1.5rem;
@@ -1035,6 +1020,9 @@ video {
 }
 .mb-2 {
   margin-bottom: 0.5rem;
+}
+.mb-20 {
+  margin-bottom: 5rem;
 }
 .mb-3 {
   margin-bottom: 0.75rem;
@@ -1105,9 +1093,6 @@ video {
 .mt-auto {
   margin-top: auto;
 }
-.mb-20 {
-  margin-bottom: 5rem;
-}
 .line-clamp-2 {
   overflow: hidden;
   display: -webkit-box;
@@ -1135,9 +1120,6 @@ video {
 .hidden {
   display: none;
 }
-.aspect-square {
-  aspect-ratio: 1 / 1;
-}
 .aspect-\[1069\/702\] {
   aspect-ratio: 1069/702;
 }
@@ -1146,6 +1128,9 @@ video {
 }
 .aspect-\[636\/702\] {
   aspect-ratio: 636/702;
+}
+.aspect-square {
+  aspect-ratio: 1 / 1;
 }
 .h-0 {
   height: 0px;
@@ -1275,9 +1260,6 @@ video {
 }
 .h-\[68px\] {
   height: 68px;
-}
-.h-\[702px\] {
-  height: 702px;
 }
 .h-\[70px\] {
   height: 70px;
@@ -1411,12 +1393,6 @@ video {
 .w-96 {
   width: 24rem;
 }
-.w-\[1069px\] {
-  width: 1069px;
-}
-.w-\[1076px\] {
-  width: 1076px;
-}
 .w-\[140px\] {
   width: 140px;
 }
@@ -1473,9 +1449,6 @@ video {
 }
 .w-\[56px\] {
   width: 56px;
-}
-.w-\[636px\] {
-  width: 636px;
 }
 .w-\[643px\] {
   width: 643px;
@@ -1541,6 +1514,9 @@ video {
 .max-w-\[1717px\] {
   max-width: 1717px;
 }
+.max-w-\[1800px\] {
+  max-width: 1800px;
+}
 .max-w-\[1920px\] {
   max-width: 1920px;
 }
@@ -1570,9 +1546,6 @@ video {
 }
 .max-w-xs {
   max-width: 20rem;
-}
-.max-w-\[1800px\] {
-  max-width: 1800px;
 }
 .flex-1 {
   flex: 1 1 0%;
@@ -1686,6 +1659,9 @@ video {
 .grid-cols-1 {
   grid-template-columns: repeat(1, minmax(0, 1fr));
 }
+.grid-cols-12 {
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+}
 .grid-cols-2 {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
@@ -1694,9 +1670,6 @@ video {
 }
 .grid-cols-4 {
   grid-template-columns: repeat(4, minmax(0, 1fr));
-}
-.grid-cols-12 {
-  grid-template-columns: repeat(12, minmax(0, 1fr));
 }
 .flex-row {
   flex-direction: row;
@@ -2382,6 +2355,11 @@ video {
   --tw-gradient-to: rgb(0 0 0 / 0) var(--tw-gradient-to-position);
   --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to);
 }
+.from-black\/90 {
+  --tw-gradient-from: rgb(0 0 0 / 0.9) var(--tw-gradient-from-position);
+  --tw-gradient-to: rgb(0 0 0 / 0) var(--tw-gradient-to-position);
+  --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to);
+}
 .from-blue-600 {
   --tw-gradient-from: #2563eb var(--tw-gradient-from-position);
   --tw-gradient-to: rgb(37 99 235 / 0) var(--tw-gradient-to-position);
@@ -2410,11 +2388,6 @@ video {
 .from-white {
   --tw-gradient-from: #fff var(--tw-gradient-from-position);
   --tw-gradient-to: rgb(255 255 255 / 0) var(--tw-gradient-to-position);
-  --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to);
-}
-.from-black\/90 {
-  --tw-gradient-from: rgb(0 0 0 / 0.9) var(--tw-gradient-from-position);
-  --tw-gradient-to: rgb(0 0 0 / 0) var(--tw-gradient-to-position);
   --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to);
 }
 .via-black\/20 {
@@ -2539,6 +2512,10 @@ video {
 .p-8 {
   padding: 2rem;
 }
+.px-10 {
+  padding-left: 2.5rem;
+  padding-right: 2.5rem;
+}
 .px-12 {
   padding-left: 3rem;
   padding-right: 3rem;
@@ -2626,10 +2603,6 @@ video {
 .py-8 {
   padding-top: 2rem;
   padding-bottom: 2rem;
-}
-.px-10 {
-  padding-left: 2.5rem;
-  padding-right: 2.5rem;
 }
 .pb-12 {
   padding-bottom: 3rem;
@@ -2785,9 +2758,6 @@ video {
 }
 .font-bold {
   font-weight: 700;
-}
-.font-extrabold {
-  font-weight: 800;
 }
 .font-light {
   font-weight: 300;
