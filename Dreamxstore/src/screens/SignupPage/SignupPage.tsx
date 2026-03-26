@@ -101,7 +101,7 @@ const SignupPage = () => {
   // };
 
   const handleGoogleSignup = () => {
-    const productionUrl = 'https://dream-xstore.onrender.com';
+    const productionUrl = 'https://dreamx-store.onrender.com';
     const rawApiUrl = process.env.NEXT_PUBLIC_API_URL || 
                     (process.env.NODE_ENV === 'production' ? productionUrl : 'http://localhost:3000');
     const authBaseUrl = rawApiUrl.replace(/\/api$/, "");
