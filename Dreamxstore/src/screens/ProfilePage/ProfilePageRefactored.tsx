@@ -6,6 +6,7 @@ import { Card, CardContent } from '../../components/ui/card';
 import { User, Package, Settings, Heart, ArrowLeft } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import { UserService } from '../../lib/api/services/userService';
+import UserOrderService from '../../lib/api/services/orderService';
 import {
   ProfileHeader,
   ProfileOverview,
@@ -110,25 +111,18 @@ const ProfilePage: React.FC = () => {
         const wishlistItems = await UserService.getWishlist();
         
         // Fetch order statistics from API
-        const orderStatsResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'}/api/user/orders/stats`, {
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          },
-        });
+        const statsData = await UserOrderService.getOrderStats();
         
         let orderStats = {
           totalOrders: 0,
           totalSpend: 0,
         };
         
-        if (orderStatsResponse.ok) {
-          const statsData = await orderStatsResponse.json();
-          if (statsData.success) {
-            orderStats = {
-              totalOrders: statsData.data.totalOrders || 0,
-              totalSpend: statsData.data.totalSpend || 0,
-            };
-          }
+        if (statsData.success) {
+          orderStats = {
+            totalOrders: statsData.data.totalOrders || 0,
+            totalSpend: statsData.data.totalSpend || 0,
+          };
         }
         
         const memberSince = profile.createdAt ? new Date(profile.createdAt).toISOString().split('T')[0] : '2024-01-15';

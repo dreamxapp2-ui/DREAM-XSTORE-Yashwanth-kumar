@@ -1,10 +1,4 @@
-/**
- * Shipment Service - Handles all shipment-related API calls
- */
-
-const SHIPMENT_API_BASE = process.env.NEXT_PUBLIC_PAYMENT_API_URL 
-  ? process.env.NEXT_PUBLIC_PAYMENT_API_URL.replace('/payment', '')
-  : 'http://localhost:3002';
+import { apiClient } from './client';
 
 interface PickupLocation {
   pickup_location: string;
@@ -115,23 +109,7 @@ class ShipmentService {
    */
   static async addPickupLocation(locationData: PickupLocation): Promise<any> {
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${SHIPMENT_API_BASE}/shipment/add-pickup-location`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify(locationData),
-      });
-
-      const data = await response.json();
-      
-      if (!data.success) {
-        throw new Error(data.error || 'Failed to add pickup location');
-      }
-
-      return data;
+      return await apiClient.post<any>('/shipment/add-pickup-location', locationData);
     } catch (error: any) {
       console.error('[ShipmentService] Add pickup location error:', error);
       throw error;
@@ -154,19 +132,7 @@ class ShipmentService {
       if (params.breadth) queryParams.append('breadth', params.breadth.toString());
       if (params.height) queryParams.append('height', params.height.toString());
 
-      const response = await fetch(`${SHIPMENT_API_BASE}/shipment/delivery-price?${queryParams}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      const data = await response.json();
-      
-      if (!data.success) {
-        throw new Error(data.error || 'Failed to get delivery price');
-      }
-
+      const data = await apiClient.get<any>('/shipment/delivery-price', { params: queryParams });
       return data.data;
     } catch (error: any) {
       console.error('[ShipmentService] Get delivery price error:', error);
@@ -179,22 +145,7 @@ class ShipmentService {
    */
   static async createShipmentOrder(orderData: ShipmentOrderData): Promise<ShipmentOrderResponse> {
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${SHIPMENT_API_BASE}/shipment/create-order`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify(orderData),
-      });
-
-      const data = await response.json();
-      
-      if (!data.success) {
-        throw new Error(data.error || 'Failed to create shipment order');
-      }
-
+      const data = await apiClient.post<any>('/shipment/create-order', orderData);
       return data.data;
     } catch (error: any) {
       console.error('[ShipmentService] Create shipment order error:', error);
@@ -207,25 +158,10 @@ class ShipmentService {
    */
   static async assignAWB(shipmentId: number, courierId: number): Promise<any> {
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${SHIPMENT_API_BASE}/shipment/assign-awb`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          shipment_id: shipmentId,
-          courier_id: courierId,
-        }),
+      const data = await apiClient.post<any>('/shipment/assign-awb', {
+        shipment_id: shipmentId,
+        courier_id: courierId,
       });
-
-      const data = await response.json();
-      
-      if (!data.success) {
-        throw new Error(data.error || 'Failed to assign AWB');
-      }
-
       return data.data;
     } catch (error: any) {
       console.error('[ShipmentService] Assign AWB error:', error);
@@ -238,25 +174,10 @@ class ShipmentService {
    */
   static async requestPickup(shipmentId: number, pickupDate?: string): Promise<any> {
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${SHIPMENT_API_BASE}/shipment/request-pickup`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          shipment_id: shipmentId,
-          pickup_date: pickupDate ? [pickupDate] : undefined,
-        }),
+      const data = await apiClient.post<any>('/shipment/request-pickup', {
+        shipment_id: shipmentId,
+        pickup_date: pickupDate ? [pickupDate] : undefined,
       });
-
-      const data = await response.json();
-      
-      if (!data.success) {
-        throw new Error(data.error || 'Failed to request pickup');
-      }
-
       return data.data;
     } catch (error: any) {
       console.error('[ShipmentService] Request pickup error:', error);
@@ -269,19 +190,7 @@ class ShipmentService {
    */
   static async trackByShipmentId(shipmentId: number | string): Promise<TrackingData> {
     try {
-      const response = await fetch(`${SHIPMENT_API_BASE}/shipment/track/${shipmentId}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      const data = await response.json();
-      
-      if (!data.success) {
-        throw new Error(data.error || 'Failed to track shipment');
-      }
-
+      const data = await apiClient.get<any>(`/shipment/track/${shipmentId}`);
       return data.data;
     } catch (error: any) {
       console.error('[ShipmentService] Track shipment error:', error);
@@ -294,19 +203,7 @@ class ShipmentService {
    */
   static async trackByAWB(awbCode: string): Promise<TrackingData> {
     try {
-      const response = await fetch(`${SHIPMENT_API_BASE}/shipment/track-awb/${awbCode}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      const data = await response.json();
-      
-      if (!data.success) {
-        throw new Error(data.error || 'Failed to track shipment');
-      }
-
+      const data = await apiClient.get<any>(`/shipment/track-awb/${awbCode}`);
       return data.data;
     } catch (error: any) {
       console.error('[ShipmentService] Track by AWB error:', error);
@@ -319,30 +216,12 @@ class ShipmentService {
    */
   static async getAllOrders(page?: number, perPage?: number, status?: string): Promise<any> {
     try {
-      const token = localStorage.getItem('token');
-      const queryParams = new URLSearchParams();
-      
-      if (page) queryParams.append('page', page.toString());
-      if (perPage) queryParams.append('per_page', perPage.toString());
-      if (status) queryParams.append('status', status);
+      const params: any = {};
+      if (page) params.page = page;
+      if (perPage) params.per_page = perPage;
+      if (status) params.status = status;
 
-      const queryString = queryParams.toString();
-      const url = `${SHIPMENT_API_BASE}/shipment/orders${queryString ? `?${queryString}` : ''}`;
-
-      const response = await fetch(url, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-
-      const data = await response.json();
-      
-      if (!data.success) {
-        throw new Error(data.error || 'Failed to get orders');
-      }
-
+      const data = await apiClient.get<any>('/shipment/orders', { params });
       return data.data;
     } catch (error: any) {
       console.error('[ShipmentService] Get all orders error:', error);
@@ -355,21 +234,7 @@ class ShipmentService {
    */
   static async getDeliveredOrders(): Promise<any> {
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${SHIPMENT_API_BASE}/shipment/delivered-orders`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-
-      const data = await response.json();
-      
-      if (!data.success) {
-        throw new Error(data.error || 'Failed to get delivered orders');
-      }
-
+      const data = await apiClient.get<any>('/shipment/delivered-orders');
       return data.data;
     } catch (error: any) {
       console.error('[ShipmentService] Get delivered orders error:', error);
@@ -382,24 +247,9 @@ class ShipmentService {
    */
   static async cancelShipment(shipmentIds: number[]): Promise<any> {
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${SHIPMENT_API_BASE}/shipment/cancel`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          shipment_ids: shipmentIds,
-        }),
+      const data = await apiClient.post<any>('/shipment/cancel', {
+        shipment_ids: shipmentIds,
       });
-
-      const data = await response.json();
-      
-      if (!data.success) {
-        throw new Error(data.error || 'Failed to cancel shipment');
-      }
-
       return data.data;
     } catch (error: any) {
       console.error('[ShipmentService] Cancel shipment error:', error);

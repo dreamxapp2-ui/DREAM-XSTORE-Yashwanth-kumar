@@ -20,6 +20,8 @@ const reviewRoutes = require('./routes/reviews');
 const inventoryRoutes = require('./routes/inventory');
 const bannerRoutes = require('./routes/banners');
 var downloadRouter = require('./routes/download');
+const paymentRoutes = require('./payment-api/routes/payment');
+const shipmentRoutes = require('./payment-api/routes/shipment');
 
 
 const app = express();
@@ -90,6 +92,9 @@ app.use('/api/inventory', inventoryRoutes);
 
 //banner routes (public)
 app.use('/api/banners', bannerRoutes);
+
+app.use('/api/payment', paymentRoutes);
+app.use('/api/shipment', shipmentRoutes);
 
 app.use('/download', downloadRouter);
 

@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { apiClient } from '@/src/lib/api/client';
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { z } from "zod";
@@ -45,47 +46,20 @@ export const LoginPage = () => {
       // Client-side validation (optional)
       loginSchema.parse(formData);
 
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
-      const response = await fetch(`${apiUrl}/auth/login`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          email: formData.email,
-          password: formData.password,
-        }),
+      const data = await apiClient.post('/auth/login', {
+        email: formData.email,
+        password: formData.password,
       });
 
-      // Check content-type to avoid HTML parse error
-      const contentType = response.headers.get("content-type");
-      if (!contentType || !contentType.includes("application/json")) {
-        throw new Error("Server returned non-JSON response");
-      }
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        const { message, field } = errorData;
-        if (field && field !== "general") {
-          setErrors({ [field]: message });
-        } else if (message.includes("verify your email")) {
-          setErrors({ general: "Please verify your email first. Check your inbox or request a new link." });
-          // Optional: router.push('/verify-email');
-        } else {
-          setErrors({ general: message || "Invalid email or password" });
-        }
-        throw new Error(message || "Login failed");
-      }
-
-      const data = await response.json();
       if (data.token) {
         localStorage.setItem("token", data.token);
       }
+      
       login(data.token, {
         id: data.user.id,
         username: data.user.username,
         email: data.user.email,
-        isBrand: data.user.isBrand, // Added
+        isBrand: data.user.isBrand,
       });
       router.push("/");
     } catch (err: any) {
@@ -105,7 +79,7 @@ export const LoginPage = () => {
   };
 
   const handleGoogleLogin = () => {
-    const authUrl = process.env.NEXT_PUBLIC_AUTH_URL || "http://localhost:3000";
+    const authUrl = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000").replace(/\/api$/, "");
     window.location.href = `${authUrl}/api/auth/google`;
   };
 

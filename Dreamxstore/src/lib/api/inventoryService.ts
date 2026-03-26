@@ -2,7 +2,7 @@
  * Inventory Service - Handles stock management API calls
  */
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api';
+import { apiClient } from './client';
 
 interface InventoryItem {
   productId: string;
@@ -48,18 +48,7 @@ class InventoryService {
    */
   static async reduceStock(orderItems: InventoryItem[]): Promise<StockReductionResult> {
     try {
-      const token = localStorage.getItem('token');
-      
-      const response = await fetch(`${API_BASE}/inventory/reduce-stock`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({ orderItems }),
-      });
-
-      const data = await response.json();
+      const data = await apiClient.post('/inventory/reduce-stock', { orderItems });
 
       if (!data.success) {
         console.error('[InventoryService] Stock reduction failed:', data);
@@ -77,15 +66,7 @@ class InventoryService {
    */
   static async checkAvailability(orderItems: InventoryItem[]): Promise<StockAvailability> {
     try {
-      const response = await fetch(`${API_BASE}/inventory/check-availability`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ orderItems }),
-      });
-
-      const data = await response.json();
+      const data = await apiClient.post('/inventory/check-availability', { orderItems });
       return data;
     } catch (error: any) {
       console.error('[InventoryService] Error checking availability:', error);
@@ -98,18 +79,7 @@ class InventoryService {
    */
   static async restoreStock(orderItems: InventoryItem[]): Promise<any> {
     try {
-      const token = localStorage.getItem('token');
-      
-      const response = await fetch(`${API_BASE}/inventory/restore-stock`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({ orderItems }),
-      });
-
-      const data = await response.json();
+      const data = await apiClient.post('/inventory/restore-stock', { orderItems });
       return data;
     } catch (error: any) {
       console.error('[InventoryService] Error restoring stock:', error);

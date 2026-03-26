@@ -1,29 +1,4 @@
-// Payment Service - Handles payment API integration with Razorpay
-import axios from 'axios';
-import { TokenManager } from '../tokenManager';
-
-const PAYMENT_API_URL = process.env.NEXT_PUBLIC_PAYMENT_API_URL || 'http://localhost:3000/payment';
-
-// Create a dedicated axios instance for payment API
-const paymentAxiosInstance = axios.create({
-  baseURL: PAYMENT_API_URL,
-  timeout: 30000,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
-
-// Add auth token to payment API requests
-paymentAxiosInstance.interceptors.request.use(
-  (config) => {
-    const token = TokenManager.getToken();
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => Promise.reject(error)
-);
+import { apiClient } from '../client';
 
 export interface CreateOrderResponse {
   success: boolean;
@@ -72,14 +47,14 @@ class PaymentService {
     try {
       console.log('[PaymentService] Creating order:', { amount, currency });
 
-      const response = await paymentAxiosInstance.post<CreateOrderResponse>('/create-order', {
+      const response = await apiClient.post<CreateOrderResponse>('/payment/create-order', {
         amount,
         currency,
         description,
       });
 
-      console.log('[PaymentService] Order created successfully:', response.data);
-      return response.data;
+      console.log('[PaymentService] Order created successfully:', response);
+      return response;
     } catch (error: any) {
       console.error('[PaymentService] Error creating order:', error.message);
       return {
@@ -100,14 +75,14 @@ class PaymentService {
     try {
       console.log('[PaymentService] Verifying payment:', razorpayPaymentId);
 
-      const response = await paymentAxiosInstance.post<VerifyPaymentResponse>('/verify', {
+      const response = await apiClient.post<VerifyPaymentResponse>('/payment/verify', {
         razorpayOrderId,
         razorpayPaymentId,
         razorpaySignature,
       });
 
-      console.log('[PaymentService] Payment verified successfully:', response.data);
-      return response.data;
+      console.log('[PaymentService] Payment verified successfully:', response);
+      return response;
     } catch (error: any) {
       console.error('[PaymentService] Error verifying payment:', error.message);
       return {

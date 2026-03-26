@@ -14,6 +14,11 @@ services:
           name: dreamx-store
           type: web
           property: url
+      - key: BACKEND_URL
+        fromService:
+          name: dream-xstore
+          type: web
+          property: url
       - key: NODE_ENV
         value: production
 

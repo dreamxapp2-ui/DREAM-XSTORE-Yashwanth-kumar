@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { apiClient } from '@/src/lib/api/client';
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { z } from "zod";
@@ -49,47 +50,29 @@ const SignupPage = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrors({});
-    setGlobalError(null);  // Clear previous
+    setGlobalError(null);
     setLoading(true);
 
     try {
       // Validate form data with Zod
       const validatedData = signupSchema.parse(formData);
 
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000/api";
-      const response = await fetch(`${apiUrl}/auth/register`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          username: validatedData.username,
-          email: validatedData.email,
-          password: validatedData.password,
-        }),
+      const data = await apiClient.post('/auth/signup', {
+        username: validatedData.username,
+        email: validatedData.email,
+        password: validatedData.password,
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        const { message, field } = errorData;  // Fix: Parse backend shape
-        if (field && field !== 'general') {
-          setErrors({ [field]: message });  // Field-specific
-        } else {
-          setGlobalError(message || "Signup failed");  // Global
-        }
-        throw new Error(message || "Signup failed");
+      // Store user data/email for post-signup use if needed
+      if (data.user) {
+        localStorage.setItem("pendingUser", JSON.stringify(data.user));
       }
-
-      const result = await response.json();
-      // Upgrade: Store user data for post-signup use
-      localStorage.setItem("pendingUser", JSON.stringify(result.user));  // Includes isBrand, username
       localStorage.setItem("pendingVerificationEmail", validatedData.email);
 
       // Redirect to verification link sent page
       router.push("/verification-link-sent");
     } catch (err: any) {
       if (err instanceof z.ZodError) {
-        // Handle Zod validation errors (unchanged)
         const fieldErrors: Partial<Record<keyof SignupFormData, string>> = {};
         err.issues.forEach((error) => {
           const field = error.path[0] as keyof SignupFormData;
@@ -97,8 +80,7 @@ const SignupPage = () => {
         });
         setErrors(fieldErrors);
       } else {
-        // Fallback for network/other errors
-        setGlobalError(err instanceof Error ? err.message : "An error occurred during signup");
+        setGlobalError(err.message || "An error occurred during signup");
       }
     } finally {
       setLoading(false);
@@ -118,7 +100,7 @@ const SignupPage = () => {
   // };
 
   const handleGoogleSignup = () => {
-    const authBaseUrl = process.env.NEXT_PUBLIC_AUTH_URL || "http://localhost:3000";
+    const authBaseUrl = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000").replace(/\/api$/, "");
     window.location.href = `${authBaseUrl}/api/auth/google`;
   };
 

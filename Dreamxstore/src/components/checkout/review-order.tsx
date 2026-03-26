@@ -7,6 +7,7 @@ import { useToast } from '@/src/contexts/ToastContext';
 import PaymentService from '@/src/lib/api/services/paymentService';
 import ShipmentService, { ShipmentOrderData } from '@/src/lib/api/shipmentService';
 import InventoryService from '@/src/lib/api/inventoryService';
+import UserOrderService from '@/src/lib/api/services/orderService';
 
 interface ReviewOrderProps {
   shippingData: any;
@@ -56,19 +57,12 @@ export default function ReviewOrder({
               await createShipmentOrder(orderId, paymentId);
               
               // SAVE ORDER TO DATABASE
-              await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api'}/orders`, {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                  'Authorization': `Bearer ${localStorage.getItem('token')}`
-                },
-                body: JSON.stringify({
-                  items: cart,
-                  shippingData,
-                  total: totalAmount,
-                  paymentStatus: 'completed',
-                  paymentMethod: paymentData?.paymentMethod || 'card'
-                })
+              await UserOrderService.createOrder({
+                items: cart,
+                shippingData,
+                total: totalAmount,
+                paymentStatus: 'completed',
+                paymentMethod: paymentData?.paymentMethod || 'card'
               });
               
               // Clear cart
@@ -115,19 +109,12 @@ export default function ReviewOrder({
       await createShipmentOrder(mockOrderId, mockPaymentId);
       
       // SAVE ORDER TO DATABASE
-      await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api'}/orders`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify({
-          items: cart,
-          shippingData,
-          total: getTotalPrice(),
-          paymentStatus: 'completed',
-          paymentMethod: paymentData?.paymentMethod || 'card'
-        })
+      await UserOrderService.createOrder({
+        items: cart,
+        shippingData,
+        total: getTotalPrice(),
+        paymentStatus: 'completed',
+        paymentMethod: paymentData?.paymentMethod || 'card'
       });
       
       localStorage.removeItem('cart');

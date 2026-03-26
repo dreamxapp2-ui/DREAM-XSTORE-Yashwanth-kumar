@@ -44,9 +44,8 @@ export const OrdersTab: React.FC<OrdersTabProps> = () => {
   const handleDownloadInvoice = async (orderId: string) => {
     try {
       const token = localStorage.getItem('token');
-      const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api';
-      // The backend route is /download/order/:orderId/invoice
-      const downloadUrl = `${baseUrl.replace('/api', '')}/download/order/${orderId}/invoice`;
+      const baseUrl = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api').replace('/api', '');
+      const downloadUrl = `${baseUrl}/download/order/${orderId}/invoice`;
       
       const response = await fetch(downloadUrl, {
         headers: {

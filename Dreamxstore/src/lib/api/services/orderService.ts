@@ -4,7 +4,6 @@
 
 import { apiClient } from '../client';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
 
 export interface OrderItem {
   productId: {
@@ -86,27 +85,10 @@ class UserOrderService {
    */
   static async getOrders(page = 1, limit = 10, status?: string): Promise<OrdersResponse> {
     try {
-      const params = new URLSearchParams({
-        page: page.toString(),
-        limit: limit.toString(),
-      });
+      const params: any = { page, limit };
+      if (status) params.status = status;
 
-      if (status) {
-        params.append('status', status);
-      }
-
-      const token = localStorage.getItem('token');
-      // Fix: the NEXT_PUBLIC_API_URL already contains '/api', so the correct route is just '/user/orders'
-      const response = await fetch(`${API_BASE.replace('/api', '')}/api/user/orders?${params}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-
-      const data = await response.json();
-      return data;
+      return await apiClient.get<OrdersResponse>('/user/orders', { params });
     } catch (error: any) {
       console.error('[UserOrderService] Get orders error:', error);
       throw error;
@@ -118,19 +100,21 @@ class UserOrderService {
    */
   static async getOrderStats(): Promise<OrderStatsResponse> {
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE.replace('/api', '')}/api/user/orders/stats`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-
-      const data = await response.json();
-      return data;
+      return await apiClient.get<OrderStatsResponse>('/user/orders/stats');
     } catch (error: any) {
       console.error('[UserOrderService] Get order stats error:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Create a new order
+   */
+  static async createOrder(orderData: any): Promise<{ success: boolean; order: Order }> {
+    try {
+      return await apiClient.post<{ success: boolean; order: Order }>('/orders', orderData);
+    } catch (error: any) {
+      console.error('[UserOrderService] Create order error:', error);
       throw error;
     }
   }
@@ -140,17 +124,7 @@ class UserOrderService {
    */
   static async getOrderDetails(orderId: string): Promise<OrderDetailResponse> {
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE.replace('/api', '')}/api/user/orders/${orderId}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-
-      const data = await response.json();
-      return data;
+      return await apiClient.get<OrderDetailResponse>(`/user/orders/${orderId}`);
     } catch (error: any) {
       console.error('[UserOrderService] Get order details error:', error);
       throw error;
