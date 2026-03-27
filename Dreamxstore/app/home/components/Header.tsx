@@ -13,7 +13,6 @@ export default function Header() {
   const [user, setUser] = useState<any>(null);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
-  const [isCartOpen, setIsCartOpen] = useState(false);
   const { cart, removeFromCart, updateQuantity } = useCart();
   const router = useRouter();
 
@@ -58,18 +57,16 @@ export default function Header() {
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (isProfileOpen || isCartOpen) {
-        // Simple heuristic: if the click target isn't inside a menu-related element
+      if (isProfileOpen) {
         const target = event.target as HTMLElement;
         if (!target.closest('.menu-trigger')) {
           setIsProfileOpen(false);
-          setIsCartOpen(false);
         }
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [isProfileOpen, isCartOpen]);
+  }, [isProfileOpen]);
 
   const totalItems = cart.reduce((total, item) => total + item.quantity, 0);
 
@@ -130,78 +127,21 @@ export default function Header() {
             <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
           </Button>
 
-          <div className="relative menu-trigger">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => {
-                setIsCartOpen(!isCartOpen);
-                setIsProfileOpen(false);
-              }}
-              className={`w-10 h-10 rounded-full transition-all relative shadow-md ${isCartOpen ? 'bg-[#bef264] text-black' : 'bg-black text-white hover:bg-gray-800'}`}
-            >
-              <ShoppingBag className="w-5 h-5" />
-              {totalItems > 0 && (
-                <span className={`absolute -top-1 -right-1 min-w-[18px] h-[18px] text-[10px] font-black rounded-full flex items-center justify-center border-2 border-white shadow-sm transition-colors ${isCartOpen ? 'bg-black text-[#bef264]' : 'bg-[#bef264] text-black'}`}>
-                  {totalItems}
-                </span>
-              )}
-            </Button>
-
-            {/* Cart Dropdown Preview */}
-            {isCartOpen && (
-              <div className="absolute right-0 mt-3 w-[300px] sm:w-[380px] z-[110] transition-all animate-in fade-in slide-in-from-top-2 duration-200">
-                <div className="bg-white rounded-3xl shadow-[0_15px_50px_rgba(0,0,0,0.15)] border border-gray-100 overflow-hidden">
-                  <div className="p-4 border-b border-gray-50 flex justify-between items-center">
-                    <h3 className="text-sm font-black uppercase italic">Your Cargo ({totalItems})</h3>
-                    <Link href="/cart" onClick={() => setIsCartOpen(false)} className="text-[10px] font-black text-[#004d84] underline uppercase">View Full Cart</Link>
-                  </div>
-                  <div className="max-h-[350px] overflow-y-auto p-4 space-y-4">
-                    {cart.length === 0 ? (
-                      <div className="py-8 text-center text-xs font-bold text-gray-400 italic">Cargo bay is empty</div>
-                    ) : (
-                      cart.map((item) => (
-                        <div key={item._id} className="flex gap-3 group">
-                           <div className="w-16 h-16 rounded-xl bg-gray-50 overflow-hidden border border-gray-100 flex-shrink-0">
-                             <img src={item.image} className="w-full h-full object-cover" alt={item.title} />
-                           </div>
-                           <div className="flex-1 min-w-0">
-                             <h4 className="text-[11px] font-black text-gray-900 truncate leading-tight">{item.title}</h4>
-                             <p className="text-[10px] font-bold text-gray-400 mt-0.5">{item.selectedSize} • Qty: {item.quantity}</p>
-                             <p className="text-xs font-black text-black mt-1">${(item.price * item.quantity).toFixed(0)}</p>
-                           </div>
-                           <button 
-                             onClick={() => removeFromCart(item._id)}
-                             className="w-8 h-8 rounded-full flex items-center justify-center text-gray-300 hover:text-red-500 hover:bg-red-50 transition-all opacity-0 group-hover:opacity-100"
-                           >
-                             <Trash2 className="w-4 h-4" />
-                           </button>
-                        </div>
-                      ))
-                    )}
-                  </div>
-                  {cart.length > 0 && (
-                    <div className="p-4 bg-gray-50 border-t border-gray-100">
-                      <div className="flex justify-between items-center mb-4">
-                         <span className="text-[10px] font-black text-gray-400 uppercase">Subtotal</span>
-                         <span className="text-lg font-black text-black">
-                           ${cart.reduce((sum, item) => sum + (item.price * item.quantity), 0).toFixed(0)}
-                         </span>
-                      </div>
-                      <Button 
-                        onClick={() => {
-                          setIsCartOpen(false);
-                          router.push('/cart');
-                        }}
-                        className="w-full bg-black text-[#bef264] hover:bg-gray-800 rounded-2xl h-12 font-black text-xs uppercase italic"
-                      >
-                        Secure Checkout
-                      </Button>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
+          <div className="relative">
+            <Link href="/cart">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="w-10 h-10 rounded-full transition-all relative shadow-md bg-black text-white hover:bg-gray-800"
+              >
+                <ShoppingBag className="w-5 h-5" />
+                {totalItems > 0 && (
+                  <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] text-[10px] font-black rounded-full flex items-center justify-center border-2 border-white shadow-sm bg-[#bef264] text-black">
+                    {totalItems}
+                  </span>
+                )}
+              </Button>
+            </Link>
           </div>
 
           {/* Profile Dropdown */}
@@ -210,7 +150,6 @@ export default function Header() {
               className="flex items-center gap-2 pl-2 py-1 cursor-pointer group"
               onClick={() => {
                 setIsProfileOpen(!isProfileOpen);
-                setIsCartOpen(false);
               }}
             >
               <div className={`w-9 h-9 rounded-full border flex items-center justify-center overflow-hidden transition-all group-hover:scale-105 ${isProfileOpen ? 'bg-[#bef264] border-black scale-105' : 'bg-[#bef264]/20 border-[#bef264]/40'}`}>
