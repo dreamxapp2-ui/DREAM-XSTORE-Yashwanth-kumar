@@ -24,6 +24,7 @@ export const LoginPage = () => {
       avatarUrl: undefined, token,
     }));
     window.dispatchEvent(new Event("storage"));
+    window.dispatchEvent(new Event("auth-change"));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {

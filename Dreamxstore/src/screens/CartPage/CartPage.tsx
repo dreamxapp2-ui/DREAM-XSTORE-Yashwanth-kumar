@@ -177,15 +177,15 @@ export const CartPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#fafafa] flex flex-col items-center justify-center p-4 lg:p-12 relative overflow-hidden">
+    <div className="min-h-screen bg-[#fafafa] flex flex-col items-center justify-center p-2 sm:p-4 lg:p-12 relative overflow-hidden">
       {/* Background Tech Accent (Subtle Grid) */}
       <div className="absolute inset-0 opacity-[0.03] pointer-events-none" 
            style={{ backgroundImage: 'radial-gradient(#000 1px, transparent 1px)', backgroundSize: '30px 30px' }}></div>
 
-      <div className="w-full max-w-6xl bg-white rounded-[3rem] shadow-2xl overflow-hidden flex flex-col md:flex-row min-h-[700px] border border-gray-100 relative z-10">
+      <div className="w-full max-w-6xl bg-white rounded-3xl sm:rounded-[3rem] shadow-2xl overflow-hidden flex flex-col md:flex-row min-h-[500px] md:min-h-[700px] border border-gray-100 relative z-10">
         
         {/* LEFT SIDEBAR - Navigation Tabs */}
-        <div className="w-full md:w-64 bg-[#f8f8f8] p-8 flex flex-col gap-4 border-r border-gray-100">
+        <div className="hidden md:flex w-64 bg-[#f8f8f8] p-8 flex-col gap-4 border-r border-gray-100">
            <div className="mb-8">
               <div className="w-12 h-12 bg-black rounded-2xl flex items-center justify-center mb-6">
                  <ShoppingBag className="text-[#bef264] w-6 h-6" />
@@ -225,19 +225,19 @@ export const CartPage: React.FC = () => {
 
         {/* RIGHT CONTENT - Cart Items */}
         <div className="flex-1 flex flex-col bg-white">
-           {/* Header */}
-           <div className="p-10 pb-6 flex justify-between items-center">
-              <div>
-                 <h2 className="text-4xl font-black text-gray-900 leading-none">Your Cart</h2>
-                 <p className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] mt-2">Inventory Management</p>
-              </div>
-              <button onClick={() => router.push('/home')} className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center hover:bg-gray-100 transition-colors">
-                 <X className="w-5 h-5 text-gray-400" />
-              </button>
-           </div>
+            {/* Header */}
+            <div className="p-6 sm:p-10 pb-4 sm:pb-6 flex justify-between items-center">
+               <div>
+                  <h2 className="text-2xl sm:text-4xl font-black text-gray-900 leading-none">Your Cart</h2>
+                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] mt-2">Inventory Management</p>
+               </div>
+               <button onClick={() => router.push('/home')} className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center hover:bg-gray-100 transition-colors">
+                  <X className="w-5 h-5 text-gray-400" />
+               </button>
+            </div>
 
-           {/* List Area */}
-           <div className="flex-1 overflow-y-auto px-10 py-4 custom-scrollbar">
+            {/* List Area */}
+            <div className="flex-1 overflow-y-auto px-6 sm:px-10 py-4 custom-scrollbar">
               {cart.length === 0 ? (
                 <div className="h-full flex flex-col items-center justify-center text-center py-20">
                   <div className="w-24 h-24 bg-gray-50 rounded-full flex items-center justify-center mb-6">
@@ -250,33 +250,36 @@ export const CartPage: React.FC = () => {
               ) : (
                 <div className="space-y-8">
                   {cart.map((item) => (
-                    <div key={item._id} className="flex items-center gap-8 group">
+                    <div key={item._id} className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-8 group border-b border-gray-50 pb-6 sm:border-0 sm:pb-0">
                        {/* Item Image */}
-                       <div className="w-24 h-24 bg-[#f8f8f8] rounded-[1.5rem] p-2 flex-shrink-0 overflow-hidden group-hover:scale-105 transition-transform">
+                       <div className="w-20 h-20 sm:w-24 sm:h-24 bg-[#f8f8f8] rounded-2xl sm:rounded-[1.5rem] p-2 flex-shrink-0 overflow-hidden group-hover:scale-105 transition-transform">
                           <img src={item.image} alt={item.title} className="w-full h-full object-contain mix-blend-multiply" />
                        </div>
 
                        {/* Item Info */}
-                       <div className="flex-1 min-w-0">
-                          <h3 className="font-black text-lg text-gray-900 uppercase truncate leading-tight">{item.title}</h3>
+                       <div className="flex-1 min-w-0 w-full">
+                          <div className="flex justify-between items-start sm:block">
+                             <h3 className="font-black text-base sm:text-lg text-gray-900 uppercase truncate leading-tight">{item.title}</h3>
+                             <p className="sm:hidden text-lg font-black text-gray-900 tracking-tight">₹{item.price * item.quantity}</p>
+                          </div>
                           <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">
                              {item.selectedSize ? `Size: ${item.selectedSize}` : 'Universal Fit'}
                           </p>
                           
                           {/* Quantity Controls */}
                           <div className="mt-4 flex items-center gap-1 bg-gray-50 w-fit p-1 rounded-xl border border-gray-100">
-                             <button onClick={() => removeFromCart(item._id)} className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-red-500 transition-colors">
-                                <Trash2 className="w-4 h-4" />
+                             <button onClick={() => removeFromCart(item._id)} className="w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center text-gray-400 hover:text-red-500 transition-colors">
+                                <Trash2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                              </button>
-                             <div className="w-8 h-8 flex items-center justify-center text-xs font-black">{item.quantity}</div>
-                             <button onClick={() => updateQuantity(item._id, item.quantity + 1)} className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-black transition-colors font-black">
+                             <div className="w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center text-[10px] sm:text-xs font-black">{item.quantity}</div>
+                             <button onClick={() => updateQuantity(item._id, item.quantity + 1)} className="w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center text-gray-400 hover:text-black transition-colors font-black">
                                 +
                              </button>
                           </div>
                        </div>
 
                        {/* Item Price */}
-                       <div className="text-right">
+                       <div className="hidden sm:block text-right">
                           <p className="text-xl font-black text-gray-900 tracking-tight">₹{item.price * item.quantity}</p>
                        </div>
                     </div>
@@ -284,33 +287,32 @@ export const CartPage: React.FC = () => {
                 </div>
               )}
            </div>
+            {/* Footer / Summary */}
+            {cart.length > 0 && (
+              <div className="p-6 sm:p-10 pt-4 sm:pt-6 border-t border-gray-50 bg-white sticky bottom-0 z-20">
+                 <div className="flex items-center justify-center gap-3 mb-6 sm:mb-10">
+                    <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-[#bef264]/10 flex items-center justify-center text-black">
+                       <CheckCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                    </div>
+                    <p className="text-[8px] sm:text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 italic">Free US Delivery Applied</p>
+                 </div>
 
-           {/* Footer / Summary */}
-           {cart.length > 0 && (
-             <div className="p-10 pt-6 border-t border-gray-50">
-                <div className="flex items-center justify-center gap-3 mb-10">
-                   <div className="w-8 h-8 rounded-full bg-[#bef264]/10 flex items-center justify-center text-black">
-                      <CheckCircle className="w-4 h-4" />
-                   </div>
-                   <p className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 italic">Free US Delivery Applied</p>
-                </div>
+                 <div className="flex flex-col sm:flex-row items-center justify-between gap-6 sm:gap-0">
+                    <div className="flex items-baseline gap-4">
+                       <span className="text-base sm:text-xl font-bold text-gray-400 uppercase tracking-[0.2em] italic">Total</span>
+                       <span className="text-3xl sm:text-4xl font-black text-gray-900 tracking-tighter">₹{getTotalPrice()}</span>
+                    </div>
 
-                <div className="flex items-center justify-between">
-                   <div className="flex items-baseline gap-4">
-                      <span className="text-xl font-bold text-gray-400 uppercase tracking-[0.2em] italic">Total</span>
-                      <span className="text-4xl font-black text-gray-900 tracking-tighter">₹{getTotalPrice()}</span>
-                   </div>
-
-                   <button 
-                     onClick={handleCheckout}
-                     className="bg-black text-[#bef264] px-12 h-16 rounded-[2rem] flex items-center gap-4 font-black uppercase italic hover:scale-105 active:scale-95 transition-all shadow-xl shadow-black/10"
-                   >
-                     <span>Check Out</span>
-                     <ChevronRight className="w-5 h-5" />
-                   </button>
-                </div>
-             </div>
-           )}
+                    <button 
+                      onClick={handleCheckout}
+                      className="w-full sm:w-auto bg-black text-[#bef264] px-8 sm:px-12 h-14 sm:h-16 rounded-2xl sm:rounded-[2rem] flex items-center justify-center gap-4 font-black uppercase italic hover:scale-105 active:scale-95 transition-all shadow-xl shadow-black/10"
+                    >
+                      <span>Check Out</span>
+                      <ChevronRight className="w-5 h-5" />
+                    </button>
+                 </div>
+              </div>
+            )}
         </div>
       </div>
 

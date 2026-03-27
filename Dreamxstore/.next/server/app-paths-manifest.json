@@ -1,7 +1,10 @@
 {
-  "/profile/page": "app/profile/page.js",
-  "/signup/page": "app/signup/page.js",
+  "/page": "app/page.js",
   "/login/page": "app/login/page.js",
-  "/home/page": "app/home/page.js",
+  "/admin/banners/page": "app/admin/banners/page.js",
+  "/admin/brands/page": "app/admin/brands/page.js",
+  "/admin/orders/page": "app/admin/orders/page.js",
+  "/admin/page": "app/admin/page.js",
+  "/admin/products/page": "app/admin/products/page.js",
   "/admin/login/page": "app/admin/login/page.js"
 }

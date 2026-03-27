@@ -167,4 +167,5 @@ class UserOrderService {
   }
 }
 
+export { UserOrderService as OrderService };
 export default UserOrderService;

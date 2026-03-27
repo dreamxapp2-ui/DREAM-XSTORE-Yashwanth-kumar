@@ -94,7 +94,7 @@ const ProfilePage: React.FC = () => {
   if (!user) return null;
 
   return (
-    <div className="min-h-screen bg-[#fafafa] pb-32">
+    <div className="min-h-screen bg-[#fafafa] pb-10 sm:pb-20">
       {/* 1. MODERN HEADER */}
       <div className="bg-white border-b border-gray-100 z-50 sticky top-0">
          <div className="max-w-7xl mx-auto h-20 px-6 flex items-center justify-between">
@@ -116,7 +116,7 @@ const ProfilePage: React.FC = () => {
           
           {/* 2. SIDEBAR - Profile Overview */}
           <div className="w-full lg:w-1/3 sticky lg:top-32">
-             <div className="bg-white rounded-[2.5rem] p-8 shadow-sm border border-gray-100 space-y-8">
+             <div className="bg-white rounded-3xl sm:rounded-[2.5rem] p-6 sm:p-8 shadow-sm border border-gray-100 space-y-8">
                 {/* Profile Meta */}
                 <div className="flex flex-col items-center text-center space-y-4">
                    <div className="relative group">
@@ -141,16 +141,16 @@ const ProfilePage: React.FC = () => {
                 </div>
 
                 {/* Account Stats */}
-                <div className="grid grid-cols-2 gap-4">
-                   <div className="bg-[#f8f8f8] p-4 rounded-2xl flex flex-col">
-                      <span className="text-2xl font-black text-gray-900">{stats.totalOrders}</span>
-                      <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Total Orders</span>
-                   </div>
-                   <div className="bg-[#f8f8f8] p-4 rounded-2xl flex flex-col">
-                      <span className="text-2xl font-black text-gray-900">{stats.wishlistItems}</span>
-                      <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Wishlisted</span>
-                   </div>
-                </div>
+                 <div className="grid grid-cols-2 gap-4">
+                    <div className="bg-[#f8f8f8] p-3 sm:p-4 rounded-2xl flex flex-col">
+                       <span className="text-xl sm:text-2xl font-black text-gray-900">{stats.totalOrders}</span>
+                       <span className="text-[9px] sm:text-[10px] font-bold text-gray-400 uppercase tracking-wider">Total Orders</span>
+                    </div>
+                    <div className="bg-[#f8f8f8] p-3 sm:p-4 rounded-2xl flex flex-col">
+                       <span className="text-xl sm:text-2xl font-black text-gray-900">{stats.wishlistItems}</span>
+                       <span className="text-[9px] sm:text-[10px] font-bold text-gray-400 uppercase tracking-wider">Wishlisted</span>
+                    </div>
+                 </div>
 
                 {/* Sub Meta */}
                 <div className="space-y-4 pt-4 border-t border-gray-50">
@@ -177,16 +177,16 @@ const ProfilePage: React.FC = () => {
                   { id: 'orders', icon: Package, label: 'My Orders' },
                   { id: 'settings', icon: Settings, label: 'Preferences' }
                 ].map((tab) => (
-                  <button
+                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id as any)}
-                    className={`flex items-center gap-3 px-6 py-4 rounded-2xl font-black text-sm uppercase italic transition-all whitespace-nowrap ${
+                    className={`flex items-center gap-2 sm:gap-3 px-4 py-3 sm:px-6 sm:py-4 rounded-xl sm:rounded-2xl font-black text-xs sm:text-sm uppercase italic transition-all whitespace-nowrap ${
                       activeTab === tab.id 
                         ? 'bg-black text-[#bef264] shadow-xl' 
                         : 'bg-white text-gray-400 hover:text-black border border-gray-100 hover:border-black'
                     }`}
                   >
-                    <tab.icon className="w-5 h-5" />
+                    <tab.icon className="w-4 h-4 sm:w-5 sm:h-5" />
                     {tab.label}
                   </button>
                 ))}
@@ -194,30 +194,30 @@ const ProfilePage: React.FC = () => {
 
              {/* Dynamic Content Views */}
              <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-                {activeTab === 'profile' && (
+                 {activeTab === 'profile' && (
                   <div className="space-y-6">
-                     <div className="bg-white rounded-[2.5rem] p-8 border border-gray-100 shadow-sm">
-                        <h3 className="text-xl font-black mb-6 italic uppercase underline underline-offset-8 decoration-[#bef264]">Personal Story</h3>
+                     <div className="bg-white rounded-3xl sm:rounded-[2.5rem] p-6 sm:p-8 border border-gray-100 shadow-sm">
+                        <h3 className="text-lg sm:text-xl font-black mb-4 sm:mb-6 italic uppercase underline underline-offset-8 decoration-[#bef264]">Personal Story</h3>
                         <p className="text-gray-600 font-bold leading-relaxed italic">
                            {user.bio || "No biography provided yet. Start your story with DREAM-X."}
                         </p>
                      </div>
                      <div className="grid md:grid-cols-2 gap-6">
-                        <div className="bg-[#bef264] p-8 rounded-[2.5rem] flex flex-col justify-between aspect-square group cursor-pointer hover:rotate-1 transition-transform">
+                        <div className="bg-[#bef264] p-6 sm:p-8 rounded-3xl sm:rounded-[2.5rem] flex flex-col justify-between aspect-square group cursor-pointer hover:rotate-1 transition-transform">
                            <div>
-                              <Package className="w-12 h-12 text-black mb-4 group-hover:scale-110 transition-transform" />
-                              <h4 className="text-2xl font-black text-black leading-tight">TRACK YOUR<br/>VIBES.</h4>
+                              <Package className="w-10 h-10 sm:w-12 sm:h-12 text-black mb-4 group-hover:scale-110 transition-transform" />
+                              <h4 className="text-xl sm:text-2xl font-black text-black leading-tight">TRACK YOUR<br/>VIBES.</h4>
                            </div>
-                           <button onClick={() => setActiveTab('orders')} className="flex items-center gap-2 text-xs font-black text-black/60 uppercase italic group-hover:text-black">
+                           <button onClick={() => setActiveTab('orders')} className="flex items-center gap-2 text-[10px] sm:text-xs font-black text-black/60 uppercase italic group-hover:text-black">
                               View all orders <ChevronRight className="w-4 h-4" />
                            </button>
                         </div>
-                        <div className="bg-white border-4 border-black p-8 rounded-[2.5rem] flex flex-col justify-between aspect-square group cursor-pointer hover:-rotate-1 transition-transform">
+                        <div className="bg-white border-4 border-black p-6 sm:p-8 rounded-3xl sm:rounded-[2.5rem] flex flex-col justify-between aspect-square group cursor-pointer hover:-rotate-1 transition-transform">
                            <div>
-                              <Settings className="w-12 h-12 text-[#bef264] mb-4 group-hover:scale-110 transition-transform" />
-                              <h4 className="text-2xl font-black text-black leading-tight">IDENTITY<br/>TUNING.</h4>
+                              <Settings className="w-10 h-10 sm:w-12 sm:h-12 text-[#bef264] mb-4 group-hover:scale-110 transition-transform" />
+                              <h4 className="text-xl sm:text-2xl font-black text-black leading-tight">IDENTITY<br/>TUNING.</h4>
                            </div>
-                           <button onClick={() => setActiveTab('settings')} className="flex items-center gap-2 text-xs font-black text-black/60 uppercase italic group-hover:text-black">
+                           <button onClick={() => setActiveTab('settings')} className="flex items-center gap-2 text-[10px] sm:text-xs font-black text-black/60 uppercase italic group-hover:text-black">
                               Adjust settings <ChevronRight className="w-4 h-4" />
                            </button>
                         </div>

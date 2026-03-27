@@ -33,6 +33,19 @@ export const LandingHeader = () => {
     };
 
     loadProfileData();
+
+    // Listen for storage changes
+    const handleStorageChange = () => {
+      loadProfileData();
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('auth-change', handleStorageChange);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('auth-change', handleStorageChange);
+    };
   }, []);
 
   const handleLogout = () => {
@@ -131,18 +144,18 @@ export const LandingHeader = () => {
             {/* Profile Dropdown */}
             {isProfileHovered && (
               <div className="absolute right-0 mt-0 pt-2 w-48 transition-all animate-in fade-in slide-in-from-top-2 duration-200 z-[110]">
-                <div className="bg-white rounded-2xl shadow-[0_10px_40px_rgba(0,0,0,0.12)] border border-gray-100 overflow-hidden py-2">
+                <div className="bg-white rounded-[2px] shadow-[0_10px_40px_rgba(0,0,0,0.12)] border border-gray-100 overflow-hidden py-2">
                   <div className="px-4 py-2 border-b border-gray-50 mb-1">
-                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Hi, {user?.name?.split(' ')[0] || 'Guest'}</p>
-                    <p className="text-xs font-bold text-gray-900 truncate">{user?.email || 'Welcome back'}</p>
+                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Hi, {user?.username || user?.firstName || user?.name?.split(' ')[0] || 'Guest'}</p>
+                    <p className="text-xs font-bold text-gray-900 truncate">{user?.email || (user ? '' : 'Welcome back')}</p>
                   </div>
-                  <Link href="/profile" className="flex items-center gap-3 px-4 py-2.5 text-sm font-bold text-gray-700 hover:bg-gray-50 hover:text-[#004d84] transition-colors">
+                  <Link href="/profile" className="flex items-center gap-3 px-4 py-2.5 text-sm font-bold text-gray-700 hover:bg-gray-50 hover:text-[#004d84] transition-colors rounded-[2px]">
                     <User className="w-4 h-4" />
                     <span>Profile</span>
                   </Link>
                   <button 
                     onClick={handleLogout}
-                    className="w-full flex items-center gap-3 px-4 py-2.5 text-sm font-bold text-red-500 hover:bg-red-50 transition-colors"
+                    className="w-full flex items-center gap-3 px-4 py-2.5 text-sm font-bold text-red-500 hover:bg-red-50 transition-colors rounded-[2px]"
                   >
                     <LogOut className="w-4 h-4" />
                     <span>Logout</span>

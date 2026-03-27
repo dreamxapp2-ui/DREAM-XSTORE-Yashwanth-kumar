@@ -33,6 +33,19 @@ export const HeroSection = () => {
     };
 
     loadProfileData();
+
+    // Listen for storage changes
+    const handleStorageChange = () => {
+      loadProfileData();
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('auth-change', handleStorageChange);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('auth-change', handleStorageChange);
+    };
   }, []);
 
   const handleLogout = () => {
@@ -143,7 +156,7 @@ export const HeroSection = () => {
               </div>
               <div className="hidden sm:flex items-center gap-1">
                 <span className="text-xs font-black text-gray-900 group-hover:text-[#004d84]">
-                  {user?.name?.split(' ')[0] || 'Guest'}
+                  {user?.username || user?.firstName || user?.name?.split(' ')[0] || 'Guest'}
                 </span>
                 <ChevronDown className={`w-3 h-3 text-gray-400 transition-transform duration-300 ${isProfileHovered ? 'rotate-180' : ''}`} />
               </div>
@@ -152,18 +165,18 @@ export const HeroSection = () => {
             {/* Hover Menu */}
             {isProfileHovered && (
               <div className="absolute right-0 mt-0 pt-2 w-48 transition-all animate-in fade-in slide-in-from-top-2 duration-200">
-                <div className="bg-white rounded-2xl shadow-[0_10px_40px_rgba(0,0,0,0.12)] border border-gray-100 overflow-hidden py-2">
+                <div className="bg-white rounded-[2px] shadow-[0_10px_40px_rgba(0,0,0,0.12)] border border-gray-100 overflow-hidden py-2">
                   <div className="px-4 py-2 border-b border-gray-50 mb-1">
                     <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">User Details</p>
-                    <p className="text-sm font-bold text-gray-900 truncate">{user?.name || 'Guest'}</p>
+                    <p className="text-sm font-bold text-gray-900 truncate">{user?.username || user?.firstName || user?.name || 'Guest'}</p>
                   </div>
-                  <Link href="/profile" className="flex items-center gap-3 px-4 py-2.5 text-sm font-bold text-gray-700 hover:bg-gray-50 hover:text-[#004d84] transition-colors">
+                  <Link href="/profile" className="flex items-center gap-3 px-4 py-2.5 text-sm font-bold text-gray-700 hover:bg-gray-50 hover:text-[#004d84] transition-colors rounded-[2px]">
                     <User className="w-4 h-4" />
                     <span>Profile</span>
                   </Link>
                   <button 
                     onClick={handleLogout}
-                    className="w-full flex items-center gap-3 px-4 py-2.5 text-sm font-bold text-red-500 hover:bg-red-50 transition-colors"
+                    className="w-full flex items-center gap-3 px-4 py-2.5 text-sm font-bold text-red-500 hover:bg-red-50 transition-colors rounded-[2px]"
                   >
                     <LogOut className="w-4 h-4" />
                     <span>Logout</span>

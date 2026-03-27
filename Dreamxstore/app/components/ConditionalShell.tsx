@@ -1,7 +1,6 @@
 'use client';
 
 import { usePathname } from 'next/navigation';
-import { BottomNav } from '@/src/components/ui/BottomNav';
 import Header from '@/app/home/components/Header';
 import { FloatingChatButton } from '@/src/screens/LandingPage/sections/FloatingChatButton/FloatingChatButton';
 
@@ -15,7 +14,6 @@ export function ConditionalShell({ children }: { children: React.ReactNode }) {
     <>
       {!isAuthRoute && <Header />}
       <main className="min-h-screen">{children}</main>
-      {!isAuthRoute && <BottomNav />}
       {!isAuthRoute && <FloatingChatButton />}
     </>
   );

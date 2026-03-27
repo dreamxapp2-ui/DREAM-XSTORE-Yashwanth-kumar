@@ -3,6 +3,11 @@ import "./globals.css";
 import { Providers } from "./providers";
 import { ConditionalShell } from "./components/ConditionalShell";
 
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
+};
+
 export const metadata: Metadata = {
   title: "Dream X Store - Custom Clothing & Fashion",
   description: "Dream X Store - Custom Clothing & Fashion ecommerce platform",
@@ -10,10 +15,6 @@ export const metadata: Metadata = {
     icon: "https://i.postimg.cc/Kv1zypB5/Frame-2.png",
     shortcut: "https://i.postimg.cc/Kv1zypB5/Frame-2.png",
     apple: "https://i.postimg.cc/Kv1zypB5/Frame-2.png",
-  },
-  viewport: {
-    width: "device-width",
-    initialScale: 1,
   },
 };
 

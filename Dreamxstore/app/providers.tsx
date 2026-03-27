@@ -7,7 +7,7 @@ import { ToastDisplay } from "../src/components/Toast/ToastDisplay";
 
 export function Providers({ children }: { children: React.ReactNode }) {
   useEffect(() => {
-    // Initialize MSW in development - Disabled to fix network errors
+    // Initialize MSW in development - Disabled to fetch realtime data from MongoDB
     /*
     if (process.env.NODE_ENV === 'development') {
       import('../src/mocks/browser').then(({ worker }) => {

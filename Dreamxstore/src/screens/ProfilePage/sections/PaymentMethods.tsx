@@ -19,16 +19,16 @@ interface PaymentMethodsProps {
 
 export const PaymentMethods: React.FC<PaymentMethodsProps> = ({ paymentMethods }) => {
   return (
-    <Card className="border border-gray-100 rounded-[2.5rem] bg-white shadow-sm overflow-hidden">
-      <CardContent className="p-8">
-        <div className="flex justify-between items-center mb-6 border-b border-gray-50 pb-6">
+    <Card className="border border-gray-100 rounded-3xl sm:rounded-[2.5rem] bg-white shadow-sm overflow-hidden">
+      <CardContent className="p-4 sm:p-8">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 border-b border-gray-50 pb-6">
           <div className="flex items-center gap-3">
-             <div className="w-10 h-10 rounded-full bg-[#bef264]/20 flex items-center justify-center">
-                <CreditCard className="w-5 h-5 text-black" />
+             <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-[#bef264]/20 flex items-center justify-center">
+                <CreditCard className="w-4 h-4 sm:w-5 sm:h-5 text-black" />
              </div>
-             <h2 className="text-xl font-black italic uppercase tracking-tight text-black">Secured Assets</h2>
+             <h2 className="text-lg sm:text-xl font-black italic uppercase tracking-tight text-black">Secured Assets</h2>
           </div>
-          <Button className="bg-black text-[#bef264] hover:bg-black/90 text-xs font-black uppercase italic rounded-full px-6 py-3 transition-all active:scale-95">
+          <Button className="w-full sm:w-auto bg-black text-[#bef264] hover:bg-black/90 text-[10px] sm:text-xs font-black uppercase italic rounded-full px-4 sm:px-6 py-2 sm:py-3 transition-all active:scale-95">
             <Plus className="w-4 h-4 mr-2" />
             New Card
           </Button>
@@ -39,7 +39,7 @@ export const PaymentMethods: React.FC<PaymentMethodsProps> = ({ paymentMethods }
             <div className="text-center py-8 text-gray-400 font-bold italic">No payment assets linked.</div>
           ) : (
             paymentMethods.map((method) => (
-              <div key={method.id} className="bg-[#fcfcfc] border border-gray-100 rounded-[2rem] p-6 hover:border-black transition-all group">
+              <div key={method.id} className="bg-[#fcfcfc] border border-gray-100 rounded-2xl sm:rounded-[2rem] p-4 sm:p-6 hover:border-black transition-all group">
                 <div className="flex justify-between items-center">
                   <div className="flex items-center gap-4">
                     <div className="w-14 h-10 bg-black rounded-xl flex items-center justify-center border-2 border-[#bef264]/20 group-hover:border-[#bef264] transition-all">

@@ -47,7 +47,13 @@ export class ApiErrorHandler {
       code: error.code ?? 'N/A',
       errors: error.errors,
     };
-    console.error(`[API Error${context ? ` - ${context}` : ''}]:`, errorObj);
+    console.error(`[API Error${context ? ` - ${context}` : ''}]:`, {
+      message: error.message,
+      status: error.status,
+      code: error.code,
+      errors: error.errors,
+      originalError: error
+    });
   }
 
   /**

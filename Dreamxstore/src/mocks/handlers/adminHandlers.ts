@@ -344,7 +344,146 @@ export const adminHandlers = [
   }),
 
   // ==================== Product Management ====================
-  // DISABLED: Using real backend API for products instead of MSW mocks
+  
+  http.get(`${API_URL}/admin/products`, ({ request }) => {
+    const url = new URL(request.url);
+    const page = parseInt(url.searchParams.get('page') || '1');
+    const limit = parseInt(url.searchParams.get('limit') || '10');
+    const category = url.searchParams.get('category');
+    const status = url.searchParams.get('status');
+    const search = url.searchParams.get('search');
+    const sortBy = url.searchParams.get('sortBy') || 'createdAt';
+    const sortOrder = (url.searchParams.get('sortOrder') || 'desc') as 'asc' | 'desc';
+
+    let filtered = [...mockProducts];
+    
+    if (category) {
+      filtered = filtered.filter(p => p.category === category);
+    }
+    
+    if (status) {
+      filtered = filtered.filter(p => p.status === status);
+    }
+    
+    if (search) {
+      const searchLower = search.toLowerCase();
+      filtered = filtered.filter(p =>
+        p.name.toLowerCase().includes(searchLower) ||
+        p.brandName.toLowerCase().includes(searchLower) ||
+        p.description.toLowerCase().includes(searchLower)
+      );
+    }
+    
+    filtered = sortData(filtered, sortBy, sortOrder);
+    const paginated = getPaginatedData(filtered, page, limit);
+    
+    return HttpResponse.json({
+      success: true,
+      ...paginated,
+    });
+  }),
+
+  http.get(`${API_URL}/admin/products/pending`, () => {
+    const pending = mockProducts.filter(p => p.status === ProductStatus.PENDING);
+    return HttpResponse.json({
+      success: true,
+      data: pending,
+    });
+  }),
+
+  http.get(`${API_URL}/admin/products/:id`, ({ params }) => {
+    const product = mockProducts.find(p => p.id === params.id);
+    
+    if (!product) {
+      return HttpResponse.json(
+        { success: false, message: 'Product not found' },
+        { status: 404 }
+      );
+    }
+    
+    return HttpResponse.json({
+      success: true,
+      data: product,
+    });
+  }),
+
+  http.post(`${API_URL}/admin/products`, async ({ request }) => {
+    const data = await request.json() as any;
+    const newProduct = {
+      id: `product-${Date.now()}`,
+      ...data,
+      sales: 0,
+      status: ProductStatus.PENDING,
+      createdAt: new Date().toISOString(),
+    };
+    
+    mockProducts.push(newProduct);
+    
+    return HttpResponse.json({
+      success: true,
+      data: newProduct,
+    }, { status: 201 });
+  }),
+
+  http.put(`${API_URL}/admin/products/:id`, async ({ params, request }) => {
+    const data = await request.json() as any;
+    const index = mockProducts.findIndex(p => p.id === params.id);
+    
+    if (index === -1) {
+      return HttpResponse.json(
+        { success: false, message: 'Product not found' },
+        { status: 404 }
+      );
+    }
+    
+    mockProducts[index] = { ...mockProducts[index], ...data };
+    
+    return HttpResponse.json({
+      success: true,
+      data: mockProducts[index],
+    });
+  }),
+
+  http.patch(`${API_URL}/admin/products/:id/status`, async ({ params, request }) => {
+    const { status } = await request.json() as any;
+    const index = mockProducts.findIndex(p => p.id === params.id);
+    
+    if (index === -1) {
+      return HttpResponse.json(
+        { success: false, message: 'Product not found' },
+        { status: 404 }
+      );
+    }
+    
+    mockProducts[index].status = status;
+    if (status === ProductStatus.ACTIVE) {
+      mockProducts[index].approvedAt = new Date().toISOString();
+      mockProducts[index].approvedBy = 'admin-1';
+    }
+    
+    return HttpResponse.json({
+      success: true,
+      data: mockProducts[index],
+    });
+  }),
+
+  http.delete(`${API_URL}/admin/products/:id`, ({ params }) => {
+    const index = mockProducts.findIndex(p => p.id === params.id);
+    
+    if (index === -1) {
+      return HttpResponse.json(
+        { success: false, message: 'Product not found' },
+        { status: 404 }
+      );
+    }
+    
+    mockProducts.splice(index, 1);
+    
+    return HttpResponse.json({
+      success: true,
+      message: 'Product deleted successfully',
+    });
+  }),
 
   // ==================== Category Management ====================
   
@@ -508,14 +647,14 @@ export const adminHandlers = [
 
   // ==================== Content Management ====================
   
-  http.get(`${API_URL}/admin/content/banners`, () => {
+  http.get(`${API_URL}/admin/banners`, () => {
     return HttpResponse.json({
       success: true,
       data: mockBanners,
     });
   }),
 
-  http.post(`${API_URL}/admin/content/banners`, async ({ request }) => {
+  http.post(`${API_URL}/admin/banners`, async ({ request }) => {
     const data = await request.json() as any;
     const newBanner = {
       id: `banner-${Date.now()}`,

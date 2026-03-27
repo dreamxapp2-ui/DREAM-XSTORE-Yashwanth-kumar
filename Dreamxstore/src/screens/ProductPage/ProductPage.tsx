@@ -4,7 +4,7 @@ import { Button } from "../../components/ui/button";
 import { useRouter, useParams } from "next/navigation";
 import { useCart } from "../../contexts/CartContext";
 import Link from "next/link";
-import { Product } from "../../lib/api/services/productService";
+import { Product, ProductService } from "../../lib/api/services/productService";
 
 interface ProductPageProps {
   initialProduct?: Product;
@@ -65,7 +65,7 @@ export const ProductPage = ({ initialProduct }: ProductPageProps): JSX.Element =
         setRelatedLoading(true);
         const response = await ProductService.getProductsByCategory(product.category, 1, 6);
         // Filter out current product
-        const filtered = response.data.filter(p => p._id !== product._id).slice(0, 5);
+        const filtered = response.data.filter((p: Product) => p._id !== product._id).slice(0, 5);
         setRelatedProducts(filtered);
       } catch (err) {
         console.error("Failed to fetch related products:", err);
@@ -199,17 +199,35 @@ export const ProductPage = ({ initialProduct }: ProductPageProps): JSX.Element =
                  </div>
               </div>
               <div className="grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-5 gap-3">
-                 {product.sizes?.map(s => (
-                   <button 
-                    key={s}
-                    onClick={() => setSelectedSize(s)}
-                    className={`h-14 lg:h-12 border rounded-xl font-black text-sm flex items-center justify-center transition-all ${
-                      selectedSize === s ? 'bg-black text-white border-black scale-105' : 'border-gray-200 text-gray-400 hover:border-black hover:text-black'
-                    }`}
-                   >
-                     {s}
-                   </button>
-                 ))}
+                 {product.sizes?.map(s => {
+                   const stock = product.sizeStock ? product.sizeStock[s] : undefined;
+                   const isOutOfStock = stock === 0;
+                   
+                   return (
+                     <button 
+                      key={s}
+                      disabled={isOutOfStock}
+                      onClick={() => setSelectedSize(s)}
+                      className={`h-14 lg:h-16 border rounded-xl font-black flex flex-col items-center justify-center transition-all relative overflow-hidden ${
+                        isOutOfStock 
+                          ? 'border-gray-100 bg-gray-50 text-gray-300 cursor-not-allowed opacity-50' 
+                          : selectedSize === s 
+                            ? 'bg-black text-white border-black scale-105 shadow-lg' 
+                            : 'border-gray-200 text-gray-600 hover:border-black hover:text-black'
+                      }`}
+                     >
+                       <span className="text-sm uppercase italic">{s}</span>
+                       {stock !== undefined && !isOutOfStock && (
+                         <span className={`text-[8px] font-bold ${selectedSize === s ? 'text-[#bef264]' : 'text-gray-400'} mt-0.5`}>
+                           {stock} LEFT
+                         </span>
+                       )}
+                       {isOutOfStock && (
+                         <span className="text-[8px] font-bold text-red-400 uppercase tracking-tighter mt-0.5">OUT</span>
+                       )}
+                     </button>
+                   );
+                 })}
                  {(!product.sizes || product.sizes.length === 0) && (
                    <div className="col-span-full py-4 text-center text-xs font-bold text-gray-400 bg-gray-50 rounded-xl">No sizes available</div>
                  )}

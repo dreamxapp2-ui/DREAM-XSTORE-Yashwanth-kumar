@@ -128,17 +128,17 @@ export const AddressManagement: React.FC = () => {
   }
   return (
     <>
-      <Card className="border border-gray-100 rounded-[2.5rem] bg-white shadow-sm overflow-hidden">
-        <CardContent className="p-8">
-          <div className="flex justify-between items-center mb-8 border-b border-gray-50 pb-6">
+      <Card className="border border-gray-100 rounded-3xl sm:rounded-[2.5rem] bg-white shadow-sm overflow-hidden">
+        <CardContent className="p-4 sm:p-8">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 sm:mb-8 border-b border-gray-50 pb-4 sm:pb-6">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-[#bef264]/20 flex items-center justify-center">
-                <MapPin className="w-5 h-5 text-black" />
+              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-[#bef264]/20 flex items-center justify-center">
+                <MapPin className="w-4 h-4 sm:w-5 sm:h-5 text-black" />
               </div>
-              <h2 className="text-xl font-black italic uppercase tracking-tight">Shipping Access</h2>
+              <h2 className="text-lg sm:text-xl font-black italic uppercase tracking-tight">Shipping Access</h2>
             </div>
             <Button 
-              className="bg-black text-[#bef264] hover:bg-black/90 text-xs font-black uppercase italic rounded-full px-6 py-3 transition-all active:scale-95"
+              className="w-full sm:w-auto bg-black text-[#bef264] hover:bg-black/90 text-[10px] sm:text-xs font-black uppercase italic rounded-full px-4 sm:px-6 py-2 sm:py-3 transition-all active:scale-95"
               onClick={() => setShowAddModal(true)}
             >
               <Plus className="w-4 h-4 mr-2" />
@@ -146,16 +146,16 @@ export const AddressManagement: React.FC = () => {
             </Button>
           </div>
 
-        <div className="grid md:grid-cols-2 gap-4">
+          <div className="grid md:grid-cols-2 gap-4">
           {addresses.length === 0 ? (
-            <div className="col-span-full text-center py-12 bg-gray-50 rounded-[2rem] border-2 border-dashed border-gray-100">
-              <MapPin className="w-12 h-12 mx-auto mb-4 text-gray-200" />
-              <p className="font-bold text-gray-400 italic">No storage coordinates found yet.</p>
-              <p className="text-xs font-medium text-gray-300 uppercase tracking-widest mt-1">Configure your shipping destination</p>
+            <div className="col-span-full text-center py-10 bg-gray-50 rounded-2xl sm:rounded-[2rem] border-2 border-dashed border-gray-100 p-4">
+              <MapPin className="w-10 h-10 sm:w-12 sm:h-12 mx-auto mb-4 text-gray-200" />
+              <p className="text-sm sm:font-bold text-gray-400 italic">No storage coordinates found yet.</p>
+              <p className="text-[10px] font-medium text-gray-300 uppercase tracking-widest mt-1">Configure your shipping destination</p>
             </div>
           ) : (
             addresses.map((address) => (
-              <div key={address._id} className="bg-[#fcfcfc] border border-gray-100 rounded-[2rem] p-6 hover:border-black transition-all group relative">
+              <div key={address._id} className="bg-[#fcfcfc] border border-gray-100 rounded-2xl sm:rounded-[2rem] p-4 sm:p-6 hover:border-black transition-all group relative">
                 <div className="flex justify-between items-start">
                   <div className="flex-1">
                     <div className="flex flex-wrap items-center gap-2 mb-3">
@@ -209,19 +209,19 @@ export const AddressManagement: React.FC = () => {
 
     {/* Add Address Modal - REDESIGNED */}
     {showAddModal && (
-      <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[200] p-4 animate-in fade-in duration-300">
-        <div className="bg-white rounded-[3rem] w-full max-w-xl max-h-[90vh] overflow-hidden shadow-2xl animate-in zoom-in-95 duration-300">
-          <div className="bg-black p-8 flex justify-between items-center">
-            <h3 className="text-2xl font-black text-[#bef264] italic uppercase">New Destination</h3>
+      <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[200] p-2 sm:p-4 animate-in fade-in duration-300">
+        <div className="bg-white rounded-3xl sm:rounded-[3rem] w-full max-w-xl max-h-[95vh] overflow-hidden shadow-2xl animate-in zoom-in-95 duration-300">
+          <div className="bg-black p-6 sm:p-8 flex justify-between items-center">
+            <h3 className="text-xl sm:text-2xl font-black text-[#bef264] italic uppercase">New Destination</h3>
             <button
-              className="w-10 h-10 rounded-full bg-[#bef264]/10 flex items-center justify-center text-[#bef264] hover:bg-[#bef264] hover:text-black transition-all"
+              className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-[#bef264]/10 flex items-center justify-center text-[#bef264] hover:bg-[#bef264] hover:text-black transition-all"
               onClick={() => setShowAddModal(false)}
             >
-              <X className="w-5 h-5" />
+              <X className="w-4 h-4 sm:w-5 sm:h-5" />
             </button>
           </div>
 
-          <form onSubmit={handleSubmitAddress} className="p-8 overflow-y-auto max-h-[calc(90vh-100px)]">
+          <form onSubmit={handleSubmitAddress} className="p-6 sm:p-8 overflow-y-auto max-h-[calc(95vh-100px)]">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Address Type */}
               <div className="md:col-span-2">
@@ -341,11 +341,11 @@ export const AddressManagement: React.FC = () => {
             </div>
 
             {/* Submit Button */}
-            <div className="mt-10">
+            <div className="mt-8 sm:mt-10">
                <Button
                  type="submit"
                  disabled={isSubmitting}
-                 className="w-full h-16 bg-[#bef264] text-black hover:bg-black hover:text-[#bef264] rounded-2xl font-black text-lg uppercase italic transition-all shadow-xl shadow-[#bef264]/20"
+                 className="w-full h-14 sm:h-16 bg-[#bef264] text-black hover:bg-black hover:text-[#bef264] rounded-2xl font-black text-base sm:text-lg uppercase italic transition-all shadow-xl shadow-[#bef264]/20"
                >
                  {isSubmitting ? 'UPLOADING...' : 'CONFIRM COORDINATES'}
                </Button>
