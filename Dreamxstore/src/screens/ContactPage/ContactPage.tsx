@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState } from "react";
-import { HeroSection } from "../LandingPage/sections/HeroSection";
 import { Footer } from "../LandingPage/sections/Footer";
 import { FloatingChatButton } from "../LandingPage/sections/FloatingChatButton";
 import { Button } from "../../components/ui/button";
@@ -101,9 +100,6 @@ export const ContactPage = () => {
   return (
     <div className="bg-white w-full min-h-screen">
       <div className="bg-white w-full max-w-none mx-auto relative">
-        {/* Hero Section - Fixed Navigation */}
-        <HeroSection />
-        
         {/* Main Content */}
         <main className="pt-0">
           {/* Hero Banner */}
