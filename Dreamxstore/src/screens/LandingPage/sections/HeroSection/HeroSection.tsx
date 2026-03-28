@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Button } from "../../../../components/ui/button";
 import { Search, Bell, ShoppingBag, User, Menu, X, ChevronDown, LogOut } from "lucide-react";
+import { ProductService, Product } from '../../../../lib/api/services/productService';
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCart } from "../../../../contexts/CartContext";
@@ -12,6 +13,11 @@ export const HeroSection = () => {
   const [user, setUser] = useState<any>(null);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isProfileHovered, setIsProfileHovered] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchSuggestions, setSearchSuggestions] = useState<Product[]>([]);
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
+  const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
+  const searchRef = useRef<HTMLDivElement>(null);
   const { cart } = useCart();
   const router = useRouter();
 
@@ -52,6 +58,62 @@ export const HeroSection = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     window.location.href = '/login';
+  };
+
+  // Fetch live suggestions as user types
+  useEffect(() => {
+    if (!searchQuery.trim()) {
+      setSearchSuggestions([]);
+      return;
+    }
+    const timer = setTimeout(async () => {
+      setIsLoadingSuggestions(true);
+      try {
+        const response = await ProductService.searchProducts(searchQuery, { limit: 5 });
+        let products: Product[] = [];
+        if (response.data && Array.isArray(response.data)) {
+          products = response.data;
+        } else if ((response as any).data?.data && Array.isArray((response as any).data.data)) {
+          products = (response as any).data.data;
+        } else if (Array.isArray(response)) {
+          products = response as unknown as Product[];
+        }
+        setSearchSuggestions(products.slice(0, 5));
+      } catch {
+        setSearchSuggestions([]);
+      } finally {
+        setIsLoadingSuggestions(false);
+      }
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
+        setIsSearchFocused(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleSearch = () => {
+    if (!searchQuery.trim()) return;
+    setIsSearchFocused(false);
+    router.push(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
+  };
+
+  const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') handleSearch();
+    if (e.key === 'Escape') setIsSearchFocused(false);
+  };
+
+  const handleSuggestionClick = (product: Product) => {
+    setSearchQuery(product.name);
+    setIsSearchFocused(false);
+    router.push(`/product/${product._id}`);
   };
 
   const totalItems = cart.reduce((total, item) => total + item.quantity, 0);
@@ -102,21 +164,78 @@ export const HeroSection = () => {
         </div>
 
         {/* Search Bar */}
-        <div className="flex-1 max-w-xs mx-4 hidden lg:block">
+        <div className="flex-1 max-w-xs mx-4 hidden lg:block" ref={searchRef}>
           <div className="relative group">
-            <span className="absolute inset-y-0 left-0 flex items-center pl-3">
-              <Search className="w-4 h-4 text-gray-400" />
+            <span
+              className="absolute inset-y-0 left-0 flex items-center pl-3 cursor-pointer z-10"
+              onClick={handleSearch}
+            >
+              <Search className="w-4 h-4 text-gray-400 hover:text-[#004d84] transition-colors" />
             </span>
             <input
               type="text"
-              placeholder="Search..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onFocus={() => setIsSearchFocused(true)}
+              onKeyDown={handleSearchKeyDown}
+              placeholder="Search products..."
               className="w-full h-10 pl-9 pr-4 rounded-full bg-gray-50 border-none focus:ring-1 focus:ring-[#004d84] text-xs transition-all"
             />
+            {/* Suggestions Dropdown */}
+            {isSearchFocused && searchQuery.trim() && (
+              <div className="absolute top-full mt-2 left-0 right-0 bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden z-[200]">
+                {isLoadingSuggestions ? (
+                  <div className="px-4 py-3 text-xs text-gray-400 flex items-center gap-2">
+                    <span className="animate-spin inline-block w-3 h-3 border border-gray-300 border-t-[#004d84] rounded-full"></span>
+                    Searching...
+                  </div>
+                ) : searchSuggestions.length > 0 ? (
+                  <>
+                    {searchSuggestions.map((product) => (
+                      <button
+                        key={product._id}
+                        onMouseDown={() => handleSuggestionClick(product)}
+                        className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 text-left transition-colors"
+                      >
+                        {product.images?.[0] && (
+                          <img src={product.images[0]} alt={product.name} className="w-8 h-8 object-cover rounded-md flex-shrink-0" />
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-semibold text-gray-900 truncate">{product.name}</p>
+                          <p className="text-[10px] text-gray-400">{product.category}</p>
+                        </div>
+                        <span className="text-xs font-bold text-[#004d84] flex-shrink-0">₹{product.price}</span>
+                      </button>
+                    ))}
+                    <button
+                      onMouseDown={handleSearch}
+                      className="w-full px-4 py-2 text-xs text-[#004d84] font-semibold hover:bg-[#f0f7ff] text-center border-t border-gray-100 transition-colors"
+                    >
+                      See all results for "{searchQuery}"
+                    </button>
+                  </>
+                ) : (
+                  <div className="px-4 py-3 text-xs text-gray-400 text-center">
+                    No products found
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
 
         {/* Right: Actions */}
         <div className="flex items-center gap-3">
+          {/* Mobile Search Button */}
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => router.push('/search')}
+            className="w-10 h-10 rounded-full text-gray-600 hover:bg-gray-100 flex lg:hidden"
+          >
+            <Search className="w-5 h-5" />
+          </Button>
+
           <Button
             variant="ghost"
             size="icon"

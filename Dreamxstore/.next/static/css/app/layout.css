@@ -2054,6 +2054,10 @@ video {
 .border-white\/50 {
   border-color: rgb(255 255 255 / 0.5);
 }
+.border-t-\[\#004d84\] {
+  --tw-border-opacity: 1;
+  border-top-color: rgb(0 77 132 / var(--tw-border-opacity, 1));
+}
 .border-t-blue-600 {
   --tw-border-opacity: 1;
   border-top-color: rgb(37 99 235 / var(--tw-border-opacity, 1));
@@ -3424,6 +3428,10 @@ video {
 .hover\:bg-\[\#e9f87a\]:hover {
   --tw-bg-opacity: 1;
   background-color: rgb(233 248 122 / var(--tw-bg-opacity, 1));
+}
+.hover\:bg-\[\#f0f7ff\]:hover {
+  --tw-bg-opacity: 1;
+  background-color: rgb(240 247 255 / var(--tw-bg-opacity, 1));
 }
 .hover\:bg-\[\#f1ff8c\]:hover {
   --tw-bg-opacity: 1;
