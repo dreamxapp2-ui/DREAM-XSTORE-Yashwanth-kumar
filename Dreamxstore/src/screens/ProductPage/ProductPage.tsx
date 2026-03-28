@@ -17,50 +17,48 @@ export const ProductPage = ({ initialProduct }: ProductPageProps): JSX.Element =
   const params = useParams();
   const { addToCart } = useCart();
   
+  const [product, setProduct] = useState<Product | null>(initialProduct || null);
+  const [loading, setLoading] = useState(!initialProduct);
+  const [error, setError] = useState<string | null>(null);
   const [quantity, setQuantity] = useState(1);
   const [isWishlisted, setIsWishlisted] = useState(false);
   const [selectedSize, setSelectedSize] = useState("");
   const [selectedImage, setSelectedImage] = useState(0);
   const [sizeType, setSizeType] = useState("EU");
 
-  // Default Mock product data if no initialProduct provided
-  const mockProduct: Product = {
-    _id: "60f8c2b5e1b2c8a1b8e4d111",
-    name: "Shoes PulseSneaks Relax 4",
-    brandName: "PulseSneaks",
-    category: "Mens",
-    price: 160.0,
-    rating: 5,
-    reviewsCount: 1560,
-    images: [
-      "https://images.pexels.com/photos/19090/pexels-photo.jpg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1",
-      "https://images.pexels.com/photos/1456706/pexels-photo-1456706.jpeg?auto=compress&cs=tinysrgb&w=400",
-      "https://images.pexels.com/photos/1478442/pexels-photo-1478442.jpeg?auto=compress&cs=tinysrgb&w=400",
-      "https://images.pexels.com/photos/1598505/pexels-photo-1598505.jpeg?auto=compress&cs=tinysrgb&w=400",
-      "https://images.pexels.com/photos/1580267/pexels-photo-1580267.jpeg?auto=compress&cs=tinysrgb&w=400"
-    ],
-    description: "Sleek and stylish sneakers with breathable mesh.",
-    longDescription: "Sleek and stylish, these sneakers feature a breathable mesh upper for comfort and a cushioned sole for all-day support, making them perfect for both casual outings and active adventures. The vibrant color pops, adding a fun touch to any outfit.",
-    sizes: ["S", "M", "L", "XL", "XXL"],
-    inStock: true,
-    discount: 10,
-    originalPrice: 176
-  };
-
-  const product = initialProduct || mockProduct;
-
   useEffect(() => {
-    if (product.sizes && product.sizes.length > 0) {
-      setSelectedSize(product.sizes[0]);
-    }
-  }, [product]);
+    const fetchProduct = async () => {
+      const id = params.productSlug as string;
+      if (!id || initialProduct) return;
+
+      try {
+        setLoading(true);
+        const data = await ProductService.getProductById(id);
+        if (data) {
+          setProduct(data);
+          if (data.sizes && data.sizes.length > 0) {
+            setSelectedSize(data.sizes[0]);
+          }
+        } else {
+          setError("Product not found");
+        }
+      } catch (err) {
+        console.error("Failed to fetch product:", err);
+        setError("Failed to load product details");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProduct();
+  }, [params.productSlug, initialProduct]);
 
   const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
   const [relatedLoading, setRelatedLoading] = useState(false);
 
   useEffect(() => {
     const fetchRelated = async () => {
-      if (!product.category) return;
+      if (!product?.category) return;
       try {
         setRelatedLoading(true);
         const response = await ProductService.getProductsByCategory(product.category, 1, 6);
@@ -74,7 +72,36 @@ export const ProductPage = ({ initialProduct }: ProductPageProps): JSX.Element =
       }
     };
     fetchRelated();
-  }, [product._id, product.category]);
+  }, [product?._id, product?.category]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-white flex flex-col items-center justify-center p-4">
+        <div className="w-16 h-16 border-4 border-gray-100 border-t-[#bef264] rounded-full animate-spin mb-4"></div>
+        <p className="text-sm font-black text-gray-400 animate-pulse uppercase tracking-widest">Loading Premium Collection...</p>
+      </div>
+    );
+  }
+
+  if (error || !product) {
+    return (
+      <div className="min-h-screen bg-white flex flex-col items-center justify-center p-4 text-center space-y-6">
+        <div className="w-24 h-24 bg-red-50 rounded-full flex items-center justify-center text-red-500">
+           <Search className="w-10 h-10" />
+        </div>
+        <div className="space-y-2">
+          <h2 className="text-2xl font-black text-gray-900">Oops! Product Not Found</h2>
+          <p className="text-gray-500 max-w-md mx-auto">{error || "The product you're looking for might have been moved or is currently unavailable."}</p>
+        </div>
+        <Button 
+          onClick={() => router.push('/')}
+          className="bg-black text-white px-8 py-3 rounded-full font-black hover:bg-gray-800 transition-all"
+        >
+          Return to Store
+        </Button>
+      </div>
+    );
+  }
 
   const handleAddToCart = () => {
     addToCart({
@@ -132,8 +159,8 @@ export const ProductPage = ({ initialProduct }: ProductPageProps): JSX.Element =
 
             <div className="space-y-4">
               <div className="flex items-center gap-2">
-                 <img src="https://i.postimg.cc/sx24cHZb/image-89.png" className="w-6 h-6 object-contain" alt="Brand" />
-                 <span className="text-sm font-black italic">{product.brandName}</span>
+                 {product.brand?.logo && <img src={product.brand.logo} className="w-6 h-6 object-contain" alt="Brand" />}
+                 <span className="text-sm font-black italic">{product.brandName || product.brand?.name}</span>
               </div>
               <div className="flex justify-between items-start">
                  <h1 className="text-3xl lg:text-4xl xl:text-5xl font-black text-gray-900 leading-tight">
@@ -161,8 +188,8 @@ export const ProductPage = ({ initialProduct }: ProductPageProps): JSX.Element =
                <div className="flex flex-col">
                   <span className="text-sm font-black text-red-500">{product.discount}% OFF</span>
                   <div className="flex items-end gap-3">
-                    <span className="text-4xl lg:text-5xl font-black text-gray-900">${product.price.toFixed(0)}</span>
-                    <span className="text-lg lg:text-xl font-bold text-gray-300 line-through mb-1">${product.originalPrice || (product.price * 1.2).toFixed(0)}</span>
+                    <span className="text-4xl lg:text-5xl font-black text-gray-900">₹{product.price.toLocaleString()}</span>
+                    <span className="text-lg lg:text-xl font-bold text-gray-300 line-through mb-1">₹{(product.originalPrice || (product.price * 1.2)).toLocaleString()}</span>
                   </div>
                </div>
             </div>
@@ -263,7 +290,7 @@ export const ProductPage = ({ initialProduct }: ProductPageProps): JSX.Element =
             
             <div className="hidden lg:flex items-center gap-3 text-xs font-black text-gray-400 pt-2 italic">
                <Truck className="w-5 h-5 text-[#bef264]" />
-               FREE SHIPPING ON ORDERS OVER $150
+               FREE SHIPPING ON ORDERS OVER ₹15,000
             </div>
 
             {/* Mobile Action Bar */}
@@ -271,7 +298,7 @@ export const ProductPage = ({ initialProduct }: ProductPageProps): JSX.Element =
               <div className="bg-white/90 backdrop-blur-3xl rounded-[2.5rem] p-4 pr-3 flex items-center justify-between shadow-[0_30px_60px_rgba(0,0,0,0.15)] border border-white/50">
                 <div className="flex flex-col ml-6">
                     <span className="text-[10px] font-black text-gray-400 uppercase leading-none mb-1">Total price</span>
-                    <span className="text-2xl font-black text-gray-900 leading-none">${(product.price * quantity).toFixed(0)}</span>
+                    <span className="text-2xl font-black text-gray-900 leading-none">₹{(product.price * quantity).toLocaleString()}</span>
                 </div>
                 <button 
                   onClick={handleAddToCart}
@@ -314,7 +341,7 @@ export const ProductPage = ({ initialProduct }: ProductPageProps): JSX.Element =
                       </div>
                       <div className="px-2">
                         <h4 className="font-black text-sm text-gray-900 group-hover:translate-x-1 transition-transform line-clamp-1">{p.name}</h4>
-                        <p className="text-xs font-bold text-gray-400 tracking-tight">${p.price.toFixed(0)}</p>
+                        <p className="text-xs font-bold text-gray-400 tracking-tight">₹{p.price.toLocaleString()}</p>
                       </div>
                    </Link>
                  ))}

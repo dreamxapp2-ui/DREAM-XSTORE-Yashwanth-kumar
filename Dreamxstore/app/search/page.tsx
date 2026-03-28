@@ -96,28 +96,6 @@ function SearchPageContent() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Search Bar */}
-      <div className="sticky top-0 z-30 bg-white/80 backdrop-blur-md border-b border-gray-200 px-4 sm:px-6 lg:px-20 py-4 shadow-sm">
-        <div className="max-w-2xl mx-auto">
-          <motion.div
-            initial={{ scale: 0.95, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            className="relative"
-          >
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search products, brands, categories..."
-              className="w-full px-4 py-3 pl-12 rounded-full border border-gray-200 shadow-sm 
-                         focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
-              autoFocus
-            />
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-          </motion.div>
-        </div>
-      </div>
-
       {/* Content */}
       <div className="px-4 sm:px-6 lg:px-20 py-8">
         <AnimatePresence mode="wait">
