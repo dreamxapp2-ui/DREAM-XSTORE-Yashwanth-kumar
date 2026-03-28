@@ -30,6 +30,14 @@ function SearchPageContent() {
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
   const [isSearching, setIsSearching] = useState(false);
 
+  // Sync searchQuery state with URL params
+  useEffect(() => {
+    const q = searchParams.get('q');
+    if (q !== null) {
+      setSearchQuery(q);
+    }
+  }, [searchParams]);
+
   // Search using backend API
   useEffect(() => {
     if (searchQuery.trim()) {
@@ -45,15 +53,8 @@ function SearchPageContent() {
       console.log('[Search] Searching for:', searchQuery);
       const response = await ProductService.searchProducts(searchQuery);
       
-      // Handle different response structures
-      let products = [];
-      if (response.data && Array.isArray(response.data)) {
-        products = response.data;
-      } else if (response.data && response.data.data && Array.isArray(response.data.data)) {
-        products = response.data.data;
-      } else if (Array.isArray(response)) {
-        products = response;
-      }
+      // The API returns PaginatedResponse<Product> which has a 'data' property (the array)
+      const products = response.data || [];
       
       setFilteredProducts(products);
       console.log('[Search] Found', products.length, 'products');

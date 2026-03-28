@@ -1,18 +1,26 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Search, Bell, ShoppingBag, User, Menu, X, ChevronDown, LogOut, Trash2 } from "lucide-react";
+import { ProductService, Product } from '@/src/lib/api/services/productService';
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCart } from "@/src/contexts/CartContext";
 import { UserService } from '@/src/lib/api/services/userService';
 import { TokenManager } from '@/src/lib/api/tokenManager';
 import { Button } from "@/src/components/ui/button";
+import { motion, AnimatePresence } from "framer-motion";
 
 export default function Header() {
   const [user, setUser] = useState<any>(null);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchSuggestions, setSearchSuggestions] = useState<Product[]>([]);
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
+  const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
+  const searchRef = useRef<HTMLDivElement>(null);
   const { cart, removeFromCart, updateQuantity } = useCart();
   const router = useRouter();
 
@@ -68,20 +76,142 @@ export default function Header() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isProfileOpen]);
 
+  // Fetch live suggestions as user types
+  useEffect(() => {
+    if (!searchQuery.trim()) {
+      setSearchSuggestions([]);
+      return;
+    }
+    const timer = setTimeout(async () => {
+      setIsLoadingSuggestions(true);
+      try {
+        const response = await ProductService.searchProducts(searchQuery, { limit: 5 });
+        let products: Product[] = [];
+        if (response.data && Array.isArray(response.data)) {
+          products = response.data;
+        } else if ((response as any).data?.data && Array.isArray((response as any).data.data)) {
+          products = (response as any).data.data;
+        } else if (Array.isArray(response)) {
+          products = response as unknown as Product[];
+        }
+        setSearchSuggestions(products.slice(0, 5));
+      } catch {
+        setSearchSuggestions([]);
+      } finally {
+        setIsLoadingSuggestions(false);
+      }
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  // Close search dropdown on outside click
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
+        setIsSearchFocused(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleSearch = () => {
+    if (!searchQuery.trim()) return;
+    setIsSearchFocused(false);
+    setIsMobileSearchOpen(false);
+    router.push(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
+  };
+
+  const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') handleSearch();
+    if (e.key === 'Escape') setIsSearchFocused(false);
+  };
+
+  const handleSuggestionClick = (product: Product) => {
+    setSearchQuery(product.name);
+    setIsSearchFocused(false);
+    setIsMobileSearchOpen(false);
+    router.push(`/product/${product._id}`);
+  };
+
   const totalItems = cart.reduce((total, item) => total + item.quantity, 0);
 
   const navLinks = [
     { name: "Home", href: "/home" },
-    { name: "About us", href: "/about" },
+    { name: "About", href: "/about" },
     { name: "Services", href: "/services" },
     { name: "Contact", href: "/contact" }
   ];
 
   return (
     <header className="w-full bg-white border-b border-gray-100 shadow-sm sticky top-0 z-[100]">
-      <div className="w-full h-[70px] mx-auto flex items-center justify-between px-4 sm:px-6 lg:px-20">
+      <div className="w-full h-[70px] mx-auto flex items-center justify-between px-4 sm:px-6 lg:px-20 relative">
+        {/* Mobile Search Overlay */}
+        <AnimatePresence>
+          {isMobileSearchOpen && (
+            <motion.div 
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="absolute inset-0 bg-white z-[120] flex items-center px-4 gap-3 lg:hidden"
+            >
+              <div className="flex-1 relative" ref={searchRef}>
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <input
+                  type="text"
+                  autoFocus
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onKeyDown={handleSearchKeyDown}
+                  placeholder="Search products..."
+                  className="w-full h-12 pl-12 pr-4 bg-gray-50 border-none rounded-full focus:ring-2 focus:ring-[#bef264]/30 text-sm font-medium"
+                />
+                
+                {/* Mobile Suggestions */}
+                {searchQuery.trim() && (
+                  <div className="absolute top-full mt-2 left-0 right-0 bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden max-h-[60vh] overflow-y-auto">
+                    {isLoadingSuggestions ? (
+                      <div className="px-6 py-4 text-sm text-gray-400 flex items-center gap-3">
+                        <span className="animate-spin inline-block w-4 h-4 border-2 border-gray-200 border-t-[#004d84] rounded-full"></span>
+                        Searching...
+                      </div>
+                    ) : searchSuggestions.length > 0 ? (
+                      <>
+                        {searchSuggestions.map((product) => (
+                          <button
+                            key={product._id}
+                            onMouseDown={() => {
+                              handleSuggestionClick(product);
+                              setIsMobileSearchOpen(false);
+                            }}
+                            className="w-full flex items-center gap-4 px-4 py-3 hover:bg-gray-50 text-left border-b border-gray-50 last:border-0"
+                          >
+                            <img src={product.images?.[0]} alt="" className="w-10 h-10 object-cover rounded-lg" />
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-bold text-gray-900 truncate">{product.name}</p>
+                              <p className="text-xs text-gray-400">₹{product.price}</p>
+                            </div>
+                          </button>
+                        ))}
+                      </>
+                    ) : null}
+                  </div>
+                )}
+              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setIsMobileSearchOpen(false)}
+                className="w-10 h-10 rounded-full text-gray-500"
+              >
+                <X className="w-6 h-6" />
+              </Button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         {/* Left: Hamburger & Logo */}
-        <div className="flex items-center gap-4">
+        <div className={`flex items-center gap-4 ${isMobileSearchOpen ? 'opacity-0' : 'opacity-100'} transition-opacity`}>
           <Button
             variant="ghost"
             size="icon"
@@ -105,19 +235,86 @@ export default function Header() {
         </div>
 
         {/* Center: Search Bar (Hidden on mobile) */}
-        <div className="hidden md:flex flex-1 max-w-xl mx-8">
+        <div className="hidden lg:flex flex-1 max-w-xl mx-8" ref={searchRef}>
           <div className="relative w-full group">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-[#004d84] transition-colors" />
+            <Search 
+              className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-[#004d84] transition-colors cursor-pointer z-10" 
+              onClick={handleSearch}
+            />
             <input
               type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onFocus={() => setIsSearchFocused(true)}
+              onKeyDown={handleSearchKeyDown}
               placeholder="Search for premium products..."
               className="w-full h-14 pl-12 pr-4 bg-gray-50 border-none rounded-full focus:ring-2 focus:ring-[#bef264]/30 transition-all text-sm font-medium"
             />
+            
+            {/* Suggestions Dropdown */}
+            {isSearchFocused && searchQuery.trim() && (
+              <div className="absolute top-full mt-2 left-0 right-0 bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden z-[110]">
+                {isLoadingSuggestions ? (
+                  <div className="px-6 py-4 text-sm text-gray-400 flex items-center gap-3">
+                    <span className="animate-spin inline-block w-4 h-4 border-2 border-gray-200 border-t-[#004d84] rounded-full"></span>
+                    Searching products...
+                  </div>
+                ) : searchSuggestions.length > 0 ? (
+                  <>
+                    <div className="px-4 py-2 bg-gray-50/50 border-b border-gray-50">
+                      <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Product Matches</p>
+                    </div>
+                    {searchSuggestions.map((product) => (
+                      <button
+                        key={product._id}
+                        onMouseDown={() => handleSuggestionClick(product)}
+                        className="w-full flex items-center gap-4 px-4 py-3 hover:bg-[#bef264]/5 text-left transition-all group"
+                      >
+                        <div className="w-12 h-12 rounded-xl bg-gray-50 border border-gray-100 overflow-hidden flex-shrink-0 group-hover:scale-105 transition-transform">
+                          {product.images?.[0] && (
+                            <img src={product.images[0]} alt={product.name} className="w-full h-full object-cover" />
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-black text-gray-900 truncate group-hover:text-[#004d84] transition-colors">{product.name}</p>
+                          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-tight">{product.category}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm font-black text-[#004d84]">₹{product.price}</p>
+                        </div>
+                      </button>
+                    ))}
+                    <button
+                      onMouseDown={handleSearch}
+                      className="w-full px-4 py-3 text-xs font-black text-center border-t border-gray-50 hover:bg-[#bef264] transition-all uppercase tracking-widest"
+                    >
+                      See all for "{searchQuery}"
+                    </button>
+                  </>
+                ) : (
+                  <div className="px-6 py-10 text-center">
+                    <Search className="w-8 h-8 text-gray-200 mx-auto mb-3" />
+                    <p className="text-sm font-bold text-gray-400">No products found matching your search</p>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
 
         {/* Right: Actions */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
+          {/* Mobile/Tablet Search Button */}
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setIsMobileSearchOpen(!isMobileSearchOpen)}
+            className={`w-10 h-10 rounded-full transition-all flex lg:hidden ${isMobileSearchOpen ? 'bg-[#bef264] text-black' : 'text-black hover:bg-gray-100'}`}
+            title={isMobileSearchOpen ? "Close Search" : "Search Products"}
+          >
+            {isMobileSearchOpen ? <X className="w-5 h-5" /> : <Search className="w-5 h-5" />}
+          </Button>
+
           <Button
             variant="ghost"
             size="icon"
