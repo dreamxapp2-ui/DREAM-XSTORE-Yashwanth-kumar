@@ -366,6 +366,8 @@ const authController = {
 
       // Create verification URL
       const verificationUrl = `${process.env.FRONTEND_URL}/verify-email?token=${verificationToken}`;
+      const isDevelopment = process.env.NODE_ENV !== 'production';
+      let emailDeliveryFailed = false;
 
       // Send verification email
       const emailContent = `
@@ -389,11 +391,20 @@ const authController = {
         await SendMail(emailContent, emailSubject, email);
       } catch (emailError) {
         console.error('Failed to send verification email:', emailError);
-        await deleteUserById(user._id);
-        return res.status(500).json({
-          message: 'Failed to send verification email. Please try again.',
-          field: 'general'
-        });
+
+        if (!isDevelopment) {
+          await deleteUserById(user._id);
+          return res.status(500).json({
+            message: 'Failed to send verification email. Please try again.',
+            field: 'general'
+          });
+        }
+
+        emailDeliveryFailed = true;
+      }
+
+      if (isDevelopment) {
+        console.info(`Development verification URL for ${email}: ${verificationUrl}`);
       }
 
       // Remove sensitive information from response
@@ -402,8 +413,10 @@ const authController = {
       delete userResponse.verificationToken;
       delete userResponse.verificationTokenExpiry;
 
-      res.status(201).json({
-        message: 'Registration initiated. Please check your email to verify your account.',
+      const responseBody = {
+        message: emailDeliveryFailed
+          ? 'Registration completed, but email delivery failed locally. Use the verification URL from this response.'
+          : 'Registration initiated. Please check your email to verify your account.',
         user: {
           id: userResponse._id,
           email: userResponse.email,
@@ -411,7 +424,13 @@ const authController = {
           isBrand: false,  // Always false on signup
           isVerified: false
         }
-      });
+      };
+
+      if (isDevelopment) {
+        responseBody.verificationUrl = verificationUrl;
+      }
+
+      res.status(201).json(responseBody);
 
     } catch (error) {
       console.error('Registration error:', error);

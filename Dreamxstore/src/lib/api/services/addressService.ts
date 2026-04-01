@@ -46,6 +46,22 @@ export interface UpdateAddressData {
 }
 
 class AddressService {
+  private normalizeAddressResponse(response: any): Address[] {
+    if (Array.isArray(response)) {
+      return response;
+    }
+
+    if (response?.success) {
+      return response.data || [];
+    }
+
+    if (Array.isArray(response?.data)) {
+      return response.data;
+    }
+
+    return [];
+  }
+
   /**
    * Get all user addresses
    */
@@ -56,11 +72,7 @@ class AddressService {
       
       console.log('[AddressService] Addresses response:', response);
       
-      if (response.success) {
-        return response.data || [];
-      }
-      
-      return [];
+      return this.normalizeAddressResponse(response);
     } catch (error: any) {
       console.error('[AddressService] Error fetching addresses:', error);
       throw error;
@@ -76,12 +88,13 @@ class AddressService {
       const response = await apiClient.post('/user/addresses', addressData);
       
       console.log('[AddressService] Add address response:', response);
-      
-      if (response.success) {
-        return response.data || [];
+
+      const addresses = this.normalizeAddressResponse(response);
+      if (Array.isArray(addresses)) {
+        return addresses;
       }
-      
-      throw new Error(response.message || 'Failed to add address');
+
+      throw new Error(response?.message || 'Failed to add address');
     } catch (error: any) {
       console.error('[AddressService] Error adding address:', error);
       throw error;
@@ -95,12 +108,13 @@ class AddressService {
     try {
       console.log('[AddressService] Updating address:', addressId, addressData);
       const response = await apiClient.put(`/user/addresses/${addressId}`, addressData);
-      
-      if (response.success) {
-        return response.data || [];
+
+      const addresses = this.normalizeAddressResponse(response);
+      if (Array.isArray(addresses)) {
+        return addresses;
       }
-      
-      throw new Error(response.message || 'Failed to update address');
+
+      throw new Error(response?.message || 'Failed to update address');
     } catch (error: any) {
       console.error('[AddressService] Error updating address:', error);
       throw error;
@@ -114,12 +128,13 @@ class AddressService {
     try {
       console.log('[AddressService] Deleting address:', addressId);
       const response = await apiClient.delete(`/user/addresses/${addressId}`);
-      
-      if (response.success) {
-        return response.data || [];
+
+      const addresses = this.normalizeAddressResponse(response);
+      if (Array.isArray(addresses)) {
+        return addresses;
       }
-      
-      throw new Error(response.message || 'Failed to delete address');
+
+      throw new Error(response?.message || 'Failed to delete address');
     } catch (error: any) {
       console.error('[AddressService] Error deleting address:', error);
       throw error;
@@ -133,12 +148,13 @@ class AddressService {
     try {
       console.log('[AddressService] Setting default address:', addressId);
       const response = await apiClient.put(`/user/addresses/${addressId}/default`, {});
-      
-      if (response.success) {
-        return response.data || [];
+
+      const addresses = this.normalizeAddressResponse(response);
+      if (Array.isArray(addresses)) {
+        return addresses;
       }
-      
-      throw new Error(response.message || 'Failed to set default address');
+
+      throw new Error(response?.message || 'Failed to set default address');
     } catch (error: any) {
       console.error('[AddressService] Error setting default address:', error);
       throw error;

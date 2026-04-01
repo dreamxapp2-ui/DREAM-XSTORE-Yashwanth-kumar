@@ -52,13 +52,25 @@ const ProfilePage: React.FC = () => {
       const response = await UserService.getProfile();
       const profile = (response as any)?.user || response;
       setUser(profile);
-
-      const wishlistItems = await UserService.getWishlist();
-      const statsData = await UserOrderService.getOrderStats();
       
       const memberDate = profile.createdAt 
         ? new Date(profile.createdAt).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
         : "Jan 2024";
+
+         let wishlistItems: any[] = [];
+         let statsData: any = { data: { totalOrders: 0, totalSpend: 0 } };
+
+         try {
+            wishlistItems = await UserService.getWishlist();
+         } catch (error) {
+            console.warn("Wishlist load skipped:", error);
+         }
+
+         try {
+            statsData = await UserOrderService.getOrderStats();
+         } catch (error) {
+            console.warn("Order stats load skipped:", error);
+         }
 
       setStats({
         totalOrders: statsData.data?.totalOrders || 0,

@@ -8,6 +8,169 @@ const multer = require("multer");
 const { SendMail } = require("../helpers/mailing");
 const path = require("path");
 const fs = require("fs");
+const { getUserById } = require("../repositories/userAuthRepository");
+const mongoose = require("mongoose");
+const { Pool } = require("@neondatabase/serverless");
+
+function isMongoObjectId(value) {
+  return typeof value === "string" && mongoose.Types.ObjectId.isValid(value);
+}
+
+let postgresPool;
+
+function getPostgresPool() {
+  if (!process.env.DATABASE_URL) {
+    return null;
+  }
+
+  if (!postgresPool) {
+    postgresPool = new Pool({ connectionString: process.env.DATABASE_URL });
+  }
+
+  return postgresPool;
+}
+
+function canUsePostgresUser(userId) {
+  return Boolean(getPostgresPool()) && !isMongoObjectId(userId);
+}
+
+function normalizeAddressRow(row) {
+  return {
+    _id: row.id,
+    type: String(row.type || 'SHIPPING').toLowerCase(),
+    name: row.name || '',
+    phone: row.phone || '',
+    addressLine1: row.addressLine1 || '',
+    addressLine2: row.addressLine2 || '',
+    city: row.city || '',
+    state: row.state || '',
+    zipCode: row.zipCode || '',
+    country: row.country || 'India',
+    isDefault: Boolean(row.isDefault),
+    createdAt: row.createdAt,
+  };
+}
+
+async function getPostgresAddresses(userId) {
+  const pool = getPostgresPool();
+  const result = await pool.query(
+    'SELECT * FROM "UserAddress" WHERE "userId" = $1 ORDER BY "isDefault" DESC, "createdAt" DESC',
+    [userId]
+  );
+
+  return result.rows.map(normalizeAddressRow);
+}
+
+async function addPostgresAddress(userId, address) {
+  const pool = getPostgresPool();
+
+  if (address.isDefault) {
+    await pool.query('UPDATE "UserAddress" SET "isDefault" = FALSE WHERE "userId" = $1', [userId]);
+  }
+
+  await pool.query(
+    `INSERT INTO "UserAddress" (
+      id, "userId", type, name, phone, "addressLine1", "addressLine2", city, state,
+      "zipCode", country, "isDefault", "createdAt", "updatedAt"
+    ) VALUES (
+      gen_random_uuid()::text, $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW(), NOW()
+    )`,
+    [
+      userId,
+      (address.type || 'shipping').toUpperCase(),
+      address.name,
+      address.phone,
+      address.addressLine1,
+      address.addressLine2 || null,
+      address.city,
+      address.state,
+      address.zipCode,
+      address.country || 'India',
+      Boolean(address.isDefault),
+    ]
+  );
+
+  return getPostgresAddresses(userId);
+}
+
+async function updatePostgresAddress(userId, addressId, updates) {
+  const pool = getPostgresPool();
+
+  if (updates.isDefault) {
+    await pool.query('UPDATE "UserAddress" SET "isDefault" = FALSE WHERE "userId" = $1', [userId]);
+  }
+
+  const result = await pool.query(
+    `UPDATE "UserAddress"
+     SET type = COALESCE($3, type),
+         name = COALESCE($4, name),
+         phone = COALESCE($5, phone),
+         "addressLine1" = COALESCE($6, "addressLine1"),
+         "addressLine2" = COALESCE($7, "addressLine2"),
+         city = COALESCE($8, city),
+         state = COALESCE($9, state),
+         "zipCode" = COALESCE($10, "zipCode"),
+         country = COALESCE($11, country),
+         "isDefault" = COALESCE($12, "isDefault"),
+         "updatedAt" = NOW()
+     WHERE id = $1 AND "userId" = $2
+     RETURNING id`,
+    [
+      addressId,
+      userId,
+      updates.type ? updates.type.toUpperCase() : null,
+      updates.name ?? null,
+      updates.phone ?? null,
+      updates.addressLine1 ?? null,
+      updates.addressLine2 ?? null,
+      updates.city ?? null,
+      updates.state ?? null,
+      updates.zipCode ?? null,
+      updates.country ?? null,
+      typeof updates.isDefault === 'boolean' ? updates.isDefault : null,
+    ]
+  );
+
+  if (!result.rowCount) {
+    return null;
+  }
+
+  return getPostgresAddresses(userId);
+}
+
+async function deletePostgresAddress(userId, addressId) {
+  const pool = getPostgresPool();
+  const result = await pool.query(
+    'DELETE FROM "UserAddress" WHERE id = $1 AND "userId" = $2 RETURNING id',
+    [addressId, userId]
+  );
+
+  if (!result.rowCount) {
+    return null;
+  }
+
+  return getPostgresAddresses(userId);
+}
+
+async function setDefaultPostgresAddress(userId, addressId) {
+  const pool = getPostgresPool();
+  const existing = await pool.query(
+    'SELECT id FROM "UserAddress" WHERE id = $1 AND "userId" = $2 LIMIT 1',
+    [addressId, userId]
+  );
+
+  if (!existing.rowCount) {
+    return null;
+  }
+
+  await pool.query('UPDATE "UserAddress" SET "isDefault" = FALSE WHERE "userId" = $1', [userId]);
+  await pool.query(
+    'UPDATE "UserAddress" SET "isDefault" = TRUE, "updatedAt" = NOW() WHERE id = $1 AND "userId" = $2',
+    [addressId, userId]
+  );
+
+  return getPostgresAddresses(userId);
+}
 
 // Configure multer for hero image upload
 const storage = multer.diskStorage({
@@ -157,10 +320,7 @@ router.post("/api/user/stats", async (req, res) => {
 // Get user profile
 router.get("/api/user/profile", authenticate, async (req, res) => {
   try {
-    const user = await User.findById(req.user._id).select(
-      "username lastName email bio isBrand hero_image collab wishlist addresses role createdAt phone"
-    );
-    console.log(user);
+    const user = await getUserById(req.user._id);
 
     if (!user) {
       return res.status(404).json({
@@ -176,14 +336,16 @@ router.get("/api/user/profile", authenticate, async (req, res) => {
         username: user.username,
         lastName: user.lastName,
         email: user.email,
+        firstName: user.firstName,
         phone: user.phone,
         bio: user.bio,
         role: user.role,
         isBrand: user.isBrand,
         hero_image: user.hero_image,
-        collab: user.collab,
-        wishlist: user.wishlist,
-        addresses: user.addresses,
+        collab: user.collab || [],
+        wishlist: user.wishlist || [],
+        addresses: user.addresses || [],
+        profilePicture: user.profilePicture,
         createdAt: user.createdAt,
       },
     });
@@ -732,6 +894,19 @@ router.get("/api/user/wishlist", authenticate, getWishlist);
  */
 router.get("/api/user/orders", authenticate, async (req, res) => {
   try {
+    if (!isMongoObjectId(req.user._id)) {
+      return res.json({
+        success: true,
+        data: [],
+        pagination: {
+          total: 0,
+          page: parseInt(req.query.page || 1),
+          limit: parseInt(req.query.limit || 10),
+          pages: 0,
+        },
+      });
+    }
+
     const { page = 1, limit = 10, status } = req.query;
     const skip = (page - 1) * limit;
 
@@ -781,6 +956,18 @@ router.get("/api/user/orders/stats", authenticate, async (req, res) => {
   try {
     const userId = req.user._id;
     console.log(`[getUserOrderStats] Fetching stats for user: ${userId}`);
+
+    if (!isMongoObjectId(userId)) {
+      return res.json({
+        success: true,
+        data: {
+          totalOrders: 0,
+          totalSpend: 0,
+          statusBreakdown: {},
+          recentOrders: [],
+        },
+      });
+    }
 
     // Get total orders count
     const totalOrders = await Order.countDocuments({ userId });
@@ -877,6 +1064,11 @@ router.get("/api/user/orders/:orderId", authenticate, async (req, res) => {
  */
 router.get("/api/user/addresses", authenticate, async (req, res) => {
   try {
+    if (canUsePostgresUser(req.user._id)) {
+      const addresses = await getPostgresAddresses(req.user._id);
+      return res.json({ success: true, data: addresses });
+    }
+
     const user = await User.findById(req.user._id).select('addresses');
     
     if (!user) {
@@ -913,6 +1105,27 @@ router.post("/api/user/addresses", authenticate, async (req, res) => {
       return res.status(400).json({
         success: false,
         message: 'Missing required fields'
+      });
+    }
+
+    if (canUsePostgresUser(req.user._id)) {
+      const addresses = await addPostgresAddress(req.user._id, {
+        type,
+        name,
+        phone,
+        addressLine1,
+        addressLine2,
+        city,
+        state,
+        zipCode,
+        country,
+        isDefault,
+      });
+
+      return res.json({
+        success: true,
+        message: 'Address added successfully',
+        data: addresses,
       });
     }
 
@@ -969,6 +1182,31 @@ router.put("/api/user/addresses/:addressId", authenticate, async (req, res) => {
   try {
     const { addressId } = req.params;
     const { type, name, phone, addressLine1, addressLine2, city, state, zipCode, country, isDefault } = req.body;
+
+    if (canUsePostgresUser(req.user._id)) {
+      const addresses = await updatePostgresAddress(req.user._id, addressId, {
+        type,
+        name,
+        phone,
+        addressLine1,
+        addressLine2,
+        city,
+        state,
+        zipCode,
+        country,
+        isDefault,
+      });
+
+      if (!addresses) {
+        return res.status(404).json({ success: false, message: 'Address not found' });
+      }
+
+      return res.json({
+        success: true,
+        message: 'Address updated successfully',
+        data: addresses,
+      });
+    }
 
     const user = await User.findById(req.user._id);
     
@@ -1033,6 +1271,20 @@ router.delete("/api/user/addresses/:addressId", authenticate, async (req, res) =
   try {
     const { addressId } = req.params;
 
+    if (canUsePostgresUser(req.user._id)) {
+      const addresses = await deletePostgresAddress(req.user._id, addressId);
+
+      if (!addresses) {
+        return res.status(404).json({ success: false, message: 'Address not found' });
+      }
+
+      return res.json({
+        success: true,
+        message: 'Address deleted successfully',
+        data: addresses,
+      });
+    }
+
     const user = await User.findById(req.user._id);
     
     if (!user) {
@@ -1076,6 +1328,20 @@ router.delete("/api/user/addresses/:addressId", authenticate, async (req, res) =
 router.put("/api/user/addresses/:addressId/default", authenticate, async (req, res) => {
   try {
     const { addressId } = req.params;
+
+    if (canUsePostgresUser(req.user._id)) {
+      const addresses = await setDefaultPostgresAddress(req.user._id, addressId);
+
+      if (!addresses) {
+        return res.status(404).json({ success: false, message: 'Address not found' });
+      }
+
+      return res.json({
+        success: true,
+        message: 'Default address updated successfully',
+        data: addresses,
+      });
+    }
 
     const user = await User.findById(req.user._id);
     

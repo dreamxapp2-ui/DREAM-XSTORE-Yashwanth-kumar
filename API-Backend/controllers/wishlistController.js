@@ -1,6 +1,10 @@
 const User = require('../models/User');
 const mongoose = require('mongoose');
 
+function isMongoObjectId(value) {
+  return typeof value === 'string' && mongoose.Types.ObjectId.isValid(value);
+}
+
 /**
  * Add product to user's wishlist
  * POST /api/user/wishlist/add
@@ -9,6 +13,13 @@ const addToWishlist = async (req, res) => {
   try {
     const { productId } = req.body;
     const userId = req.user._id;
+
+    if (!isMongoObjectId(userId)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Wishlist is not available for this account yet'
+      });
+    }
 
     console.log('[addToWishlist] Request received - productId:', productId, 'userId:', userId);
 
@@ -82,6 +93,13 @@ const removeFromWishlist = async (req, res) => {
     const { productId } = req.body;
     const userId = req.user._id;
 
+    if (!isMongoObjectId(userId)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Wishlist is not available for this account yet'
+      });
+    }
+
     console.log('[removeFromWishlist] Request received - productId:', productId, 'userId:', userId);
 
     if (!productId) {
@@ -135,6 +153,19 @@ const getWishlist = async (req, res) => {
   try {
     const userId = req.user._id;
     const { page = 1, limit = 10 } = req.query;
+
+    if (!isMongoObjectId(userId)) {
+      return res.json({
+        success: true,
+        data: [],
+        pagination: {
+          total: 0,
+          page: parseInt(page),
+          limit: parseInt(limit),
+          pages: 0,
+        }
+      });
+    }
 
     const skip = (page - 1) * limit;
 
