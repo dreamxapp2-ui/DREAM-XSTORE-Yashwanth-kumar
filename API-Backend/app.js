@@ -1,8 +1,11 @@
 require('dotenv').config();
 const express = require('express');
-const mongoose = require('mongoose');
 const cors = require('cors');
 const passport = require('./config/passport');
+const {
+    getDatastoreStatus,
+    initializeDatastores,
+} = require('./config/datastores');
 
 // Triggered nodemon restart for new DB connection
 
@@ -54,20 +57,7 @@ app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.use(passport.initialize());
 
-// MongoDB Connection
-if (!process.env.MONGODB_URI) {
-    console.error('[Backend] CRITICAL ERROR: MONGODB_URI is not defined in environment variables!');
-} else {
-    console.log('[Backend] Attempting to connect to MongoDB...');
-    mongoose.connect(process.env.MONGODB_URI)
-        .then(() => {
-            console.log('[Backend] Successfully connected to MongoDB');
-        })
-        .catch((error) => {
-            console.error('[Backend] MongoDB connection error:', error);
-            // process.exit(1); // Commented out to allow testing without DB
-        });
-}
+initializeDatastores();
 
 // Routes
 
@@ -109,7 +99,10 @@ app.use('/download', downloadRouter);
 
 // Basic route
 app.get('/', (req, res) => {
-    res.json({ message: 'Welcome to the Online Shop API' });
+    res.json({
+        message: 'Welcome to the Online Shop API',
+        datastores: getDatastoreStatus(),
+    });
 });
 
 // 404 handler

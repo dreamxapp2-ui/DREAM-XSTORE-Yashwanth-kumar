@@ -11,8 +11,8 @@ const googleAuthController = {
                 process.env.JWT_SECRET,
                 { expiresIn: '30d' }
             );
-            
-            const user = req.user.toObject();
+
+            const user = typeof req.user.toObject === 'function' ? req.user.toObject() : { ...req.user };
             delete user.password;
             delete user.googleId;
 

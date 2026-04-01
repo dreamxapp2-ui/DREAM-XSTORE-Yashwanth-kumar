@@ -245,10 +245,18 @@
 // module.exports = authController;
 
 
-const User = require('../models/User');
 const { SendMail } = require('../helpers/mailing');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
+const {
+  createUser,
+  deleteUserById,
+  getAuthStorageStatus,
+  getUserByEmail,
+  getUserById,
+  updatePassword,
+  verifyUserEmail,
+} = require('../repositories/userAuthRepository');
 
 const authController = {
   // Helper function for email validation (simple regex)
@@ -269,8 +277,25 @@ const authController = {
     return hasMinLength && hasLowercase && hasUppercase && hasNumber && hasSpecialChar;
   },
 
+  requireAuthStore(res) {
+    const storage = getAuthStorageStatus();
+    if (storage.postgres || storage.mongoFallback) {
+      return true;
+    }
+
+    res.status(503).json({
+      message: 'Authentication is temporarily unavailable because no user datastore is connected.',
+      field: 'general',
+    });
+    return false;
+  },
+
   async register(req, res) {
     try {
+      if (!authController.requireAuthStore(res)) {
+        return;
+      }
+
       const { email, password, username } = req.body;
 
       // Enhanced input validation (granular, with field-specific errors)
@@ -300,7 +325,7 @@ const authController = {
       }
 
       // Check if user already exists
-      const existingUser = await User.findOne({ email });
+      const existingUser = await getUserByEmail(email);
       if (existingUser) {
         return res.status(400).json({
           message: 'Email already registered',
@@ -321,7 +346,7 @@ const authController = {
 
       // Create new user with verification token
       // isBrand defaults to false - admins can change this later from the admin panel
-      const user = new User({
+      const user = await createUser({
         email,
         password: hashedPassword,
         username,
@@ -332,7 +357,12 @@ const authController = {
         isVerified: false,
       });
 
-      await user.save();
+      if (!user) {
+        return res.status(503).json({
+          message: 'Unable to save user. No datastore is available.',
+          field: 'general'
+        });
+      }
 
       // Create verification URL
       const verificationUrl = `${process.env.FRONTEND_URL}/verify-email?token=${verificationToken}`;
@@ -359,8 +389,7 @@ const authController = {
         await SendMail(emailContent, emailSubject, email);
       } catch (emailError) {
         console.error('Failed to send verification email:', emailError);
-        // Delete the user if email sending fails
-        await User.deleteOne({ _id: user._id });
+        await deleteUserById(user._id);
         return res.status(500).json({
           message: 'Failed to send verification email. Please try again.',
           field: 'general'
@@ -368,7 +397,7 @@ const authController = {
       }
 
       // Remove sensitive information from response
-      const userResponse = user.toObject();
+      const userResponse = { ...user };
       delete userResponse.password;
       delete userResponse.verificationToken;
       delete userResponse.verificationTokenExpiry;
@@ -396,6 +425,10 @@ const authController = {
 
   async verifyEmail(req, res) {
     try {
+      if (!authController.requireAuthStore(res)) {
+        return;
+      }
+
       const { token } = req.body;
 
       if (!token) {
@@ -408,12 +441,7 @@ const authController = {
       // Verify token
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-      // Find user by verification token
-      const user = await User.findOne({
-        email: decoded.email,
-        verificationToken: token,
-        verificationTokenExpiry: { $gt: new Date() }
-      });
+      const user = await verifyUserEmail(token);
 
       if (!user) {
         return res.status(400).json({
@@ -421,12 +449,6 @@ const authController = {
           field: 'token'
         });
       }
-
-      // Update user verification status
-      user.isVerified = true;
-      user.verificationToken = undefined;
-      user.verificationTokenExpiry = undefined;
-      await user.save();
 
       // Generate new JWT token for authenticated session (includes role)
       const authToken = jwt.sign(
@@ -473,7 +495,10 @@ const authController = {
   async login(req, res) {
     try {
       const { email, password } = req.body;
-      console.log(req.body);  // Keep for debugging; remove in prod
+
+      if (!authController.requireAuthStore(res)) {
+        return;
+      }
 
       // Enhanced input validation
       if (!email || !password) {
@@ -490,14 +515,14 @@ const authController = {
       }
 
       // Find user by email
-      const user = await User.findOne({ email });
+      const user = await getUserByEmail(email);
       if (!user) {
         return res.status(401).json({
           message: 'Invalid email or password',
           field: 'email'
         });
       }
-      console.log(user);  // Keep for debugging
+
       if (!user.password) {
         return res.status(401).json({
           message: 'Please login using your original method (e.g. Google)',
@@ -506,7 +531,6 @@ const authController = {
       }
 
       // Compare password
-      console.log(user.password);  // Keep for debugging
       const isValidPassword = await bcrypt.compare(password, user.password);
       if (!isValidPassword) {
         return res.status(401).json({
@@ -531,7 +555,7 @@ const authController = {
       );
 
       // Remove password from response
-      const userResponse = user.toObject();
+      const userResponse = { ...user };
       delete userResponse.password;
 
       res.json({
@@ -562,6 +586,10 @@ const authController = {
       const { currentPassword, newPassword } = req.body;
       const userId = req.user._id; // From auth middleware
 
+      if (!authController.requireAuthStore(res)) {
+        return;
+      }
+
       if (!currentPassword || !newPassword) {
         return res.status(400).json({
           message: 'Current password and new password are required',
@@ -575,7 +603,7 @@ const authController = {
         });
       }
 
-      const user = await User.findById(userId);
+      const user = await getUserById(userId);
       if (!user) {
         return res.status(404).json({
           message: 'User not found',
@@ -597,8 +625,7 @@ const authController = {
       const hashedPassword = await bcrypt.hash(newPassword, salt);
 
       // Update password
-      user.password = hashedPassword;
-      await user.save();
+      await updatePassword(userId, hashedPassword);
 
       res.json({ message: 'Password updated successfully' });
 

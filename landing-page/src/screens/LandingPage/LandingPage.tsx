@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Button } from "@/src/components/ui/button";
+import { Button } from "@/components/ui/button";
 import { Menu, ShoppingBag, X } from "lucide-react";
 
 export const LandingPage = () => {

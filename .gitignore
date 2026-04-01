@@ -1,3 +1,11 @@
 node_modules/
 .env
 *.env.render
+.DS_Store
+*.log
+coverage/
+dist/
+build/
+**/.next/
+**/dist/
+**/build/

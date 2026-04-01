@@ -145,6 +145,17 @@ export const LoginPage = () => {
                     value={formData.email} onChange={(e) => setFormData(f => ({ ...f, email: e.target.value }))} />
                   {errors.email && <span className="auth-field-err">{errors.email}</span>}
                 </div>
+                <div style={{ marginBottom: '12px' }}>
+                  <input
+                    type="password"
+                    placeholder="Enter your password"
+                    className="auth-input"
+                    autoComplete="current-password"
+                    value={formData.password}
+                    onChange={(e) => setFormData(f => ({ ...f, password: e.target.value }))}
+                  />
+                  {errors.password && <span className="auth-field-err">{errors.password}</span>}
+                </div>
                 <button type="submit" disabled={loading} className="auth-submit-btn">
                   {loading ? 'Signing in...' : 'Sign in with email'}
                 </button>

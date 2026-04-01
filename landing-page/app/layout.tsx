@@ -1,5 +1,10 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+};
 
 export const metadata: Metadata = {
   title: "Dream X Store - Custom Clothing & Fashion",
@@ -8,10 +13,6 @@ export const metadata: Metadata = {
     icon: "https://i.postimg.cc/15mjf5Cn/Instagram-post-1.png",
     shortcut: "https://i.postimg.cc/15mjf5Cn/Instagram-post-1.png",
     apple: "https://i.postimg.cc/15mjf5Cn/Instagram-post-1.png",
-  },
-  viewport: {
-    width: "device-width",
-    initialScale: 1,
   },
 };
 

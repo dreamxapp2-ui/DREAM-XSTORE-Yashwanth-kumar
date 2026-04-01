@@ -1,4 +1,4 @@
-const Banner = require('../models/Banner');
+const bannerRepository = require('../repositories/bannerRepository');
 
 /**
  * GET /api/banners
@@ -6,9 +6,7 @@ const Banner = require('../models/Banner');
  */
 exports.getBanners = async (req, res) => {
   try {
-    const banners = await Banner.find({ isActive: true })
-      .sort({ order: 1, createdAt: -1 })
-      .lean();
+    const banners = await bannerRepository.getBanners();
 
     res.json({
       success: true,
@@ -30,9 +28,7 @@ exports.getBanners = async (req, res) => {
  */
 exports.getAllBanners = async (req, res) => {
   try {
-    const banners = await Banner.find()
-      .sort({ order: 1, createdAt: -1 })
-      .lean();
+    const banners = await bannerRepository.getAllBanners();
 
     res.json({
       success: true,
@@ -63,16 +59,14 @@ exports.createBanner = async (req, res) => {
       });
     }
 
-    const banner = new Banner({
-      image,
-      title,
+    const banner = await bannerRepository.createBanner({
       buttonText,
+      image,
+      isActive,
       link,
-      order: order || 0,
-      isActive: isActive !== undefined ? isActive : true
+      order,
+      title,
     });
-
-    await banner.save();
 
     res.status(201).json({
       success: true,
@@ -98,7 +92,14 @@ exports.updateBanner = async (req, res) => {
     const { id } = req.params;
     const { image, title, buttonText, link, order, isActive } = req.body;
 
-    const banner = await Banner.findById(id);
+    const banner = await bannerRepository.updateBanner(id, {
+      buttonText,
+      image,
+      isActive,
+      link,
+      order,
+      title,
+    });
 
     if (!banner) {
       return res.status(404).json({
@@ -106,15 +107,6 @@ exports.updateBanner = async (req, res) => {
         message: 'Banner not found'
       });
     }
-
-    if (image) banner.image = image;
-    if (title) banner.title = title;
-    if (buttonText) banner.buttonText = buttonText;
-    if (link) banner.link = link;
-    if (order !== undefined) banner.order = order;
-    if (isActive !== undefined) banner.isActive = isActive;
-
-    await banner.save();
 
     res.json({
       success: true,
@@ -139,9 +131,9 @@ exports.deleteBanner = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const banner = await Banner.findByIdAndDelete(id);
+    const bannerDeleted = await bannerRepository.deleteBanner(id);
 
-    if (!banner) {
+    if (!bannerDeleted) {
       return res.status(404).json({
         success: false,
         message: 'Banner not found'
@@ -170,7 +162,7 @@ exports.toggleBanner = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const banner = await Banner.findById(id);
+    const banner = await bannerRepository.toggleBanner(id);
 
     if (!banner) {
       return res.status(404).json({
@@ -178,9 +170,6 @@ exports.toggleBanner = async (req, res) => {
         message: 'Banner not found'
       });
     }
-
-    banner.isActive = !banner.isActive;
-    await banner.save();
 
     res.json({
       success: true,

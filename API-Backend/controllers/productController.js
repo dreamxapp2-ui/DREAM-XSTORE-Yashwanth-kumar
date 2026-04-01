@@ -1,5 +1,6 @@
 const Product = require('../models/Product');
 const Brand = require('../models/Brand');
+const productRepository = require('../repositories/productRepository');
 
 const productController = {
   /**
@@ -92,31 +93,29 @@ const productController = {
   async getProducts(req, res) {
     try {
       const { page = 1, limit = 20, category, search, sortBy = 'createdAt' } = req.query;
-      const skip = (page - 1) * limit;
+      const { featured, maxPrice, minPrice } = req.query;
 
-      console.log('[getProducts] Query params:', { page, limit, category, search });
+      console.log('[getProducts] Query params:', {
+        page,
+        limit,
+        category,
+        search,
+        sortBy,
+        featured,
+        minPrice,
+        maxPrice,
+      });
 
-      // Build filter
-      const filter = {};
-      if (category) filter.category = category;
-      if (search) {
-        filter.$or = [
-          { name: { $regex: search, $options: 'i' } },
-          { description: { $regex: search, $options: 'i' } },
-          { tags: { $in: [new RegExp(search, 'i')] } },
-        ];
-      }
-
-      console.log('[getProducts] Filter:', filter);
-
-      // Get products
-      const products = await Product.find(filter)
-        .populate('brandId', 'brandName')
-        .limit(parseInt(limit))
-        .skip(skip)
-        .sort({ [sortBy]: -1 });
-
-      const total = await Product.countDocuments(filter);
+      const { products, total } = await productRepository.getProducts({
+        category,
+        featured: featured === 'true',
+        limit,
+        maxPrice: maxPrice !== undefined ? Number(maxPrice) : undefined,
+        minPrice: minPrice !== undefined ? Number(minPrice) : undefined,
+        page,
+        search,
+        sortBy,
+      });
 
       console.log('[getProducts] Found products:', products.length);
 
@@ -149,7 +148,7 @@ const productController = {
 
       console.log('[getProductById] ID:', productId);
 
-      const product = await Product.findById(productId).populate('brandId', 'brandName');
+      const product = await productRepository.getProductById(productId);
 
       if (!product) {
         return res.status(404).json({

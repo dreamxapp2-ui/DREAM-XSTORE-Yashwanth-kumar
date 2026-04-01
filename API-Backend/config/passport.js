@@ -1,8 +1,14 @@
 require('dotenv').config();
 const passport = require('passport');
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
-const User = require('../models/User');
 const Brand = require('../models/Brand');
+const {
+  createGoogleUser,
+  getUserByEmail,
+  getUserByGoogleId,
+  getUserById,
+  linkGoogleAccount,
+} = require('../repositories/userAuthRepository');
 
 
 // const googleStrategy = new GoogleStrategy(
@@ -119,27 +125,29 @@ const googleStrategy = new GoogleStrategy(
         brand.isBrandModel = true;
         return done(null, brand);
       } else {
-        let user = await User.findOne({ googleId: profile.id });
+        let user = await getUserByGoogleId(profile.id);
 
         if (!user) {
-          user = await User.findOne({ email: profile.emails[0].value });
+          user = await getUserByEmail(profile.emails[0].value);
 
           if (user) {
-            user.googleId = profile.id;
-            user.isVerified = true;
-            await user.save();
-          } else {
-            user = await User.create({
-              googleId: profile.id,
-              email: profile.emails[0].value,
-              firstName: profile.name.givenName,
-              lastName: profile.name.familyName,
+            user = await linkGoogleAccount(user._id, {
+              id: profile.id,
+              firstName: profile.name?.givenName,
+              lastName: profile.name?.familyName,
               profilePicture: profile.photos?.[0]?.value,
-              authType: 'google',
-              isVerified: true
+            });
+          } else {
+            user = await createGoogleUser({
+              id: profile.id,
+              email: profile.emails[0].value,
+              firstName: profile.name?.givenName,
+              lastName: profile.name?.familyName,
+              profilePicture: profile.photos?.[0]?.value,
             });
           }
         }
+
         user.isBrandModel = false;
         return done(null, user);
       }
@@ -163,7 +171,7 @@ passport.deserializeUser(async (data, done) => {
       if (brand) brand.isBrandModel = true;
       done(null, brand);
     } else {
-      const user = await User.findById(data.id);
+      const user = await getUserById(data.id);
       if (user) user.isBrandModel = false;
       done(null, user);
     }
