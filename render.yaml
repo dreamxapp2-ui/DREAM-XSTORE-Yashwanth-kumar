@@ -1,11 +1,11 @@
 services:
+  # ── Production (main branch) ──
   - type: web
     name: dreamx-store
     runtime: node
-    # Root directory is now the project root to manage sub-service builds
+    branch: main
     rootDir: .
     buildCommand: npm run install-all && npm run build --prefix Dreamxstore
-    # Start both services via root package.json for better orchestration
     startCommand: npm start
     envVars:
       # Database and Core
@@ -25,6 +25,53 @@ services:
         value: https://dreamx-store.onrender.com/api
       - key: NEXT_PUBLIC_AUTH_URL
         value: https://dreamx-store.onrender.com
+      
+      # Auth Secrets
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      
+      # Payments
+      - key: RAZOPAY_KEY
+        sync: false
+      - key: RAZOPAY_SECRET
+        sync: false
+      - key: NEXT_PUBLIC_RAZORPAY_KEY_ID
+        sync: false
+      
+      # Communication
+      - key: MAILSERVER_URL
+        sync: false
+
+  # ── Dev (dev branch) ──
+  - type: web
+    name: dreamx-store-dev
+    runtime: node
+    branch: dev
+    rootDir: .
+    buildCommand: npm run install-all && npm run build --prefix Dreamxstore
+    startCommand: npm start
+    envVars:
+      # Database and Core
+      - key: MONGODB_URI
+        sync: false
+      - key: DATABASE_URL
+        sync: false
+      - key: NODE_ENV
+        value: development
+      
+      # Unified URLs (dev instance)
+      - key: FRONTEND_URL
+        value: https://dreamx-store-dev.onrender.com
+      - key: BACKEND_URL
+        value: https://dreamx-store-dev.onrender.com
+      - key: NEXT_PUBLIC_API_URL
+        value: https://dreamx-store-dev.onrender.com/api
+      - key: NEXT_PUBLIC_AUTH_URL
+        value: https://dreamx-store-dev.onrender.com
       
       # Auth Secrets
       - key: GOOGLE_CLIENT_ID
