@@ -1,7 +1,13 @@
 require('dotenv').config();
 const passport = require('passport');
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
-const Brand = require('../models/Brand');
+const {
+  getBrandByGoogleId,
+  getBrandByEmail,
+  getBrandById,
+  linkGoogleAccount: linkBrandGoogle,
+  createGoogleBrand,
+} = require('../repositories/brandRepository');
 const {
   createGoogleUser,
   getUserByEmail,
@@ -9,68 +15,6 @@ const {
   getUserById,
   linkGoogleAccount,
 } = require('../repositories/userAuthRepository');
-
-
-// const googleStrategy = new GoogleStrategy(
-//     {
-//         clientID: process.env.GOOGLE_CLIENT_ID,
-//         clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-//         callbackURL:   `${process.env.BACKEND_URL}/api/auth/google/callback`, 
-//         scope: ['profile', 'email']
-//     },
-//     async (accessToken, refreshToken, profile, done) => {
-//         try {
-
-//             let user = await User.findOne({ googleId: profile.id });
-
-//             if (!user) {
-//                 // Check if user exists with same email
-//                 user = await User.findOne({ email: profile.emails[0].value });
-
-//                 if (user) {
-//                     // Update existing user with Google info
-//                     user.googleId = profile.id;
-//                     user.isVerified = true;
-//                     await user.save();
-//                 } else {
-//                     // Create new user
-//                     user = await User.create({
-//                         googleId: profile.id,
-//                         email: profile.emails[0].value,
-//                         firstName: profile.name.givenName,
-//                         lastName: profile.name.familyName,
-//                         profilePicture: profile.photos?.[0]?.value,
-//                         authType: 'google',
-//                         isVerified: true
-//                     });
-//                 }
-//             }
-
-//             return done(null, user);
-//         } catch (error) {
-//             console.error('Google Strategy Error:', error);
-//             return done(error, null);
-//         }
-//     }
-// );
-
-// passport.use(googleStrategy);
-
-// // Required for sessions
-// passport.serializeUser((user, done) => {
-//     done(null, user.id);
-// });
-
-// passport.deserializeUser(async (id, done) => {
-//     try {
-//         const user = await User.findById(id);
-//         done(null, user);
-//     } catch (error) {
-//         done(error, null);
-//     }
-// });
-
-// module.exports = passport;
 
 
 console.log('--- Passport Initialization ---');
@@ -103,22 +47,18 @@ const googleStrategy = new GoogleStrategy(
       const isBrand = req.query.state === 'brand';
 
       if (isBrand) {
-        let brand = await Brand.findOne({ googleId: profile.id });
+        let brand = await getBrandByGoogleId(profile.id);
 
         if (!brand) {
-          brand = await Brand.findOne({ ownerEmail: profile.emails[0].value });
+          brand = await getBrandByEmail(profile.emails[0].value);
 
           if (brand) {
-            brand.googleId = profile.id;
-            brand.isVerified = true;
-            await brand.save();
+            brand = await linkBrandGoogle(brand._id, profile.id);
           } else {
-            brand = await Brand.create({
-              googleId: profile.id,
-              ownerEmail: profile.emails[0].value,
-              brandName: profile.displayName || profile.name?.givenName || 'Google Brand',
-              password: Math.random().toString(36).slice(-8) + 'A1!',
-              isVerified: true
+            brand = await createGoogleBrand({
+              id: profile.id,
+              email: profile.emails[0].value,
+              displayName: profile.displayName || profile.name?.givenName || 'Google Brand',
             });
           }
         }
@@ -167,7 +107,7 @@ passport.serializeUser((user, done) => {
 passport.deserializeUser(async (data, done) => {
   try {
     if (data.isBrand) {
-      const brand = await Brand.findById(data.id);
+      const brand = await getBrandById(data.id);
       if (brand) brand.isBrandModel = true;
       done(null, brand);
     } else {
@@ -179,7 +119,5 @@ passport.deserializeUser(async (data, done) => {
     done(error, null);
   }
 });
-
-module.exports = passport;
 
 module.exports = passport;

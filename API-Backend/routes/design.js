@@ -3,9 +3,9 @@ const router = express.Router();
 const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
-const Design = require("../models/Design");
 const User = require("../models/User");
 const authenticate = require("../middleware/auth");
+const designRepo = require("../repositories/designRepository");
 
 // Configure multer for file upload
 const storage = multer.diskStorage({
@@ -55,9 +55,7 @@ const upload_design = multer({
 // Get user's designs - Profile Route
 router.get("/profile", authenticate, async (req, res) => {
   try {
-    const designs = await Design.find({ designer: req.user._id })
-      .populate("designer", "name email")
-      .sort({ createdAt: -1 });
+    const designs = await designRepo.getDesignsByDesigner(req.user._id);
     console.log(designs)
     res.json({
       success: true,
@@ -75,9 +73,7 @@ router.get("/profile", authenticate, async (req, res) => {
 // Get user's designs - Profile Route
 router.get("/profile-2", async (req, res) => {
   try {
-    const designs = await Design.find({ designer: req.query.id})
-      .populate("designer", "name email")
-      .sort({ createdAt: -1 });
+    const designs = await designRepo.getDesignsByDesigner(req.query.id);
     console.log(designs)
     res.json({
       success: true,
@@ -96,37 +92,7 @@ router.post("/latest-designs", async (req, res) => {
   console.log("des")
   try {
     // Find all users who have at least one design
-    const designs = await Design.aggregate([
-      {
-        $sort: { createdAt: -1 }
-      },
-      {
-        $group: {
-          _id: "$designer",
-          design: { $first: "$$ROOT" }
-        }
-      },
-      {
-        $lookup: {
-          from: "users",
-          localField: "design.designer",
-          foreignField: "_id",
-          as: "user"
-        }
-      },
-      {
-        $unwind: "$user"
-      },
-      {
-        $project: {
-          _id: 0,
-          image_1: { $arrayElemAt: ["$design.images", 0] },
-          username: "$user.name",
-          // Instead of designId, return username again (or you can remove this line)
-          // designId: "$design._id"
-        }
-      }
-    ]);
+    const designs = await designRepo.getLatestDesignsGrouped();
    console.log(designs)
     res.json({
       success: true,
@@ -188,7 +154,7 @@ router.post("/adddesign", authenticate, (req, res) => {
         }
       }
 
-      const design = new Design({
+      const design = await designRepo.createDesign({
         title,
         description,
         designer: req.user._id,
@@ -203,8 +169,6 @@ router.post("/adddesign", authenticate, (req, res) => {
         pincode: user.pincode,
         sizes: parsedSizes
       });
-
-      await design.save();
 
       res.status(201).json({
         success: true,
@@ -239,7 +203,7 @@ router.post("/adddesign", authenticate, (req, res) => {
 
 router.get("/design/:id", authenticate, async (req, res) => {
   try {
-    const design = await Design.findById(req.params.id);
+    const design = await designRepo.getDesignById(req.params.id);
     if (!design) {
       return res
         .status(404)
@@ -267,7 +231,7 @@ router.get("/design/:id", authenticate, async (req, res) => {
 });
 router.get("/design/:id/image/front", authenticate, async (req, res) => {
   try {
-    const design = await Design.findById(req.params.id);
+    const design = await designRepo.getDesignById(req.params.id);
     if (!design || !design.images[0]) {
       return res.status(404).send("Image not found");
     }
@@ -287,7 +251,7 @@ router.get("/design/:id/image/front", authenticate, async (req, res) => {
 
 router.get("/design/:id/image/:position", authenticate, async (req, res) => {
   try {
-    const design = await Design.findById(req.params.id);
+    const design = await designRepo.getDesignById(req.params.id);
     if (!design) {
       return res
         .status(404)
@@ -335,7 +299,7 @@ router.get("/design/:id/image/:position", authenticate, async (req, res) => {
 // Get design image (back)
 router.get("/design/:id/image/back", authenticate, async (req, res) => {
   try {
-    const design = await Design.findById(req.params.id);
+    const design = await designRepo.getDesignById(req.params.id);
     if (!design || !design.images[1]) {
       return res.status(404).send("Image not found");
     }
@@ -354,7 +318,7 @@ router.get("/design/:id/image/back", authenticate, async (req, res) => {
 
 router.get("/design_png/:id/image/front", authenticate, async (req, res) => {
   try {
-    const design = await Design.findById(req.params.id);
+    const design = await designRepo.getDesignById(req.params.id);
     if (!design || !design.images[0]) {
       return res.status(404).send("Image not found");
     }
@@ -375,7 +339,7 @@ router.get("/design_png/:id/image/front", authenticate, async (req, res) => {
 // Get design image (back)
 router.get("/design_png/:id/image/back", authenticate, async (req, res) => {
   try {
-    const design = await Design.findById(req.params.id);
+    const design = await designRepo.getDesignById(req.params.id);
     if (!design || !design.images[1]) {
       return res.status(404).send("Image not found");
     }
@@ -398,7 +362,7 @@ router.get("/artifacts/:id", authenticate, async (req, res) => {
     const { id } = req.params;
 
     // Find the design by ID that contains this file
-    const design = await Design.findById(id);
+    const design = await designRepo.getDesignById(id);
 
     if (!design) {
       return res.status(404).json({
@@ -448,16 +412,7 @@ router.get("/artifacts/:id", authenticate, async (req, res) => {
 // Get top 25 public designs Todo later based on ratings get the list
 router.get("/public", async (req, res) => {
   try {
-    const brandedUsers = await User.find({ isBrand: true }).select("_id");
-    const brandedUserIds = brandedUsers.map((user) => user._id);
-
-    const publicDesigns = await Design.find({
-      isPublic: true,
-      designer: { $in: brandedUserIds },
-    })
-      .select("_id title category images price")
-      .sort({ createdAt: -1 })
-      .limit(25);
+    const publicDesigns = await designRepo.getPublicDesignsByBrandUsers(25);
 
     const formattedDesigns = publicDesigns.map((design) => ({
       _id: design._id,
@@ -488,13 +443,7 @@ router.get("/publicBranded", async (req, res) => {
     // const brandedUsers = await User.find({ isBrand: false }).select('_id');
     // const brandedUserIds = brandedUsers.map(user => user._id);
 
-    const publicDesigns = await Design.find({
-      isPublic: true,
-      brand_upload: true,
-    })
-      .select("_id title category images price discount designer pincode pickup_location sizes")
-      .sort({ createdAt: -1 })
-      .limit(25);
+    const publicDesigns = await designRepo.getPublicBrandedDesigns(25);
 
     const formattedDesigns = publicDesigns.map((design) => ({
       _id: design._id,
@@ -540,7 +489,7 @@ router.post("/editdesign/:id", authenticate, (req, res) => {
       const designId = req.params.id;
       const { title, description, price, category, isPublic, discount, sizes } = req.body;
 
-      const design = await Design.findById(designId);
+      const design = await designRepo.getDesignById(designId);
 
       if (!design) {
         return res.status(404).json({
@@ -608,11 +557,7 @@ router.post("/editdesign/:id", authenticate, (req, res) => {
         }
       }
 
-      const updatedDesign = await Design.findByIdAndUpdate(
-        designId,
-        { $set: updateFields },
-        { new: true }
-      );
+      const updatedDesign = await designRepo.updateDesign(designId, updateFields);
 
       res.json({
         success: true,
@@ -634,7 +579,7 @@ router.delete("/deletedesign/:id", authenticate, async (req, res) => {
   try {
     const designId = req.params.id;
 
-    const design = await Design.findById(designId);
+    const design = await designRepo.getDesignById(designId);
 
     if (!design) {
       return res.status(404).json({
@@ -650,14 +595,14 @@ router.delete("/deletedesign/:id", authenticate, async (req, res) => {
       });
     }
 
-    for (const imagePath of design.images) {
+    for (const imagePath of (design.images || [])) {
       const fullPath = path.resolve(imagePath);
       if (fs.existsSync(fullPath)) {
         fs.unlinkSync(fullPath);
       }
     }
 
-    await Design.findByIdAndDelete(designId);
+    await designRepo.deleteDesign(designId);
 
     res.json({
       success: true,

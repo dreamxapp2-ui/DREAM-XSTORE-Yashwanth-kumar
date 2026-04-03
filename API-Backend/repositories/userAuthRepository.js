@@ -1,9 +1,13 @@
 const mongoose = require('mongoose');
 const crypto = require('crypto');
 const User = require('../models/User');
-const { Pool } = require('@neondatabase/serverless');
-
-let pool;
+const {
+  canUseMongoFallback,
+  canUsePostgres,
+  getPool,
+  queryPostgres: sharedQueryPostgres,
+  runPostgres,
+} = require('../lib/dbHelpers');
 
 const ROLE_TO_LEGACY = {
   USER: 'user',
@@ -16,26 +20,6 @@ const AUTH_TYPE_TO_LEGACY = {
   GOOGLE: 'google',
   FACEBOOK: 'facebook',
 };
-
-function canUsePostgres() {
-  return Boolean(process.env.DATABASE_URL);
-}
-
-function canUseMongoFallback() {
-  return mongoose.connection.readyState === 1;
-}
-
-function getPool() {
-  if (!process.env.DATABASE_URL) {
-    return null;
-  }
-
-  if (!pool) {
-    pool = new Pool({ connectionString: process.env.DATABASE_URL });
-  }
-
-  return pool;
-}
 
 function normalizeUser(record) {
   if (!record) {
@@ -87,31 +71,8 @@ function normalizeUser(record) {
   };
 }
 
-async function runPostgres(operationName, operation) {
-  if (!canUsePostgres()) {
-    return null;
-  }
-
-  try {
-    return await operation();
-  } catch (error) {
-    console.warn(
-      `[userAuthRepository] PostgreSQL ${operationName} failed, falling back to MongoDB: ${error.message}`
-    );
-    return null;
-  }
-}
-
 async function queryPostgres(queryText, values = []) {
-  return runPostgres('query', async () => {
-    const client = getPool();
-    if (!client) {
-      return null;
-    }
-
-    const result = await client.query(queryText, values);
-    return result.rows;
-  });
+  return sharedQueryPostgres('userAuthRepo', queryText, values);
 }
 
 async function getUserByEmail(email) {
@@ -384,6 +345,73 @@ async function createGoogleUser(googleProfile) {
   return normalizeUser(mongoUser);
 }
 
+async function updateUserProfile(userId, updates) {
+  // Build SET clause dynamically so we only touch supplied fields
+  const fieldMap = {
+    firstName: '"firstName"',
+    lastName: '"lastName"',
+    username: '"username"',
+    bio: '"bio"',
+    phone: '"phone"',
+    email: '"email"',
+    heroImageUrl: '"heroImageUrl"',
+    heroImagePublicId: '"heroImagePublicId"',
+    pickupLocation: '"pickupLocation"',
+  };
+
+  const setClauses = [];
+  const values = [userId]; // $1 = userId
+  let idx = 2;
+
+  for (const [jsKey, pgCol] of Object.entries(fieldMap)) {
+    if (updates[jsKey] !== undefined) {
+      setClauses.push(`${pgCol} = $${idx}`);
+      values.push(updates[jsKey]);
+      idx++;
+    }
+  }
+
+  if (setClauses.length === 0) {
+    // Nothing to update — just return current user
+    return getUserById(userId);
+  }
+
+  setClauses.push('"updatedAt" = NOW()');
+
+  const postgresRows = await queryPostgres(
+    `UPDATE "User" SET ${setClauses.join(', ')} WHERE id = $1 RETURNING *`,
+    values
+  );
+  const postgresUser = postgresRows?.[0] || null;
+
+  if (postgresUser) {
+    return normalizeUser(postgresUser);
+  }
+
+  if (!canUseMongoFallback()) {
+    return null;
+  }
+
+  // Mongo fallback — map field names to Mongoose schema names
+  const mongoUpdates = {};
+  if (updates.firstName !== undefined) mongoUpdates.firstName = updates.firstName;
+  if (updates.lastName !== undefined) mongoUpdates.lastName = updates.lastName;
+  if (updates.username !== undefined) mongoUpdates.username = updates.username;
+  if (updates.bio !== undefined) mongoUpdates.bio = updates.bio;
+  if (updates.phone !== undefined) mongoUpdates.phone = updates.phone;
+  if (updates.email !== undefined) mongoUpdates.email = updates.email;
+  if (updates.heroImageUrl !== undefined || updates.heroImagePublicId !== undefined) {
+    mongoUpdates.hero_image = {
+      url: updates.heroImageUrl || null,
+      publicId: updates.heroImagePublicId || null,
+    };
+  }
+  if (updates.pickupLocation !== undefined) mongoUpdates.pickup_location = updates.pickupLocation;
+
+  const mongoUser = await User.findByIdAndUpdate(userId, { $set: mongoUpdates }, { new: true });
+  return normalizeUser(mongoUser);
+}
+
 function getAuthStorageStatus() {
   return {
     postgres: canUsePostgres(),
@@ -401,5 +429,6 @@ module.exports = {
   getUserById,
   linkGoogleAccount,
   updatePassword,
+  updateUserProfile,
   verifyUserEmail,
 };

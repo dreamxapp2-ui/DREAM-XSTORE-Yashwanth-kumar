@@ -6,10 +6,10 @@
  */
 
 const User = require('../models/User');
-const Brand = require('../models/Brand');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const { uploadImage, deleteImage } = require('../utils/cloudinary');
+const brandRepo = require('../repositories/brandRepository');
 
 const adminController = {
   /**
@@ -32,10 +32,10 @@ const adminController = {
       }
 
       // Find brand by brandName and ownerEmail
-      const brand = await Brand.findOne({
-        brandName: brandName.trim(),
-        ownerEmail: ownerEmail.toLowerCase().trim()
-      });
+      const brand = await brandRepo.getBrandByNameAndEmail(
+        brandName.trim(),
+        ownerEmail.toLowerCase().trim()
+      );
 
       if (!brand) {
         return res.status(401).json({
@@ -336,7 +336,7 @@ const adminController = {
     try {
       const totalUsers = await User.countDocuments();
       const totalAdmins = await User.countDocuments({ role: { $in: ['admin', 'superadmin'] } });
-      const totalBrands = await Brand.countDocuments();
+      const totalBrands = await brandRepo.countBrands();
       const verifiedUsers = await User.countDocuments({ isVerified: true });
 
       // Get orders count (if Order model exists)
@@ -417,11 +417,10 @@ const adminController = {
     try {
       const { limit = 5 } = req.query;
 
-      const brands = await Brand.find()
-        .sort({ createdAt: -1 })
-        .limit(parseInt(limit))
-        .select('_id brandName ownerEmail status')
-        .exec();
+      const { brands } = await brandRepo.listBrands({
+        limit: parseInt(limit),
+        sort: { createdAt: -1 },
+      });
 
       const recentBrands = brands.map(brand => ({
         id: brand._id,
@@ -461,15 +460,14 @@ const adminController = {
 
       console.log('[getBrands] Filter:', filter);
 
-      const brands = await Brand.find(filter)
-        .select('brandName ownerEmail city state status productCount commissionRate description profileImage profileImageContentType followerCount socialLinks createdAt')
-        .limit(parseInt(limit))
-        .skip(skip)
-        .sort({ createdAt: -1 });
+      const { brands, total } = await brandRepo.listBrands({
+        filter,
+        page: parseInt(page),
+        limit: parseInt(limit),
+        sort: { createdAt: -1 },
+      });
 
       console.log('[getBrands] Found brands:', brands.length);
-
-      const total = await Brand.countDocuments(filter);
       console.log('[getBrands] Total brands:', total);
 
       const formattedBrands = brands.map(brand => ({
@@ -556,7 +554,7 @@ const adminController = {
     try {
       const { brandId } = req.params;
 
-      const brand = await Brand.findById(brandId).select('-password');
+      const brand = await brandRepo.getBrandByIdSafe(brandId);
 
       if (!brand) {
         return res.status(404).json({
@@ -571,7 +569,7 @@ const adminController = {
           id: brand._id,
           brandName: brand.brandName,
           ownerEmail: brand.ownerEmail,
-          location: brand.city + ', ' + brand.state,
+          location: (brand.city || '') + ', ' + (brand.state || ''),
           status: brand.status,
           productCount: brand.productCount,
           commissionRate: brand.commissionRate,
@@ -601,7 +599,7 @@ const adminController = {
     try {
       const { brandId } = req.params;
 
-      const brand = await Brand.findByIdAndDelete(brandId);
+      const brand = await brandRepo.getBrandByIdSafe(brandId);
 
       if (!brand) {
         return res.status(404).json({
@@ -609,6 +607,8 @@ const adminController = {
           message: 'Brand not found'
         });
       }
+
+      await brandRepo.deleteBrand(brandId);
 
       res.json({
         success: true,
@@ -642,11 +642,7 @@ const adminController = {
         });
       }
 
-      const brand = await Brand.findByIdAndUpdate(
-        brandId,
-        { status },
-        { new: true }
-      ).select('-password');
+      const brand = await brandRepo.updateBrand(brandId, { status });
 
       if (!brand) {
         return res.status(404).json({
@@ -726,7 +722,7 @@ const adminController = {
           console.log('[updateBrandProfile] Cloudinary upload successful:', uploadResult);
           
           // Delete old image if it exists
-          const existingBrand = await Brand.findById(brandId);
+          const existingBrand = await brandRepo.getBrandById(brandId);
           if (existingBrand && existingBrand.profileImage && existingBrand.profileImage.publicId) {
             console.log('[updateBrandProfile] Deleting old image:', existingBrand.profileImage.publicId);
             await deleteImage(existingBrand.profileImage.publicId).catch(err => {
@@ -766,7 +762,7 @@ const adminController = {
       }
 
       console.log('[updateBrandProfile] Update data keys:', Object.keys(updateData));
-      console.log('[updateBrandProfile] Final updateData being sent to MongoDB:', JSON.stringify(updateData, null, 2));
+      console.log('[updateBrandProfile] Final updateData being sent:', JSON.stringify(updateData, null, 2));
 
       if (Object.keys(updateData).length === 0) {
         return res.status(400).json({
@@ -775,11 +771,7 @@ const adminController = {
         });
       }
 
-      const brand = await Brand.findByIdAndUpdate(
-        brandId,
-        { $set: updateData },
-        { new: true, runValidators: true }
-      ).select('-password');
+      const brand = await brandRepo.updateBrand(brandId, updateData);
 
       if (!brand) {
         return res.status(404).json({
@@ -788,9 +780,7 @@ const adminController = {
         });
       }
 
-      console.log('[updateBrandProfile] After DB update - brand profileImage:', brand.profileImage);
-      console.log('[updateBrandProfile] After DB update - brand.profileImage.url:', brand.profileImage?.url);
-      console.log('[updateBrandProfile] After DB update - brand.profileImage.publicId:', brand.profileImage?.publicId);
+      console.log('[updateBrandProfile] After update - brand profileImage:', brand.profileImage);
 
       res.json({
         success: true,
@@ -815,11 +805,7 @@ const adminController = {
       const { brandId } = req.params;
       const { reason } = req.body;
 
-      const brand = await Brand.findByIdAndUpdate(
-        brandId,
-        { status: 'Rejected' },
-        { new: true }
-      ).select('-password');
+      const brand = await brandRepo.updateBrand(brandId, { status: 'Rejected' });
 
       if (!brand) {
         return res.status(404).json({
@@ -1351,7 +1337,7 @@ const adminController = {
       }
 
       // Check if email already exists in Brand
-      const existingBrand = await Brand.findOne({ ownerEmail: ownerEmail.toLowerCase() });
+      const existingBrand = await brandRepo.getBrandByEmail(ownerEmail.toLowerCase());
       if (existingBrand) {
         return res.status(409).json({
           success: false,
@@ -1364,7 +1350,7 @@ const adminController = {
       const hashedPassword = await bcrypt.hash(password, salt);
 
       // Create new brand
-      const newBrand = new Brand({
+      const savedBrand = await brandRepo.createBrand({
         brandName: brandName.trim(),
         ownerEmail: ownerEmail.toLowerCase().trim(),
         password: hashedPassword,
@@ -1376,11 +1362,8 @@ const adminController = {
         state: state.trim(),
         country: country || 'India',
         status: 'Pending',
-        createdBy: req.user._id
+        createdById: req.user._id
       });
-
-      // Save brand to database
-      const savedBrand = await newBrand.save();
 
       // Return success response
       res.status(201).json({

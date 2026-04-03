@@ -1,5 +1,5 @@
 const jwt = require('jsonwebtoken');
-const Brand = require('../models/Brand');
+const { getBrandByIdSafe } = require('../repositories/brandRepository');
 
 /**
  * Brand Authentication Middleware
@@ -31,7 +31,7 @@ const brandAuth = async (req, res, next) => {
             }
             
             // Find brand
-            const brand = await Brand.findById(decoded.brandId).select('-password');
+            const brand = await getBrandByIdSafe(decoded.brandId);
             if (!brand) {
                 return res.status(401).json({
                     success: false,

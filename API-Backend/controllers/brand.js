@@ -3,7 +3,7 @@
  * Handles brand-specific operations (profile updates, dashboard data, etc.)
  */
 
-const Brand = require('../models/Brand');
+const { getBrandById, updateBrand } = require('../repositories/brandRepository');
 const { uploadImage, deleteImage } = require('../utils/cloudinary');
 
 const brandController = {
@@ -97,7 +97,7 @@ const brandController = {
           console.log('[updateProfile] Cloudinary upload successful:', uploadResult);
 
           // Delete old image if it exists
-          const existingBrand = await Brand.findById(brandId);
+          const existingBrand = await getBrandById(brandId);
           if (existingBrand && existingBrand.profileImage && existingBrand.profileImage.publicId) {
             console.log('[updateProfile] Deleting old image:', existingBrand.profileImage.publicId);
             await deleteImage(existingBrand.profileImage.publicId).catch(err => {
@@ -145,11 +145,7 @@ const brandController = {
         });
       }
 
-      const brand = await Brand.findByIdAndUpdate(
-        brandId,
-        { $set: updateData },
-        { new: true, runValidators: true }
-      ).select('-password');
+      const brand = await updateBrand(brandId, updateData);
 
       if (!brand) {
         return res.status(404).json({
@@ -270,11 +266,7 @@ const brandController = {
       console.log('[createProduct] Product created successfully:', savedProduct._id);
 
       // Update brand productCount
-      await Brand.findByIdAndUpdate(
-        brandId,
-        { $inc: { productCount: 1 } },
-        { new: true }
-      );
+      await updateBrand(brandId, { $inc: { productCount: 1 } });
 
       res.status(201).json({
         success: true,

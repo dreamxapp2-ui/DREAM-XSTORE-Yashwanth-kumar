@@ -2,175 +2,17 @@ const express = require("express");
 const router = express.Router();
 const User = require("../models/User");
 const authenticate = require("../middleware/auth");
-const Order = require("../models/Order");
-const auth = require("../middleware/auth");
 const multer = require("multer");
 const { SendMail } = require("../helpers/mailing");
 const path = require("path");
 const fs = require("fs");
-const { getUserById } = require("../repositories/userAuthRepository");
-const mongoose = require("mongoose");
-const { Pool } = require("@neondatabase/serverless");
+const bcrypt = require("bcryptjs");
 
-function isMongoObjectId(value) {
-  return typeof value === "string" && mongoose.Types.ObjectId.isValid(value);
-}
-
-let postgresPool;
-
-function getPostgresPool() {
-  if (!process.env.DATABASE_URL) {
-    return null;
-  }
-
-  if (!postgresPool) {
-    postgresPool = new Pool({ connectionString: process.env.DATABASE_URL });
-  }
-
-  return postgresPool;
-}
-
-function canUsePostgresUser(userId) {
-  return Boolean(getPostgresPool()) && !isMongoObjectId(userId);
-}
-
-function normalizeAddressRow(row) {
-  return {
-    _id: row.id,
-    type: String(row.type || 'SHIPPING').toLowerCase(),
-    name: row.name || '',
-    phone: row.phone || '',
-    addressLine1: row.addressLine1 || '',
-    addressLine2: row.addressLine2 || '',
-    city: row.city || '',
-    state: row.state || '',
-    zipCode: row.zipCode || '',
-    country: row.country || 'India',
-    isDefault: Boolean(row.isDefault),
-    createdAt: row.createdAt,
-  };
-}
-
-async function getPostgresAddresses(userId) {
-  const pool = getPostgresPool();
-  const result = await pool.query(
-    'SELECT * FROM "UserAddress" WHERE "userId" = $1 ORDER BY "isDefault" DESC, "createdAt" DESC',
-    [userId]
-  );
-
-  return result.rows.map(normalizeAddressRow);
-}
-
-async function addPostgresAddress(userId, address) {
-  const pool = getPostgresPool();
-
-  if (address.isDefault) {
-    await pool.query('UPDATE "UserAddress" SET "isDefault" = FALSE WHERE "userId" = $1', [userId]);
-  }
-
-  await pool.query(
-    `INSERT INTO "UserAddress" (
-      id, "userId", type, name, phone, "addressLine1", "addressLine2", city, state,
-      "zipCode", country, "isDefault", "createdAt", "updatedAt"
-    ) VALUES (
-      gen_random_uuid()::text, $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW(), NOW()
-    )`,
-    [
-      userId,
-      (address.type || 'shipping').toUpperCase(),
-      address.name,
-      address.phone,
-      address.addressLine1,
-      address.addressLine2 || null,
-      address.city,
-      address.state,
-      address.zipCode,
-      address.country || 'India',
-      Boolean(address.isDefault),
-    ]
-  );
-
-  return getPostgresAddresses(userId);
-}
-
-async function updatePostgresAddress(userId, addressId, updates) {
-  const pool = getPostgresPool();
-
-  if (updates.isDefault) {
-    await pool.query('UPDATE "UserAddress" SET "isDefault" = FALSE WHERE "userId" = $1', [userId]);
-  }
-
-  const result = await pool.query(
-    `UPDATE "UserAddress"
-     SET type = COALESCE($3, type),
-         name = COALESCE($4, name),
-         phone = COALESCE($5, phone),
-         "addressLine1" = COALESCE($6, "addressLine1"),
-         "addressLine2" = COALESCE($7, "addressLine2"),
-         city = COALESCE($8, city),
-         state = COALESCE($9, state),
-         "zipCode" = COALESCE($10, "zipCode"),
-         country = COALESCE($11, country),
-         "isDefault" = COALESCE($12, "isDefault"),
-         "updatedAt" = NOW()
-     WHERE id = $1 AND "userId" = $2
-     RETURNING id`,
-    [
-      addressId,
-      userId,
-      updates.type ? updates.type.toUpperCase() : null,
-      updates.name ?? null,
-      updates.phone ?? null,
-      updates.addressLine1 ?? null,
-      updates.addressLine2 ?? null,
-      updates.city ?? null,
-      updates.state ?? null,
-      updates.zipCode ?? null,
-      updates.country ?? null,
-      typeof updates.isDefault === 'boolean' ? updates.isDefault : null,
-    ]
-  );
-
-  if (!result.rowCount) {
-    return null;
-  }
-
-  return getPostgresAddresses(userId);
-}
-
-async function deletePostgresAddress(userId, addressId) {
-  const pool = getPostgresPool();
-  const result = await pool.query(
-    'DELETE FROM "UserAddress" WHERE id = $1 AND "userId" = $2 RETURNING id',
-    [addressId, userId]
-  );
-
-  if (!result.rowCount) {
-    return null;
-  }
-
-  return getPostgresAddresses(userId);
-}
-
-async function setDefaultPostgresAddress(userId, addressId) {
-  const pool = getPostgresPool();
-  const existing = await pool.query(
-    'SELECT id FROM "UserAddress" WHERE id = $1 AND "userId" = $2 LIMIT 1',
-    [addressId, userId]
-  );
-
-  if (!existing.rowCount) {
-    return null;
-  }
-
-  await pool.query('UPDATE "UserAddress" SET "isDefault" = FALSE WHERE "userId" = $1', [userId]);
-  await pool.query(
-    'UPDATE "UserAddress" SET "isDefault" = TRUE, "updatedAt" = NOW() WHERE id = $1 AND "userId" = $2',
-    [addressId, userId]
-  );
-
-  return getPostgresAddresses(userId);
-}
+// ── Repositories (single source of truth for data access) ──────────────────
+const { getUserById, updateUserProfile } = require("../repositories/userAuthRepository");
+const addressRepo = require("../repositories/addressRepository");
+const orderRepo = require("../repositories/orderRepository");
+const wishlistRepo = require("../repositories/wishlistRepository");
 
 // Configure multer for hero image upload
 const storage = multer.diskStorage({
@@ -199,8 +41,6 @@ const upload = multer({
 }).single("hero_image");
 
 const { createShiprocketOrder } = require("../utils/shiprocket");
-const bcrypt = require("bcryptjs");
-const { addToWishlist, removeFromWishlist, getWishlist } = require("../controllers/wishlistController");
 
 // const storage = multer.memoryStorage();
 // const upload = multer({ storage });
@@ -461,29 +301,20 @@ router.put(
     try {
       const { firstName, lastName, username, bio, phone, hero_image } = req.body;
       
-      console.log('[updateProfile] Body:', req.body);
-      
-      const updates = {};
-      
-      if (firstName !== undefined) updates.firstName = firstName;
-      if (lastName !== undefined) updates.lastName = lastName;
-      if (username !== undefined) updates.username = username;
-      if (bio !== undefined) updates.bio = bio;
-      if (phone !== undefined) updates.phone = phone;
+      const repoUpdates = {};
+      if (firstName !== undefined) repoUpdates.firstName = firstName;
+      if (lastName !== undefined) repoUpdates.lastName = lastName;
+      if (username !== undefined) repoUpdates.username = username;
+      if (bio !== undefined) repoUpdates.bio = bio;
+      if (phone !== undefined) repoUpdates.phone = phone;
       
       // Handle Cloudinary image (comes as {url, publicId})
       if (hero_image) {
-        console.log('[updateProfile] Saving hero_image:', hero_image);
-        updates.hero_image = hero_image;
+        repoUpdates.heroImageUrl = hero_image.url || hero_image;
+        repoUpdates.heroImagePublicId = hero_image.publicId || null;
       }
       
-      console.log('[updateProfile] Updates:', updates);
-      
-      const updatedUser = await User.findByIdAndUpdate(
-        req.user._id,
-        { $set: updates },
-        { new: true, select: 'email username firstName lastName bio phone hero_image isBrand' }
-      );
+      const updatedUser = await updateUserProfile(req.user._id, repoUpdates);
       
       if (!updatedUser) {
         return res.status(404).json({
@@ -491,8 +322,6 @@ router.put(
           message: 'User not found'
         });
       }
-      
-      console.log('[updateProfile] Updated user:', updatedUser);
       
       res.json({
         success: true,
@@ -508,80 +337,6 @@ router.put(
     }
   }
 );
-
-// // Update user profile
-// router.post('/api/user/profile/update', authenticate, (req, res) => {
-//     upload(req, res, async (err) => {
-//         if (err instanceof multer.MulterError) {
-//             return res.status(400).json({
-//                 success: false,
-//                 message: 'File upload error',
-//                 error: err.message
-//             });
-//         } else if (err) {
-//             return res.status(400).json({
-//                 success: false,
-//                 message: 'Error uploading file',
-//                 error: err.message
-//             });
-//         }
-
-//         try {
-//             const { username, lastName, bio } = req.body;
-//             const updateData = {
-//                 username: username || req.user.username,
-//                 lastName: lastName || req.user.lastName,
-//                 bio: bio || req.user.bio
-//             };
-
-//             // If a new hero image was uploaded, add it to the update data
-//             if (req.file) {
-//                 // Delete old hero image if it exists
-//                 if (req.user.hero_image) {
-//                     const oldImagePath = path.join(__dirname, '..', req.user.hero_image);
-//                     if (fs.existsSync(oldImagePath)) {
-//                         fs.unlinkSync(oldImagePath);
-//                     }
-//                 }
-//                 updateData.hero_image = req.file.path;
-//             }
-
-//             const updatedUser = await User.findByIdAndUpdate(
-//                 req.user._id,
-//                 { $set: updateData },
-//                 { new: true, select: 'username lastName email bio hero_image' }
-//             );
-
-//             if (!updatedUser) {
-//                 return res.status(404).json({
-//                     success: false,
-//                     message: 'User not found'
-//                 });
-//             }
-
-//             res.json({
-//                 success: true,
-//                 user: {
-//                     email: updatedUser.email,
-//                     username: updatedUser.username,
-//                     lastName: updatedUser.lastName,
-//                     bio: updatedUser.bio,
-//                     hero_image: updatedUser.hero_image
-//                 }
-//             });
-//         } catch (error) {
-//             console.error('Error updating user profile:', error);
-//             // Delete uploaded file if update fails
-//             if (req.file) {
-//                 fs.unlinkSync(req.file.path);
-//             }
-//             res.status(500).json({
-//                 success: false,
-//                 message: 'Error updating user profile'
-//             });
-//         }
-//     });
-// });
 
 router.get("/api/public/profile/:filename", (req, res) => {
   const filename = req.params.filename;
@@ -663,154 +418,24 @@ router.post("/api/user/forgot-password", async (req, res) => {
 });
 
 
-// Checkout Route
-// router.post('/api/checkout', authenticate ,async (req, res) => {
-// =======
-//         console.error('Error updating user profile:', error);
-//         res.status(500).json({ success: false, message: 'Error updating user profile' });
-//     }
-// });
-
-// router.post("/api/checkout", authenticate, async (req, res) => {
-//   try {
-//     const { address, items, totals } = req.body;
-
-//     if (!address || !items.length) {
-//       return res
-//         .status(400)
-//         .json({ error: "Address and cart items are required" });
-//     }
-
-//     const user = await User.findById(req.user._id);
-
-//     const newOrder = new Order({
-//       User: user._id,
-//       address,
-//       items,
-//       subtotal: totals.subtotal,
-//       tax: totals.tax,
-//       shipping: totals.shipping,
-//       total: totals.total,
-//       status: "Pending",
-//       createdAt: new Date(),
-//     });
-
-//     await newOrder.save();
-
-//     const shiprocketOrderPayload = {
-//       order_id: newOrder._id.toString(),
-//       order_date: new Date().toISOString().split("T")[0],
-//       billing_customer_name: user.username,
-//       billing_last_name: user.lastName || "",
-//       billing_address: address,
-//       billing_city: "Mumbai", // Ideally extract from address or form
-//       billing_pincode: "400001", // Get from user form
-//       billing_state: "Maharashtra",
-//       billing_country: "India",
-//       billing_email: user.email,
-//       billing_phone: "9999999999", // Ideally collected from user
-
-//       shipping_is_billing: true,
-//       order_items: items.map((item) => ({
-//         name: item.title,
-//         sku: item.category,
-//         units: item.quantity,
-//         selling_price: item.price,
-//       })),
-//       payment_method: "Prepaid",
-//       sub_total: totals.subtotal,
-//       length: 10,
-//       breadth: 10,
-//       height: 10,
-//       weight: 0.5,
-//       pickup_location: user.pickup_locations?.[0] || "Primary Location",
-//     };
-
-//     console.log("Shiprocket Order Payload:", shiprocketOrderPayload);
-
-//         const {
-//             text,
-//             city,
-//             state,
-//             pincode,
-//             phone
-//         } = address;
-
-//         const shiprocketOrderPayload = {
-//             order_id: newOrder._id.toString(),
-//             order_date: new Date().toISOString().split('T')[0],
-//             billing_customer_name: user.username,
-//             billing_last_name: user.lastName || '',
-//             billing_address: text,
-//             billing_city: city,
-//             billing_pincode: pincode,
-//             billing_state: state,
-//             billing_country: "India",
-//             billing_email: user.email,
-//             billing_phone: phone,
-//             shipping_is_billing: true,
-//             order_items: items.map(item => ({
-//                 name: item.title,
-//                 sku: item.category,
-//                 units: item.quantity,
-//                 selling_price: item.price
-//             })),
-//             payment_method: "Prepaid",
-//             sub_total: totals.subtotal,
-//             length: 10,
-//             breadth: 10,
-//             height: 10,
-//             weight: 0.5,
-//             pickup_location: user.pickup_locations?.[0] || "Primary Location"
-//         };
-
-//         console.log("Shiprocket Order Payload:", shiprocketOrderPayload);
-
-//         const shiprocketRes = await createShiprocketOrder(shiprocketOrderPayload);
-//         console.log("✅ Shiprocket response:", shiprocketRes);
-
-//         res.status(201).json({
-//             message: 'Order placed successfully!',
-//             orderId: newOrder._id,
-//             shiprocketOrder: shiprocketRes
-//         });
-
-//     } catch (error) {
-//         console.error('Checkout error:', error?.response?.data || error.message || error);
-//         res.status(500).json({ error: 'Something went wrong during checkout.' });
-//     }
-// });
-
-
 // Create new order (Called after successful payment)
 router.post("/api/orders", authenticate, async (req, res) => {
   try {
     const { items, shippingData, total, paymentStatus, paymentMethod } = req.body;
 
-    const { mongoose } = require('mongoose');
-    const newOrder = new Order({
-      _id: new mongoose.Types.ObjectId(),
-      userId: req.user._id,
-      items: items.map(item => ({
-        productId: item._id,
-        title: item.title,
-        price: item.price,
-        quantity: item.quantity,
-        image: item.image
-      })),
-      subtotal: total,
-      tax: 0,
-      shippingFee: 0,
-      total: total,
-      paymentStatus: paymentStatus || 'completed',
-      paymentMethod: paymentMethod || 'card',
+    const order = await orderRepo.createOrder(req.user._id, {
+      items,
+      total,
+      paymentStatus,
+      paymentMethod,
       shippingAddressSnapshot: shippingData,
-      orderStatus: 'processing',
-      createdAt: new Date()
     });
 
-    await newOrder.save();
-    res.status(201).json({ success: true, order: newOrder });
+    if (!order) {
+      return res.status(503).json({ success: false, error: "No datastore available" });
+    }
+
+    res.status(201).json({ success: true, order });
   } catch (error) {
     console.error("Error creating order:", error);
     res.status(500).json({ success: false, error: "Failed to create order" });
@@ -820,14 +445,7 @@ router.post("/api/orders", authenticate, async (req, res) => {
 // Get Latest Orders Route
 router.post("/api/orders/latest", authenticate, async (req, res) => {
   try {
-    // Fetch orders of the authenticated user, sorted by most recent first
-    console.log(`[Orders] Fetching latest orders for user: ${req.user._id}`);
-    const orders = await Order.find({ userId: req.user._id })
-      .sort({ createdAt: -1 }) // Sort in descending order
-      .limit(10); // Adjust limit as needed
-    
-    console.log(`[Orders] Found ${orders.length} latest orders`);
-
+    const orders = await orderRepo.getLatestOrders(req.user._id, 10);
     res.status(200).json(orders);
   } catch (error) {
     console.error("Error fetching latest orders:", error);
@@ -874,19 +492,69 @@ router.post("/api/user/top-brands", async (req, res) => {
  * POST /api/user/wishlist/add
  * Add product to wishlist
  */
-router.post("/api/user/wishlist/add", authenticate, addToWishlist);
+router.post("/api/user/wishlist/add", authenticate, async (req, res) => {
+  try {
+    const { productId } = req.body;
+    if (!productId) {
+      return res.status(400).json({ success: false, message: 'Product ID is required' });
+    }
+
+    const result = await wishlistRepo.addToWishlist(req.user._id, productId);
+
+    if (result.unavailable) {
+      return res.status(503).json({ success: false, message: 'Wishlist is temporarily unavailable' });
+    }
+    if (result.alreadyExists) {
+      return res.status(400).json({ success: false, message: 'Product already in wishlist' });
+    }
+
+    res.json({ success: true, message: 'Product added to wishlist' });
+  } catch (error) {
+    console.error('[addToWishlist] Error:', error);
+    res.status(500).json({ success: false, message: 'Failed to add product to wishlist' });
+  }
+});
 
 /**
  * POST /api/user/wishlist/remove
  * Remove product from wishlist
  */
-router.post("/api/user/wishlist/remove", authenticate, removeFromWishlist);
+router.post("/api/user/wishlist/remove", authenticate, async (req, res) => {
+  try {
+    const { productId } = req.body;
+    if (!productId) {
+      return res.status(400).json({ success: false, message: 'Product ID is required' });
+    }
+
+    await wishlistRepo.removeFromWishlist(req.user._id, productId);
+    res.json({ success: true, message: 'Product removed from wishlist' });
+  } catch (error) {
+    console.error('[removeFromWishlist] Error:', error);
+    res.status(500).json({ success: false, message: 'Failed to remove product from wishlist' });
+  }
+});
 
 /**
  * GET /api/user/wishlist
  * Get user's wishlist with pagination
  */
-router.get("/api/user/wishlist", authenticate, getWishlist);
+router.get("/api/user/wishlist", authenticate, async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+
+    const { items, total } = await wishlistRepo.getWishlist(req.user._id, page, limit);
+
+    res.json({
+      success: true,
+      data: items,
+      pagination: { total, page, limit, pages: Math.ceil(total / limit) },
+    });
+  } catch (error) {
+    console.error('[getWishlist] Error:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch wishlist' });
+  }
+});
 
 /**
  * GET /api/user/orders
@@ -894,57 +562,22 @@ router.get("/api/user/wishlist", authenticate, getWishlist);
  */
 router.get("/api/user/orders", authenticate, async (req, res) => {
   try {
-    if (!isMongoObjectId(req.user._id)) {
-      return res.json({
-        success: true,
-        data: [],
-        pagination: {
-          total: 0,
-          page: parseInt(req.query.page || 1),
-          limit: parseInt(req.query.limit || 10),
-          pages: 0,
-        },
-      });
-    }
-
     const { page = 1, limit = 10, status } = req.query;
-    const skip = (page - 1) * limit;
-
-    const filter = { userId: req.user._id };
-    if (status) {
-      filter.orderStatus = status;
-    }
-
-    console.log(`[getUserOrders] Fetching orders for user: ${req.user._id}, filter:`, filter);
-
-    const orders = await Order.find(filter)
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(parseInt(limit))
-      .populate('items.productId', 'name images price')
-      .lean();
-
-    console.log(`[getUserOrders] Found ${orders.length} orders`);
-
-    const total = await Order.countDocuments(filter);
+    const result = await orderRepo.getOrders(req.user._id, { page: parseInt(page), limit: parseInt(limit), status });
 
     res.json({
       success: true,
-      data: orders,
+      data: result.data,
       pagination: {
-        total,
-        page: parseInt(page),
-        limit: parseInt(limit),
-        pages: Math.ceil(total / limit)
-      }
+        total: result.total,
+        page: result.page,
+        limit: result.limit,
+        pages: result.pages,
+      },
     });
   } catch (error) {
     console.error('[getUserOrders] Error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to fetch orders',
-      error: error.message
-    });
+    res.status(500).json({ success: false, message: 'Failed to fetch orders', error: error.message });
   }
 });
 
@@ -954,70 +587,11 @@ router.get("/api/user/orders", authenticate, async (req, res) => {
  */
 router.get("/api/user/orders/stats", authenticate, async (req, res) => {
   try {
-    const userId = req.user._id;
-    console.log(`[getUserOrderStats] Fetching stats for user: ${userId}`);
-
-    if (!isMongoObjectId(userId)) {
-      return res.json({
-        success: true,
-        data: {
-          totalOrders: 0,
-          totalSpend: 0,
-          statusBreakdown: {},
-          recentOrders: [],
-        },
-      });
-    }
-
-    // Get total orders count
-    const totalOrders = await Order.countDocuments({ userId });
-    console.log(`[getUserOrderStats] Total orders: ${totalOrders}`);
-
-    // Calculate total spend (only completed orders)
-    const completedOrders = await Order.find({
-      userId,
-      paymentStatus: 'completed'
-    }).select('total');
-
-    const totalSpend = completedOrders.reduce((sum, order) => sum + (order.total || 0), 0);
-
-    // Get order status breakdown
-    const statusBreakdown = await Order.aggregate([
-      { $match: { userId: req.user._id } },
-      {
-        $group: {
-          _id: '$orderStatus',
-          count: { $sum: 1 }
-        }
-      }
-    ]);
-
-    // Get recent orders (last 5)
-    const recentOrders = await Order.find({ userId })
-      .sort({ createdAt: -1 })
-      .limit(5)
-      .populate('items.productId', 'name images')
-      .lean();
-
-    res.json({
-      success: true,
-      data: {
-        totalOrders,
-        totalSpend,
-        statusBreakdown: statusBreakdown.reduce((acc, item) => {
-          acc[item._id] = item.count;
-          return acc;
-        }, {}),
-        recentOrders
-      }
-    });
+    const stats = await orderRepo.getOrderStats(req.user._id);
+    res.json({ success: true, data: stats });
   } catch (error) {
     console.error('[getUserOrderStats] Error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to fetch order statistics',
-      error: error.message
-    });
+    res.status(500).json({ success: false, message: 'Failed to fetch order statistics', error: error.message });
   }
 });
 
@@ -1027,34 +601,16 @@ router.get("/api/user/orders/stats", authenticate, async (req, res) => {
  */
 router.get("/api/user/orders/:orderId", authenticate, async (req, res) => {
   try {
-    const { orderId } = req.params;
-
-    const order = await Order.findOne({
-      _id: orderId,
-      userId: req.user._id
-    })
-      .populate('items.productId', 'name images price brandName')
-      .populate('shippingId')
-      .lean();
+    const order = await orderRepo.getOrderById(req.user._id, req.params.orderId);
 
     if (!order) {
-      return res.status(404).json({
-        success: false,
-        message: 'Order not found'
-      });
+      return res.status(404).json({ success: false, message: 'Order not found' });
     }
 
-    res.json({
-      success: true,
-      data: order
-    });
+    res.json({ success: true, data: order });
   } catch (error) {
     console.error('[getOrderDetails] Error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to fetch order details',
-      error: error.message
-    });
+    res.status(500).json({ success: false, message: 'Failed to fetch order details', error: error.message });
   }
 });
 
@@ -1064,31 +620,11 @@ router.get("/api/user/orders/:orderId", authenticate, async (req, res) => {
  */
 router.get("/api/user/addresses", authenticate, async (req, res) => {
   try {
-    if (canUsePostgresUser(req.user._id)) {
-      const addresses = await getPostgresAddresses(req.user._id);
-      return res.json({ success: true, data: addresses });
-    }
-
-    const user = await User.findById(req.user._id).select('addresses');
-    
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: 'User not found'
-      });
-    }
-
-    res.json({
-      success: true,
-      data: user.addresses || []
-    });
+    const addresses = await addressRepo.getAddresses(req.user._id);
+    res.json({ success: true, data: addresses });
   } catch (error) {
     console.error('[getAddresses] Error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to fetch addresses',
-      error: error.message
-    });
+    res.status(500).json({ success: false, message: 'Failed to fetch addresses', error: error.message });
   }
 });
 
@@ -1100,77 +636,22 @@ router.post("/api/user/addresses", authenticate, async (req, res) => {
   try {
     const { type, name, phone, addressLine1, addressLine2, city, state, zipCode, country, isDefault } = req.body;
 
-    // Validate required fields
     if (!name || !phone || !addressLine1 || !city || !state || !zipCode) {
-      return res.status(400).json({
-        success: false,
-        message: 'Missing required fields'
-      });
+      return res.status(400).json({ success: false, message: 'Missing required fields' });
     }
 
-    if (canUsePostgresUser(req.user._id)) {
-      const addresses = await addPostgresAddress(req.user._id, {
-        type,
-        name,
-        phone,
-        addressLine1,
-        addressLine2,
-        city,
-        state,
-        zipCode,
-        country,
-        isDefault,
-      });
-
-      return res.json({
-        success: true,
-        message: 'Address added successfully',
-        data: addresses,
-      });
-    }
-
-    const user = await User.findById(req.user._id);
-    
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: 'User not found'
-      });
-    }
-
-    // If this is set as default, unset all other defaults
-    if (isDefault) {
-      user.addresses.forEach(addr => addr.isDefault = false);
-    }
-
-    // Add new address
-    user.addresses.push({
-      type: type || 'shipping',
-      name,
-      phone,
-      addressLine1,
-      addressLine2,
-      city,
-      state,
-      zipCode,
-      country: country || 'India',
-      isDefault: isDefault || false
+    const addresses = await addressRepo.addAddress(req.user._id, {
+      type, name, phone, addressLine1, addressLine2, city, state, zipCode, country, isDefault,
     });
 
-    await user.save();
+    if (!addresses) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
 
-    res.json({
-      success: true,
-      message: 'Address added successfully',
-      data: user.addresses
-    });
+    res.json({ success: true, message: 'Address added successfully', data: addresses });
   } catch (error) {
     console.error('[addAddress] Error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to add address',
-      error: error.message
-    });
+    res.status(500).json({ success: false, message: 'Failed to add address', error: error.message });
   }
 });
 
@@ -1183,83 +664,18 @@ router.put("/api/user/addresses/:addressId", authenticate, async (req, res) => {
     const { addressId } = req.params;
     const { type, name, phone, addressLine1, addressLine2, city, state, zipCode, country, isDefault } = req.body;
 
-    if (canUsePostgresUser(req.user._id)) {
-      const addresses = await updatePostgresAddress(req.user._id, addressId, {
-        type,
-        name,
-        phone,
-        addressLine1,
-        addressLine2,
-        city,
-        state,
-        zipCode,
-        country,
-        isDefault,
-      });
-
-      if (!addresses) {
-        return res.status(404).json({ success: false, message: 'Address not found' });
-      }
-
-      return res.json({
-        success: true,
-        message: 'Address updated successfully',
-        data: addresses,
-      });
-    }
-
-    const user = await User.findById(req.user._id);
-    
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: 'User not found'
-      });
-    }
-
-    const addressIndex = user.addresses.findIndex(addr => addr._id.toString() === addressId);
-    
-    if (addressIndex === -1) {
-      return res.status(404).json({
-        success: false,
-        message: 'Address not found'
-      });
-    }
-
-    // If this is set as default, unset all other defaults
-    if (isDefault) {
-      user.addresses.forEach(addr => addr.isDefault = false);
-    }
-
-    // Update address
-    user.addresses[addressIndex] = {
-      ...user.addresses[addressIndex].toObject(),
-      type: type || user.addresses[addressIndex].type,
-      name: name || user.addresses[addressIndex].name,
-      phone: phone || user.addresses[addressIndex].phone,
-      addressLine1: addressLine1 || user.addresses[addressIndex].addressLine1,
-      addressLine2: addressLine2 !== undefined ? addressLine2 : user.addresses[addressIndex].addressLine2,
-      city: city || user.addresses[addressIndex].city,
-      state: state || user.addresses[addressIndex].state,
-      zipCode: zipCode || user.addresses[addressIndex].zipCode,
-      country: country || user.addresses[addressIndex].country,
-      isDefault: isDefault !== undefined ? isDefault : user.addresses[addressIndex].isDefault
-    };
-
-    await user.save();
-
-    res.json({
-      success: true,
-      message: 'Address updated successfully',
-      data: user.addresses
+    const addresses = await addressRepo.updateAddress(req.user._id, addressId, {
+      type, name, phone, addressLine1, addressLine2, city, state, zipCode, country, isDefault,
     });
+
+    if (!addresses) {
+      return res.status(404).json({ success: false, message: 'Address not found' });
+    }
+
+    res.json({ success: true, message: 'Address updated successfully', data: addresses });
   } catch (error) {
     console.error('[updateAddress] Error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to update address',
-      error: error.message
-    });
+    res.status(500).json({ success: false, message: 'Failed to update address', error: error.message });
   }
 });
 
@@ -1270,54 +686,16 @@ router.put("/api/user/addresses/:addressId", authenticate, async (req, res) => {
 router.delete("/api/user/addresses/:addressId", authenticate, async (req, res) => {
   try {
     const { addressId } = req.params;
+    const addresses = await addressRepo.deleteAddress(req.user._id, addressId);
 
-    if (canUsePostgresUser(req.user._id)) {
-      const addresses = await deletePostgresAddress(req.user._id, addressId);
-
-      if (!addresses) {
-        return res.status(404).json({ success: false, message: 'Address not found' });
-      }
-
-      return res.json({
-        success: true,
-        message: 'Address deleted successfully',
-        data: addresses,
-      });
+    if (!addresses) {
+      return res.status(404).json({ success: false, message: 'Address not found' });
     }
 
-    const user = await User.findById(req.user._id);
-    
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: 'User not found'
-      });
-    }
-
-    const addressIndex = user.addresses.findIndex(addr => addr._id.toString() === addressId);
-    
-    if (addressIndex === -1) {
-      return res.status(404).json({
-        success: false,
-        message: 'Address not found'
-      });
-    }
-
-    user.addresses.splice(addressIndex, 1);
-    await user.save();
-
-    res.json({
-      success: true,
-      message: 'Address deleted successfully',
-      data: user.addresses
-    });
+    res.json({ success: true, message: 'Address deleted successfully', data: addresses });
   } catch (error) {
     console.error('[deleteAddress] Error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to delete address',
-      error: error.message
-    });
+    res.status(500).json({ success: false, message: 'Failed to delete address', error: error.message });
   }
 });
 
@@ -1328,58 +706,16 @@ router.delete("/api/user/addresses/:addressId", authenticate, async (req, res) =
 router.put("/api/user/addresses/:addressId/default", authenticate, async (req, res) => {
   try {
     const { addressId } = req.params;
+    const addresses = await addressRepo.setDefaultAddress(req.user._id, addressId);
 
-    if (canUsePostgresUser(req.user._id)) {
-      const addresses = await setDefaultPostgresAddress(req.user._id, addressId);
-
-      if (!addresses) {
-        return res.status(404).json({ success: false, message: 'Address not found' });
-      }
-
-      return res.json({
-        success: true,
-        message: 'Default address updated successfully',
-        data: addresses,
-      });
+    if (!addresses) {
+      return res.status(404).json({ success: false, message: 'Address not found' });
     }
 
-    const user = await User.findById(req.user._id);
-    
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: 'User not found'
-      });
-    }
-
-    // Unset all defaults
-    user.addresses.forEach(addr => addr.isDefault = false);
-
-    // Set the specified address as default
-    const addressIndex = user.addresses.findIndex(addr => addr._id.toString() === addressId);
-    
-    if (addressIndex === -1) {
-      return res.status(404).json({
-        success: false,
-        message: 'Address not found'
-      });
-    }
-
-    user.addresses[addressIndex].isDefault = true;
-    await user.save();
-
-    res.json({
-      success: true,
-      message: 'Default address updated successfully',
-      data: user.addresses
-    });
+    res.json({ success: true, message: 'Default address updated successfully', data: addresses });
   } catch (error) {
     console.error('[setDefaultAddress] Error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to set default address',
-      error: error.message
-    });
+    res.status(500).json({ success: false, message: 'Failed to set default address', error: error.message });
   }
 });
 

@@ -1,14 +1,10 @@
 const Banner = require('../models/Banner');
-const mongoose = require('mongoose');
 const prisma = require('../lib/prisma');
-
-function canUsePostgres() {
-  return Boolean(process.env.DATABASE_URL);
-}
-
-function canUseMongoFallback() {
-  return mongoose.connection.readyState === 1;
-}
+const {
+  canUseMongoFallback,
+  canUsePostgres,
+  runPostgres: sharedRunPostgres,
+} = require('../lib/dbHelpers');
 
 function normalizeBanner(record) {
   if (!record) {
@@ -38,18 +34,7 @@ function toPrismaPayload(payload) {
 }
 
 async function runPostgres(operationName, operation) {
-  if (!canUsePostgres()) {
-    return null;
-  }
-
-  try {
-    return await operation();
-  } catch (error) {
-    console.warn(
-      `[bannerRepository] PostgreSQL ${operationName} failed, falling back to MongoDB: ${error.message}`
-    );
-    return null;
-  }
+  return sharedRunPostgres(`bannerRepo.${operationName}`, operation);
 }
 
 async function getBanners() {

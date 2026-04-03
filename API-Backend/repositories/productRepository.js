@@ -1,14 +1,10 @@
 const Product = require('../models/Product');
-const mongoose = require('mongoose');
 const prisma = require('../lib/prisma');
-
-function canUsePostgres() {
-  return Boolean(process.env.DATABASE_URL);
-}
-
-function canUseMongoFallback() {
-  return mongoose.connection.readyState === 1;
-}
+const {
+  canUseMongoFallback,
+  canUsePostgres,
+  runPostgres: sharedRunPostgres,
+} = require('../lib/dbHelpers');
 
 function toNumber(value) {
   if (value === null || value === undefined) {
@@ -161,18 +157,7 @@ function resolveSortBy(sortBy) {
 }
 
 async function runPostgres(operationName, operation) {
-  if (!canUsePostgres()) {
-    return null;
-  }
-
-  try {
-    return await operation();
-  } catch (error) {
-    console.warn(
-      `[productRepository] PostgreSQL ${operationName} failed, falling back to MongoDB: ${error.message}`
-    );
-    return null;
-  }
+  return sharedRunPostgres(`productRepo.${operationName}`, operation);
 }
 
 async function getProducts(filters) {
