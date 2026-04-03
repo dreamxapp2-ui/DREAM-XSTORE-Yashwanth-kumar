@@ -6,10 +6,15 @@ const { validateWebhookSignature } = require('razorpay/dist/utils/razorpay-utils
 console.log('[Razorpay Init] KEY_ID:', process.env.RAZORPAY_KEY_ID ? 'LOADED' : 'UNDEFINED');
 console.log('[Razorpay Init] KEY_SECRET:', process.env.RAZORPAY_KEY_SECRET ? 'LOADED' : 'UNDEFINED');
 
-const razorpay = new Razorpay({
-  key_id: process.env.RAZORPAY_KEY_ID,
-  key_secret: process.env.RAZORPAY_KEY_SECRET
-});
+let razorpay;
+if (process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET) {
+  razorpay = new Razorpay({
+    key_id: process.env.RAZORPAY_KEY_ID,
+    key_secret: process.env.RAZORPAY_KEY_SECRET
+  });
+} else {
+  console.warn('[Razorpay] Missing RAZORPAY_KEY_ID or RAZORPAY_KEY_SECRET — payment features disabled');
+}
 
 // Create order
 const createOrder = async (amount, currency = 'INR') => {

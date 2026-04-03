@@ -124,9 +124,10 @@ app.use((err, req, res, next) => {
 });
 
 // Start server
-// In production (Render monolith), we use port 5000 for the backend
+// In production (Render monolith), backend uses BACKEND_PORT (default 5000)
 // while the frontend takes the primary Render port ($PORT).
-const PORT = process.env.PORT || 5000;
+// Next.js rewrites /api/* → http://localhost:5000/api/*
+const PORT = process.env.BACKEND_PORT || 5000;
 
 app.listen(PORT, '0.0.0.0', () => {
     console.log(`[Backend] Server is running on port ${PORT}`);
