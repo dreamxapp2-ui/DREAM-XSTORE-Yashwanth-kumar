@@ -3,9 +3,9 @@
   "version": "1.0.0",
   "scripts": {
     "dev": "concurrently \"npm run dev --prefix API-Backend\" \"npm run dev --prefix Dreamxstore\"",
-    "build": "npm run install-all && npm run build --prefix Dreamxstore",
-    "start": "concurrently \"node API-Backend/app.js\" \"npm start --prefix Dreamxstore\"",
-    "start:render": "concurrently \"node API-Backend/app.js\" \"npm start --prefix Dreamxstore\"",
+    "build": "npm run install-all && npm run prisma:generate --prefix API-Backend && npm run build --prefix Dreamxstore",
+    "start": "concurrently \"npm start --prefix API-Backend\" \"npm start --prefix Dreamxstore\"",
+    "start:render": "concurrently \"npm start --prefix API-Backend\" \"npm start --prefix Dreamxstore\"",
     "install-all": "npm install && npm install --prefix API-Backend && npm install --prefix Dreamxstore"
   },
   "dependencies": {
