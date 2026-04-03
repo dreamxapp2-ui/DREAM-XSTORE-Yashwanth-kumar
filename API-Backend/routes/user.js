@@ -1,6 +1,5 @@
 const express = require("express");
 const router = express.Router();
-const User = require("../models/User");
 const authenticate = require("../middleware/auth");
 const multer = require("multer");
 const { SendMail } = require("../helpers/mailing");
@@ -9,7 +8,8 @@ const fs = require("fs");
 const bcrypt = require("bcryptjs");
 
 // ── Repositories (single source of truth for data access) ──────────────────
-const { getUserById, updateUserProfile } = require("../repositories/userAuthRepository");
+const userRepo = require("../repositories/userAuthRepository");
+const { getUserById, updateUserProfile } = userRepo;
 const addressRepo = require("../repositories/addressRepository");
 const orderRepo = require("../repositories/orderRepository");
 const wishlistRepo = require("../repositories/wishlistRepository");
@@ -76,14 +76,13 @@ res.json({status:"done"})
 
 router.post("/api/user/other-brands", authenticate, async (req, res) => {
   try {
-    const brands = await User.find({
-      isBrand: true,
-      _id: { $ne: req.user._id }
-    }).select("username hero_image _id");
+    const brands = await userRepo.getBrandUsers({
+      filter: { _id: { $ne: req.user._id } },
+    });
 
     res.json({
       success: true,
-      brands
+      brands: brands.map(b => ({ username: b.username, hero_image: b.hero_image, _id: b._id }))
     });
   } catch (error) {
     res.status(500).json({
@@ -101,17 +100,13 @@ router.post("/api/user/add-collab", authenticate, async (req, res) => {
     }
 
     // Add the collab id to the user's collabs array (create if not exists)
-    const updatedUser = await User.findByIdAndUpdate(
-      req.user._id,
-      { $addToSet: { collab: id } }, // $addToSet prevents duplicates
-      { new: true }
-    ).select("username collab");
+    const updatedUser = await userRepo.addCollab(req.user._id, id);
 
     if (!updatedUser) {
       return res.status(404).json({ success: false, message: "User not found" });
     }
     console.log(updatedUser)
-    res.json({ success: true, user: updatedUser });
+    res.json({ success: true, user: { username: updatedUser.username, collab: updatedUser.collab } });
   } catch (error) {
     console.error("Error adding collab:", error);
     res.status(500).json({ success: false, message: "Failed to add collab" });
@@ -126,7 +121,7 @@ router.post("/api/user/hero-images", async (req, res) => {
       return res.status(400).json({ success: false, message: "ids array is required" });
     }
 
-    const users = await User.find({ _id: { $in: ids } }).select("_id hero_image");
+    const users = await userRepo.getUsersByIds(ids);
     const images = users.map(user => ({
       id: user._id,
       hero_image: user.hero_image
@@ -141,8 +136,8 @@ router.post("/api/user/hero-images", async (req, res) => {
 
 router.post("/api/user/stats", async (req, res) => {
   try {
-    const totalUsers = await User.countDocuments({});
-    const brandUsers = await User.find({ isBrand: true }).select("email username createdAt");
+    const totalUsers = await userRepo.countUsers();
+    const brandUsers = await userRepo.getBrandUsers();
 
     res.json({
       totalUsers,
@@ -201,9 +196,7 @@ router.get("/api/user/profile", authenticate, async (req, res) => {
 // Get user profile
 router.post("/api/user/public-profile", async (req, res) => {
   try {
-    const user = await User.findById(req.body.id).select(
-      "username lastName email bio isBrand hero_image"
-    ); // Only select needed fields, exclude _id
+    const user = await getUserById(req.body.id);
     console.log(user);
 
     if (!user) {
@@ -244,12 +237,11 @@ router.post(
         pickupLocations = [pickupLocations];
       }
 
-      const updates = {
-        username,
-        lastName,
-        bio,
-        email,
-      };
+      const repoUpdates = {};
+      if (username) repoUpdates.username = username;
+      if (lastName) repoUpdates.lastName = lastName;
+      if (bio) repoUpdates.bio = bio;
+      if (email) repoUpdates.email = email;
 
       // If a new hero image was uploaded, add it to the update data
       if (req.file) {
@@ -260,21 +252,17 @@ router.post(
             fs.unlinkSync(oldImagePath);
           }
         }
-        updates.hero_image = req.file.path;
+        repoUpdates.heroImageUrl = req.file.path;
       }
 
       // Only update pickup locations and hero image for brands
       if (req.user.isBrand) {
-        updates.pickup_locations = pickupLocations || [];
+        repoUpdates.pickupLocation = (pickupLocations || []).join(',');
       }
 
-      console.log(updates);
+      console.log(repoUpdates);
 
-      const updatedUser = await User.findByIdAndUpdate(req.user._id, updates, {
-        new: true,
-        select:
-          "email username lastName bio isBrand pickup_locations hero_image",
-      });
+      const updatedUser = await updateUserProfile(req.user._id, repoUpdates);
 
       if (!updatedUser) {
         return res
@@ -359,7 +347,7 @@ router.post("/api/user/send-forgot-otp", async (req, res) => {
       return res.status(400).json({ success: false, message: "Email is required" });
     }
 
-    const user = await User.findOne({ email });
+    const user = await userRepo.getUserByEmail(email);
     if (!user) {
       return res.status(404).json({ success: false, message: "User not found" });
     }
@@ -367,10 +355,8 @@ router.post("/api/user/send-forgot-otp", async (req, res) => {
     // Generate a 6-digit OTP
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
 
-    // Optionally: Save OTP to user document or a cache with expiry (not shown here)
-    user.password = otp;
-    //user.resetOtpExpires = Date.now() + 10 * 60 * 1000; // 10 minutes expiry
-    await user.save();
+    // Save OTP as password (legacy behavior)
+    await userRepo.setPasswordDirect(user._id, otp);
 
     // Send OTP via email
     const htmlContent = `
@@ -397,7 +383,7 @@ router.post("/api/user/forgot-password", async (req, res) => {
       return res.status(400).json({ success: false, message: "Email, OTP, and new password are required" });
     }
 
-    const user = await User.findOne({ email });
+    const user = await userRepo.getUserByEmail(email);
     if (!user) {
       return res.status(404).json({ success: false, message: "User not found" });
     }
@@ -407,8 +393,7 @@ router.post("/api/user/forgot-password", async (req, res) => {
     }
 
     const hashedPassword = await bcrypt.hash(newPassword, 10);
-    user.password = hashedPassword;
-    await user.save();
+    await userRepo.updatePassword(user._id, hashedPassword);
 
     res.json({ success: true, message: "Password reset successful" });
   } catch (error) {
@@ -456,9 +441,7 @@ router.post("/api/orders/latest", authenticate, async (req, res) => {
 // Get top 4 brand users
 router.post("/api/user/top-brands", async (req, res) => {
   try {
-    const brands = await User.find({ isBrand: true })
-      .select("username bio hero_image")
-      .limit(4);
+    const brands = await userRepo.getBrandUsers({ limit: 4 });
 
     if (!brands || brands.length === 0) {
       return res.status(404).json({

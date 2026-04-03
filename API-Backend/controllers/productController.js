@@ -1,6 +1,5 @@
-const Product = require('../models/Product');
-const Brand = require('../models/Brand');
 const productRepository = require('../repositories/productRepository');
+const { getBrandById } = require('../repositories/brandRepository');
 
 const productController = {
   /**
@@ -39,7 +38,7 @@ const productController = {
       });
 
       // Validate brand exists
-      const brand = await Brand.findById(brandId);
+      const brand = await getBrandById(brandId);
       if (!brand) {
         return res.status(404).json({
           success: false,
@@ -48,7 +47,7 @@ const productController = {
       }
 
       // Create product
-      const product = new Product({
+      const product = await productRepository.createProduct({
         name,
         description,
         longDescription,
@@ -66,10 +65,8 @@ const productController = {
         features,
         tags,
         images,
-        inStock: stockQuantity > 0,
       });
 
-      await product.save();
       console.log('[createProduct] Product created:', product._id);
 
       res.status(201).json({
@@ -184,7 +181,7 @@ const productController = {
 
       // Validate brand if being updated
       if (updateData.brandId) {
-        const brand = await Brand.findById(updateData.brandId);
+        const brand = await getBrandById(updateData.brandId);
         if (!brand) {
           return res.status(404).json({
             success: false,
@@ -193,10 +190,7 @@ const productController = {
         }
       }
 
-      const product = await Product.findByIdAndUpdate(productId, updateData, {
-        new: true,
-        runValidators: true,
-      }).populate('brandId', 'brandName');
+      const product = await productRepository.updateProduct(productId, updateData);
 
       if (!product) {
         return res.status(404).json({
@@ -231,7 +225,7 @@ const productController = {
 
       console.log('[deleteProduct] ID:', productId);
 
-      const product = await Product.findByIdAndDelete(productId);
+      const product = await productRepository.deleteProduct(productId);
 
       if (!product) {
         return res.status(404).json({
@@ -266,7 +260,7 @@ const productController = {
 
       console.log('[toggleProductStatus] ID:', productId);
 
-      const product = await Product.findById(productId);
+      const product = await productRepository.toggleProductStatus(productId);
 
       if (!product) {
         return res.status(404).json({
@@ -274,9 +268,6 @@ const productController = {
           message: 'Product not found',
         });
       }
-
-      product.isActive = !product.isActive;
-      await product.save();
 
       console.log('[toggleProductStatus] Status updated:', product.isActive);
 

@@ -9,6 +9,7 @@ const Order = require('../models/Order');
 const mongoose = require('mongoose');
 const {
   canUseMongoFallback,
+  canUsePostgres,
   canUsePostgresForUser,
   getPool,
   isMongoObjectId,
@@ -359,10 +360,148 @@ async function getOrderById(userId, orderId) {
   return order ? normalizeMongoOrder(order) : null;
 }
 
+// ── Admin methods ──────────────────────────────────────────────────────────────
+
+async function countOrdersAdmin(filter = {}) {
+  if (canUsePostgres()) {
+    const conditions = [];
+    const values = [];
+    let idx = 1;
+    if (filter.status) {
+      conditions.push(`"orderStatus" = $${idx++}`);
+      values.push(filter.status.toUpperCase());
+    }
+    const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+    const rows = await queryPostgres(
+      `SELECT COUNT(*)::int AS count FROM "Order" ${whereClause}`,
+      values
+    );
+    if (rows) return rows[0]?.count || 0;
+  }
+
+  if (!canUseMongoFallback()) return 0;
+  return Order.countDocuments(filter);
+}
+
+async function listOrdersAdmin({ filter = {}, page = 1, limit = 20 } = {}) {
+  const offset = (page - 1) * limit;
+
+  if (canUsePostgres()) {
+    const conditions = [];
+    const values = [];
+    let idx = 1;
+    if (filter.status) {
+      conditions.push(`"orderStatus" = $${idx++}`);
+      values.push(filter.status.toUpperCase());
+    }
+    const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+    values.push(limit, offset);
+
+    const [orderRows, countRows] = await Promise.all([
+      queryPostgres(
+        `SELECT o.*, u.username, u.email, u."firstName", u."lastName"
+         FROM "Order" o
+         LEFT JOIN "User" u ON o."userId" = u.id
+         ${whereClause}
+         ORDER BY o."createdAt" DESC
+         LIMIT $${idx++} OFFSET $${idx++}`,
+        values
+      ),
+      queryPostgres(
+        `SELECT COUNT(*)::int AS count FROM "Order" ${whereClause}`,
+        values.slice(0, values.length - 2) // exclude limit/offset
+      ),
+    ]);
+
+    if (orderRows) {
+      const orders = orderRows.map(row => {
+        const order = normalizeOrder(row);
+        order.userId = {
+          _id: row.userId,
+          username: row.username || 'Unknown',
+          email: row.email || 'unknown@email.com',
+        };
+        return order;
+      });
+      return { orders, total: countRows?.[0]?.count || 0 };
+    }
+  }
+
+  if (!canUseMongoFallback()) {
+    return { orders: [], total: 0 };
+  }
+
+  const mongoFilter = {};
+  if (filter.status) mongoFilter.status = filter.status;
+
+  const [mongoOrders, total] = await Promise.all([
+    Order.find(mongoFilter)
+      .limit(parseInt(limit))
+      .skip(offset)
+      .sort({ createdAt: -1 })
+      .populate('userId')
+      .populate('brandId'),
+    Order.countDocuments(mongoFilter),
+  ]);
+
+  return { orders: mongoOrders.map(normalizeMongoOrder), total };
+}
+
+async function getRecentOrdersAdmin(limit = 5) {
+  if (canUsePostgres()) {
+    const rows = await queryPostgres(
+      `SELECT o.*, u.username, u.email
+       FROM "Order" o
+       LEFT JOIN "User" u ON o."userId" = u.id
+       ORDER BY o."createdAt" DESC
+       LIMIT $1`,
+      [limit]
+    );
+    if (rows) {
+      return rows.map(row => {
+        const order = normalizeOrder(row);
+        order.userId = {
+          _id: row.userId,
+          username: row.username || 'Unknown',
+          email: row.email || 'unknown@email.com',
+        };
+        return order;
+      });
+    }
+  }
+
+  if (!canUseMongoFallback()) return [];
+
+  const orders = await Order.find()
+    .sort({ createdAt: -1 })
+    .limit(parseInt(limit))
+    .populate('userId')
+    .exec();
+  return orders.map(normalizeMongoOrder);
+}
+
+async function getOrderByIdDirect(orderId) {
+  if (canUsePostgres()) {
+    const rows = await queryPostgres(
+      `SELECT * FROM "Order" WHERE id = $1 LIMIT 1`,
+      [orderId]
+    );
+    if (rows?.[0]) return normalizeOrder(rows[0]);
+  }
+
+  if (!canUseMongoFallback()) return null;
+  const order = await Order.findById(orderId);
+  return order ? normalizeMongoOrder(order) : null;
+}
+
 module.exports = {
+  countOrdersAdmin,
   createOrder,
   getLatestOrders,
   getOrderById,
+  getOrderByIdDirect,
   getOrders,
   getOrderStats,
+  getRecentOrdersAdmin,
+  listOrdersAdmin,
 };

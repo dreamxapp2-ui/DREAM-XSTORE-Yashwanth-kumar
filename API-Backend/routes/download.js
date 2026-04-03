@@ -2,15 +2,15 @@ const express = require('express');
 const router = express.Router();
 const path = require('path');
 const fs = require('fs');
-const Design = require('../models/Design');
-const Order = require('../models/Order');
+const designRepo = require('../repositories/designRepository');
+const orderRepo = require('../repositories/orderRepository');
 const auth = require('../middleware/auth');
 
 // Download design image
 router.get('/design/:designId/image/:imageIndex', auth, async (req, res) => {
   try {
     const { designId, imageIndex } = req.params;
-    const design = await Design.findById(designId);
+    const design = await designRepo.getDesignById(designId);
     
     if (!design) {
       return res.status(404).json({ error: 'Design not found' });
@@ -52,7 +52,7 @@ router.get('/design/:designId/image/:imageIndex', auth, async (req, res) => {
 router.get('/order/:orderId/invoice', auth, async (req, res) => {
   try {
     const { orderId } = req.params;
-    const order = await Order.findById(orderId);
+    const order = await orderRepo.getOrderByIdDirect(orderId);
     
     if (!order) {
       return res.status(404).json({ error: 'Order not found' });
@@ -102,10 +102,11 @@ router.get('/user/data', auth, async (req, res) => {
     delete userData.password; // Remove sensitive data
     
     // Get user's orders
-    const orders = await Order.find({ userId: userId }).lean();
+    const userOrders = await orderRepo.getOrders(userId, { page: 1, limit: 1000 });
+    const orders = userOrders.data || [];
     
     // Get user's designs (if any)
-    const designs = await Design.find({ designer: userId }).lean();
+    const designs = await designRepo.getDesignsByDesigner(userId);
     
     const exportData = {
       user: userData,
@@ -130,10 +131,7 @@ router.get('/user/data', auth, async (req, res) => {
 // Download product catalog (public)
 router.get('/catalog', async (req, res) => {
   try {
-    const designs = await Design.find({ isPublic: true })
-      .populate('designer', 'username email')
-      .select('title description price category images createdAt')
-      .lean();
+    const designs = await designRepo.getPublicDesignsByBrandUsers();
 
     const catalogData = {
       catalog: designs,

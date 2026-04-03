@@ -5,7 +5,9 @@
  * Only superadmins and admins should access these routes
  */
 
-const User = require('../models/User');
+const userRepo = require('../repositories/userAuthRepository');
+const productRepo = require('../repositories/productRepository');
+const orderRepo = require('../repositories/orderRepository');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const { uploadImage, deleteImage } = require('../utils/cloudinary');
@@ -115,7 +117,7 @@ const adminController = {
       }
 
       // Find user by email
-      const user = await User.findOne({ email });
+      const user = await userRepo.getUserByEmail(email);
       if (!user) {
         return res.status(401).json({
           success: false,
@@ -166,21 +168,17 @@ const adminController = {
         { expiresIn: '30d' }
       );
 
-      // Remove password from response
-      const userResponse = user.toObject();
-      delete userResponse.password;
-
       res.json({
         success: true,
         message: 'Admin login successful',
         token,
         user: {
-          id: userResponse._id,
-          email: userResponse.email,
-          username: userResponse.username,
-          role: userResponse.role,
-          firstName: userResponse.firstName,
-          lastName: userResponse.lastName
+          id: user._id,
+          email: user.email,
+          username: user.username,
+          role: user.role,
+          firstName: user.firstName,
+          lastName: user.lastName
         }
       });
 
@@ -202,7 +200,6 @@ const adminController = {
   async getAllUsers(req, res) {
     try {
       const { page = 1, limit = 10, role } = req.query;
-      const skip = (page - 1) * limit;
 
       // Build filter
       const filter = {};
@@ -211,13 +208,11 @@ const adminController = {
       }
 
       // Get users and total count
-      const users = await User.find(filter)
-        .select('-password -verificationToken -verificationTokenExpiry')
-        .limit(limit * 1)
-        .skip(skip)
-        .sort({ createdAt: -1 });
-
-      const total = await User.countDocuments(filter);
+      const { users, total } = await userRepo.listUsers({
+        filter,
+        page: parseInt(page),
+        limit: parseInt(limit),
+      });
 
       res.json({
         success: true,
@@ -268,11 +263,7 @@ const adminController = {
       }
 
       // Find and update user
-      const user = await User.findByIdAndUpdate(
-        userId,
-        { role },
-        { new: true }
-      ).select('-password -verificationToken -verificationTokenExpiry');
+      const user = await userRepo.updateUserRole(userId, role);
 
       if (!user) {
         return res.status(404).json({
@@ -302,10 +293,12 @@ const adminController = {
    */
   async getDashboardStats(req, res) {
     try {
-      const totalUsers = await User.countDocuments();
-      const totalAdmins = await User.countDocuments({ role: { $in: ['admin', 'superadmin'] } });
-      const totalBrands = await User.countDocuments({ isBrand: true });
-      const verifiedUsers = await User.countDocuments({ isVerified: true });
+      const [totalUsers, totalAdmins, totalBrands, verifiedUsers] = await Promise.all([
+        userRepo.countUsers(),
+        userRepo.countUsers({ role: { $in: ['admin', 'superadmin'] } }),
+        userRepo.countUsers({ isBrand: true }),
+        userRepo.countUsers({ isVerified: true }),
+      ]);
 
       res.json({
         success: true,
@@ -334,19 +327,13 @@ const adminController = {
    */
   async getDashboardData(req, res) {
     try {
-      const totalUsers = await User.countDocuments();
-      const totalAdmins = await User.countDocuments({ role: { $in: ['admin', 'superadmin'] } });
-      const totalBrands = await brandRepo.countBrands();
-      const verifiedUsers = await User.countDocuments({ isVerified: true });
-
-      // Get orders count (if Order model exists)
-      let totalOrders = 0;
-      try {
-        const Order = require('../models/Order');
-        totalOrders = await Order.countDocuments();
-      } catch (e) {
-        totalOrders = 0;
-      }
+      const [totalUsers, totalAdmins, totalBrands, verifiedUsers, totalOrders] = await Promise.all([
+        userRepo.countUsers(),
+        userRepo.countUsers({ role: { $in: ['admin', 'superadmin'] } }),
+        brandRepo.countBrands(),
+        userRepo.countUsers({ isVerified: true }),
+        orderRepo.countOrdersAdmin(),
+      ]);
 
       // Return dashboard stats with 0 values for empty data
       res.json({
@@ -379,13 +366,8 @@ const adminController = {
   async getRecentOrders(req, res) {
     try {
       const { limit = 5 } = req.query;
-      const Order = require('../models/Order');
 
-      const orders = await Order.find()
-        .sort({ createdAt: -1 })
-        .limit(parseInt(limit))
-        .populate('userId')
-        .exec();
+      const orders = await orderRepo.getRecentOrdersAdmin(parseInt(limit));
 
       const recentOrders = orders.map(order => ({
         id: order._id,
@@ -450,7 +432,6 @@ const adminController = {
   async getBrands(req, res) {
     try {
       const { page = 1, limit = 20, status } = req.query;
-      const skip = (page - 1) * limit;
 
       console.log('[getBrands] Query params:', { page, limit, status });
       console.log('[getBrands] User:', req.user?.id, 'Role:', req.user?.role);
@@ -523,7 +504,7 @@ const adminController = {
       const { brandId } = req.params;
 
       // Since there's no brandStatus field, just return success
-      const brand = await User.findById(brandId);
+      const brand = await userRepo.getUserById(brandId);
 
       if (!brand || !brand.isBrand) {
         return res.status(404).json({
@@ -836,28 +817,16 @@ const adminController = {
   async getProducts(req, res) {
     try {
       const { page = 1, limit = 20, status } = req.query;
-      const skip = (page - 1) * limit;
 
       const filter = {};
       if (status) filter.status = status;
 
-      let Product;
-      try {
-        Product = require('../models/Product');
-      } catch (e) {
-        return res.json({
-          success: true,
-          data: [],
-          pagination: { total: 0, page: 1, limit: 20, pages: 0 }
-        });
-      }
-
-      const products = await Product.find(filter)
-        .limit(parseInt(limit))
-        .skip(skip)
-        .sort({ createdAt: -1 });
-
-      const total = await Product.countDocuments(filter);
+      const { products, total } = await productRepo.getProducts({
+        ...filter,
+        page: parseInt(page),
+        limit: parseInt(limit),
+        sortBy: 'createdAt',
+      });
 
       const formattedProducts = products.map(product => ({
         id: product._id,
@@ -911,13 +880,8 @@ const adminController = {
   async approveProduct(req, res) {
     try {
       const { productId } = req.params;
-      const Product = require('../models/Product');
 
-      const product = await Product.findByIdAndUpdate(
-        productId,
-        { status: 'active' },
-        { new: true }
-      );
+      const product = await productRepo.updateProduct(productId, { status: 'active' });
 
       if (!product) {
         return res.status(404).json({
@@ -948,13 +912,11 @@ const adminController = {
     try {
       const { productId } = req.params;
       const { reason } = req.body;
-      const Product = require('../models/Product');
 
-      const product = await Product.findByIdAndUpdate(
-        productId,
-        { status: 'rejected', rejectionReason: reason },
-        { new: true }
-      );
+      const product = await productRepo.updateProduct(productId, {
+        status: 'rejected',
+        rejectionReason: reason,
+      });
 
       if (!product) {
         return res.status(404).json({
@@ -984,37 +946,22 @@ const adminController = {
   async getOrders(req, res) {
     try {
       const { page = 1, limit = 20, status } = req.query;
-      const skip = (page - 1) * limit;
 
       const filter = {};
       if (status) filter.status = status;
 
-      let Order;
-      try {
-        Order = require('../models/Order');
-      } catch (e) {
-        return res.json({
-          success: true,
-          data: [],
-          pagination: { total: 0, page: 1, limit: 20, pages: 0 }
-        });
-      }
-
-      const orders = await Order.find(filter)
-        .limit(parseInt(limit))
-        .skip(skip)
-        .sort({ createdAt: -1 })
-        .populate('userId')
-        .populate('brandId');
-
-      const total = await Order.countDocuments(filter);
+      const { orders, total } = await orderRepo.listOrdersAdmin({
+        filter,
+        page: parseInt(page),
+        limit: parseInt(limit),
+      });
 
       const formattedOrders = orders.map(order => ({
         id: order._id,
         customerId: order.userId?._id || '',
         customerName: order.userId?.username || 'Unknown',
         customerEmail: order.userId?.email || 'unknown@email.com',
-        brandId: order.brandId?._id || '',
+        brandId: order.brandId?._id || order.brandId || '',
         brandName: order.brandId?.username || 'Unknown Brand',
         items: order.items || [],
         subtotal: order.subtotal || 0,
@@ -1025,7 +972,7 @@ const adminController = {
         brandPayout: 0,
         orderStatus: order.orderStatus || 'pending',
         paymentStatus: order.paymentStatus || 'pending',
-        shippingAddress: order.shippingAddressSnapshot || {},
+        shippingAddress: order.shippingAddressSnapshot || order.addressSnapshot || {},
         createdAt: order.createdAt
       }));
 
@@ -1055,19 +1002,16 @@ const adminController = {
   async getCustomers(req, res) {
     try {
       const { page = 1, limit = 20, status } = req.query;
-      const skip = (page - 1) * limit;
 
       // Show all users (both brands and non-brands)
       const filter = {};
       if (status) filter.status = status;
 
-      const customers = await User.find(filter)
-        .select('-password -verificationToken')
-        .limit(parseInt(limit))
-        .skip(skip)
-        .sort({ createdAt: -1 });
-
-      const total = await User.countDocuments(filter);
+      const { users: customers, total } = await userRepo.listUsers({
+        filter,
+        page: parseInt(page),
+        limit: parseInt(limit),
+      });
 
       const formattedCustomers = customers.map(customer => ({
         id: customer._id,
@@ -1109,11 +1053,7 @@ const adminController = {
       const { customerId } = req.params;
       const { status } = req.body;
 
-      const customer = await User.findByIdAndUpdate(
-        customerId,
-        { status },
-        { new: true }
-      );
+      const customer = await userRepo.updateUserStatus(customerId, status);
 
       if (!customer) {
         return res.status(404).json({
@@ -1234,11 +1174,7 @@ const adminController = {
       const { userId } = req.params;
 
       // Find and update user
-      const user = await User.findByIdAndUpdate(
-        userId,
-        { isBrand: true },
-        { new: true }
-      ).select('-password -verificationToken -verificationTokenExpiry');
+      const user = await userRepo.setBrandFlag(userId, true);
 
       if (!user) {
         return res.status(404).json({
@@ -1272,11 +1208,7 @@ const adminController = {
       const { userId } = req.params;
 
       // Find and update user
-      const user = await User.findByIdAndUpdate(
-        userId,
-        { isBrand: false },
-        { new: true }
-      ).select('-password -verificationToken -verificationTokenExpiry');
+      const user = await userRepo.setBrandFlag(userId, false);
 
       if (!user) {
         return res.status(404).json({

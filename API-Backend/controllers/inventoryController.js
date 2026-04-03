@@ -1,4 +1,4 @@
-const Product = require('../models/Product');
+const productRepository = require('../repositories/productRepository');
 
 /**
  * Reduce product stock after successful order
@@ -17,7 +17,7 @@ exports.reduceStock = async (orderItems) => {
         const { productId, quantity, selectedSize } = item;
 
         // Find the product
-        const product = await Product.findById(productId);
+        const product = await productRepository.getProductById(productId);
 
         if (!product) {
           errors.push({
@@ -42,23 +42,23 @@ exports.reduceStock = async (orderItems) => {
           }
 
           // Update size stock
-          product.sizeStock[selectedSize] = currentSizeStock - quantity;
+          const newSizeStock = { ...product.sizeStock };
+          newSizeStock[selectedSize] = currentSizeStock - quantity;
 
           // Recalculate total stock from all sizes
-          const totalStock = Object.values(product.sizeStock).reduce((sum, qty) => sum + qty, 0);
-          product.stockQuantity = totalStock;
+          const totalStock = Object.values(newSizeStock).reduce((sum, qty) => sum + qty, 0);
 
-          await product.save();
+          await productRepository.updateStock(productId, newSizeStock, totalStock);
 
           results.push({
             productId,
             size: selectedSize,
             reducedQuantity: quantity,
-            remainingStock: product.sizeStock[selectedSize],
-            totalStock: product.stockQuantity,
+            remainingStock: newSizeStock[selectedSize],
+            totalStock,
           });
 
-          console.log(`[Inventory] Reduced ${quantity} units of ${product.name} (Size: ${selectedSize}). Remaining: ${product.sizeStock[selectedSize]}`);
+          console.log(`[Inventory] Reduced ${quantity} units of ${product.name} (Size: ${selectedSize}). Remaining: ${newSizeStock[selectedSize]}`);
         } else {
           // Reduce general stock (no sizes)
           if (product.stockQuantity < quantity) {
@@ -69,16 +69,16 @@ exports.reduceStock = async (orderItems) => {
             continue;
           }
 
-          product.stockQuantity -= quantity;
-          await product.save();
+          const newQty = product.stockQuantity - quantity;
+          await productRepository.updateStock(productId, product.sizeStock, newQty);
 
           results.push({
             productId,
             reducedQuantity: quantity,
-            remainingStock: product.stockQuantity,
+            remainingStock: newQty,
           });
 
-          console.log(`[Inventory] Reduced ${quantity} units of ${product.name}. Remaining: ${product.stockQuantity}`);
+          console.log(`[Inventory] Reduced ${quantity} units of ${product.name}. Remaining: ${newQty}`);
         }
       } catch (error) {
         console.error(`[Inventory] Error processing item ${item.productId}:`, error);
@@ -120,7 +120,7 @@ exports.checkStockAvailability = async (orderItems) => {
     for (const item of orderItems) {
       const { productId, quantity, selectedSize } = item;
 
-      const product = await Product.findById(productId);
+      const product = await productRepository.getProductById(productId);
 
       if (!product) {
         availabilityResults.push({
@@ -189,29 +189,31 @@ exports.restoreStock = async (orderItems) => {
     for (const item of orderItems) {
       const { productId, quantity, selectedSize } = item;
 
-      const product = await Product.findById(productId);
+      const product = await productRepository.getProductById(productId);
 
       if (!product) {
         console.warn(`[Inventory] Product ${productId} not found for stock restoration`);
         continue;
       }
 
+      const newSizeStock = { ...product.sizeStock };
+      let newQty;
+
       if (product.hasSizes && selectedSize) {
-        product.sizeStock[selectedSize] = (product.sizeStock[selectedSize] || 0) + quantity;
-        const totalStock = Object.values(product.sizeStock).reduce((sum, qty) => sum + qty, 0);
-        product.stockQuantity = totalStock;
+        newSizeStock[selectedSize] = (newSizeStock[selectedSize] || 0) + quantity;
+        newQty = Object.values(newSizeStock).reduce((sum, qty) => sum + qty, 0);
       } else {
-        product.stockQuantity += quantity;
+        newQty = product.stockQuantity + quantity;
       }
 
-      await product.save();
+      await productRepository.updateStock(productId, newSizeStock, newQty);
 
       results.push({
         productId,
         restoredQuantity: quantity,
         newStock: product.hasSizes && selectedSize 
-          ? product.sizeStock[selectedSize] 
-          : product.stockQuantity,
+          ? newSizeStock[selectedSize] 
+          : newQty,
       });
 
       console.log(`[Inventory] Restored ${quantity} units of ${product.name}`);

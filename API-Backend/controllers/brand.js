@@ -4,6 +4,7 @@
  */
 
 const { getBrandById, updateBrand } = require('../repositories/brandRepository');
+const { createProduct } = require('../repositories/productRepository');
 const { uploadImage, deleteImage } = require('../utils/cloudinary');
 
 const brandController = {
@@ -237,11 +238,8 @@ const brandController = {
         });
       }
 
-      // Import Product model
-      const Product = require('../models/Product');
-
       // Create product
-      const product = new Product({
+      const savedProduct = await createProduct({
         name,
         description,
         longDescription,
@@ -260,8 +258,6 @@ const brandController = {
         tags: tags || [],
         images,
       });
-
-      const savedProduct = await product.save();
 
       console.log('[createProduct] Product created successfully:', savedProduct._id);
 

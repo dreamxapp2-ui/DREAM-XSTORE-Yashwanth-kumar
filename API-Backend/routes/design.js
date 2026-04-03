@@ -3,7 +3,7 @@ const router = express.Router();
 const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
-const User = require("../models/User");
+const { getUserById } = require("../repositories/userAuthRepository");
 const authenticate = require("../middleware/auth");
 const designRepo = require("../repositories/designRepository");
 
@@ -142,7 +142,7 @@ router.post("/adddesign", authenticate, (req, res) => {
 
       const imagePaths = req.files.map((file) => file.path);
 
-      const user = await User.findById(req.user._id);
+      const user = await getUserById(req.user._id);
 
       // Parse sizes if it's a JSON string or comma-separated string
       let parsedSizes = sizes;

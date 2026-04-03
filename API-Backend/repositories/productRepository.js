@@ -253,7 +253,224 @@ async function getProductById(productId) {
   return normalizeProduct(mongoProduct);
 }
 
+// ── Size helpers ───────────────────────────────────────────────────────────────
+
+const SIZE_COL_MAP = {
+  XS: 'stockXs',
+  S: 'stockS',
+  M: 'stockM',
+  L: 'stockL',
+  XL: 'stockXl',
+  XXL: 'stockXxl',
+  XXXL: 'stockXxxl',
+};
+
+function sizeStockToCols(sizeStock) {
+  const cols = {};
+  if (!sizeStock) return cols;
+  for (const [size, col] of Object.entries(SIZE_COL_MAP)) {
+    if (sizeStock[size] !== undefined) {
+      cols[col] = parseInt(sizeStock[size], 10) || 0;
+    }
+  }
+  return cols;
+}
+
+// ── Create ─────────────────────────────────────────────────────────────────────
+
+async function createProduct(data) {
+  const sizeCols = sizeStockToCols(data.sizeStock);
+
+  const postgresProduct = await runPostgres('create product', () =>
+    prisma.product.create({
+      data: {
+        brandId: data.brandId,
+        brandName: data.brandName,
+        name: data.name,
+        description: data.description || '',
+        longDescription: data.longDescription || '',
+        category: data.category,
+        subCategory: data.subCategory || null,
+        price: data.price,
+        originalPrice: data.originalPrice,
+        discount: data.discount || 0,
+        stockQuantity: data.stockQuantity || 0,
+        hasSizes: data.hasSizes ?? true,
+        sizes: data.hasSizes ? (data.sizes || []) : [],
+        images: data.images || [],
+        features: data.features || [],
+        tags: data.tags || [],
+        inStock: (data.stockQuantity || 0) > 0,
+        ...sizeCols,
+      },
+      include: { brand: { select: { id: true, brandName: true } } },
+    })
+  );
+
+  if (postgresProduct) {
+    return normalizeProduct(postgresProduct);
+  }
+
+  if (!canUseMongoFallback()) {
+    return null;
+  }
+
+  const mongoProduct = await Product.create(data);
+  return normalizeProduct(mongoProduct);
+}
+
+// ── Update ─────────────────────────────────────────────────────────────────────
+
+async function updateProduct(productId, data) {
+  const updateData = { ...data };
+
+  // Convert sizeStock map to individual PG columns
+  if (updateData.sizeStock) {
+    const sizeCols = sizeStockToCols(updateData.sizeStock);
+    Object.assign(updateData, sizeCols);
+    delete updateData.sizeStock;
+  }
+
+  // Strip fields Prisma doesn't accept
+  delete updateData._id;
+  delete updateData.id;
+  delete updateData.brand;
+
+  const postgresProduct = await runPostgres('update product', () =>
+    prisma.product.update({
+      where: { id: productId },
+      data: updateData,
+      include: { brand: { select: { id: true, brandName: true } } },
+    })
+  );
+
+  if (postgresProduct) {
+    return normalizeProduct(postgresProduct);
+  }
+
+  if (!canUseMongoFallback()) {
+    return null;
+  }
+
+  const mongoProduct = await Product.findByIdAndUpdate(productId, data, {
+    new: true,
+    runValidators: true,
+  }).populate('brandId', 'brandName').lean();
+
+  return normalizeProduct(mongoProduct);
+}
+
+// ── Delete ─────────────────────────────────────────────────────────────────────
+
+async function deleteProduct(productId) {
+  const postgresProduct = await runPostgres('delete product', () =>
+    prisma.product.delete({
+      where: { id: productId },
+    })
+  );
+
+  if (postgresProduct) {
+    return normalizeProduct(postgresProduct);
+  }
+
+  if (!canUseMongoFallback()) {
+    return null;
+  }
+
+  const mongoProduct = await Product.findByIdAndDelete(productId);
+  return normalizeProduct(mongoProduct);
+}
+
+// ── Toggle Status ──────────────────────────────────────────────────────────────
+
+async function toggleProductStatus(productId) {
+  // First get current status
+  const product = await getProductById(productId);
+  if (!product) return null;
+
+  const newStatus = !product.isActive;
+
+  const postgresProduct = await runPostgres('toggle product status', () =>
+    prisma.product.update({
+      where: { id: productId },
+      data: { isActive: newStatus },
+      include: { brand: { select: { id: true, brandName: true } } },
+    })
+  );
+
+  if (postgresProduct) {
+    return normalizeProduct(postgresProduct);
+  }
+
+  if (!canUseMongoFallback()) {
+    return null;
+  }
+
+  const mongoProduct = await Product.findById(productId);
+  if (!mongoProduct) return null;
+  mongoProduct.isActive = newStatus;
+  await mongoProduct.save();
+  return normalizeProduct(mongoProduct);
+}
+
+// ── Stock Management ───────────────────────────────────────────────────────────
+
+async function updateStock(productId, sizeStock, stockQuantity) {
+  const sizeCols = sizeStockToCols(sizeStock);
+
+  const postgresProduct = await runPostgres('update stock', () =>
+    prisma.product.update({
+      where: { id: productId },
+      data: {
+        ...sizeCols,
+        stockQuantity,
+        inStock: stockQuantity > 0,
+      },
+    })
+  );
+
+  if (postgresProduct) {
+    return normalizeProduct(postgresProduct);
+  }
+
+  if (!canUseMongoFallback()) {
+    return null;
+  }
+
+  const mongoProduct = await Product.findById(productId);
+  if (!mongoProduct) return null;
+  if (sizeStock) mongoProduct.sizeStock = sizeStock;
+  mongoProduct.stockQuantity = stockQuantity;
+  await mongoProduct.save();
+  return normalizeProduct(mongoProduct);
+}
+
+// ── Count ──────────────────────────────────────────────────────────────────────
+
+async function countProducts(filter = {}) {
+  const postgresCount = await runPostgres('count products', () => {
+    const where = buildPrismaWhere(filter);
+    return prisma.product.count({ where });
+  });
+
+  if (postgresCount !== null && postgresCount !== undefined) {
+    return postgresCount;
+  }
+
+  if (!canUseMongoFallback()) {
+    return 0;
+  }
+
+  return Product.countDocuments(buildMongoFilter(filter));
+}
+
 module.exports = {
+  countProducts,
+  createProduct,
+  deleteProduct,
   getProductById,
   getProducts,
+  toggleProductStatus,
+  updateProduct,
+  updateStock,
 };
