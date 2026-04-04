@@ -18,13 +18,13 @@ services:
       
       # Unified URLs (self-referencing)
       - key: FRONTEND_URL
-        value: https://dreamx-store.onrender.com
+        value: https://dream-xstore-yashwanth-kumar.onrender.com
       - key: BACKEND_URL
-        value: https://dreamx-store.onrender.com
+        value: https://dream-xstore-yashwanth-kumar.onrender.com
       - key: NEXT_PUBLIC_API_URL
-        value: https://dreamx-store.onrender.com/api
+        value: https://dream-xstore-yashwanth-kumar.onrender.com/api
       - key: NEXT_PUBLIC_AUTH_URL
-        value: https://dreamx-store.onrender.com
+        value: https://dream-xstore-yashwanth-kumar.onrender.com
       
       # Auth Secrets
       - key: GOOGLE_CLIENT_ID

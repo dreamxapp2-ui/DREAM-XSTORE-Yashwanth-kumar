@@ -44,7 +44,7 @@ export const OrdersTab: React.FC<OrdersTabProps> = () => {
   const handleDownloadInvoice = async (orderId: string) => {
     try {
       const token = localStorage.getItem('token');
-      const productionUrl = 'https://dreamx-store.onrender.com';
+      const productionUrl = 'https://dream-xstore-yashwanth-kumar.onrender.com';
       const rawApiUrl = process.env.NEXT_PUBLIC_API_URL || 
                       (process.env.NODE_ENV === 'production' ? productionUrl : 'http://localhost:3000/api');
       const baseUrl = rawApiUrl.replace('/api', '');

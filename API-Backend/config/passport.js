@@ -31,7 +31,7 @@ const googleStrategy = new GoogleStrategy(
       if (process.env.GOOGLE_CALLBACK_URL) return process.env.GOOGLE_CALLBACK_URL;
       
       // Otherwise construct from BACKEND_URL (which points to the proxy root in monolith setup)
-      let baseUrl = (process.env.BACKEND_URL || 'https://dreamx-store.onrender.com').replace(/\/$/, '');
+      let baseUrl = (process.env.BACKEND_URL || 'https://dream-xstore-yashwanth-kumar.onrender.com').replace(/\/$/, '');
       
       // Force https for production
       if (baseUrl.includes('onrender.com')) baseUrl = baseUrl.replace('http://', 'https://');

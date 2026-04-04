@@ -1,48 +1,34 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useCart } from "../../../../contexts/CartContext";
 import { Button } from "../../../../components/ui/button";
 import { Sliders, Star } from "lucide-react";
 import { useRouter } from "next/navigation";
 import WishlistButton from "../../../../components/WishlistButton";
+import { ProductService } from "../../../../lib/api/services/productService";
 
 export const ProductSection = () => {
   const [activeCategory, setActiveCategory] = useState("Men");
+  const [products, setProducts] = useState<any[]>([]);
   const router = useRouter();
 
   const categories = ["Woman", "Men", "Kids", "Sport", "New"];
 
-  // Sample products for frontend testing
-  const products = [
-    {
-      _id: "60f8c2b5e1b2c8a1b8e4d111",
-      name: "D2 Utility Dryvent Jacket",
-      price: "$572",
-      image: "https://i.postimg.cc/fRWRqwYP/GPT-model.png",
-      rating: 4.9,
-      slug: "d2-utility-dryvent-jacket"
-    },
-    {
-      _id: "60f8c2b5e1b2c8a1b8e4d222",
-      name: "GEL-1130",
-      price: "$112",
-      image: "https://images.pexels.com/photos/1926769/pexels-photo-1926769.jpeg?auto=compress&cs=tinysrgb&w=400",
-      rating: 4.8,
-      slug: "gel-1130"
-    },
-    {
-       _id: "60f8c2b5e1b2c8a1b8e4d333",
-       name: "Sporty Hoodie",
-       price: "$85",
-       image: "https://images.pexels.com/photos/1183266/pexels-photo-1183266.jpeg?auto=compress&cs=tinysrgb&w=400",
-       rating: 4.7,
-       slug: "sporty-hoodie"
-    }
-  ];
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const response = await ProductService.getProducts({ limit: 5 });
+        setProducts(response.data || []);
+      } catch (error) {
+        console.error('[ProductSection] Failed to fetch products:', error);
+      }
+    };
+    fetchProducts();
+  }, []);
 
   const handleProductClick = (product: any) => {
-    router.push(`/product/${product.slug}`);
+    router.push(`/product/${product._id}`);
   };
 
   return (
@@ -99,7 +85,7 @@ export const ProductSection = () => {
               {/* Image Container */}
               <div className="bg-white rounded-2xl overflow-hidden aspect-[4/5] flex items-center justify-center mb-3">
                 <img 
-                  src={product.image} 
+                  src={product.images?.[0] || '/placeholder.png'} 
                   alt={product.name}
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                 />
@@ -112,7 +98,7 @@ export const ProductSection = () => {
                   <span className="text-gray-400 font-bold">{product.rating}</span>
                 </div>
                 <h3 className="text-sm font-bold text-gray-900 line-clamp-1 mb-1">{product.name}</h3>
-                <p className="text-sm font-extrabold text-[#004d84]">{product.price}</p>
+                <p className="text-sm font-extrabold text-[#004d84]">${typeof product.price === 'number' ? product.price.toFixed(2) : product.price}</p>
               </div>
             </div>
           ))}

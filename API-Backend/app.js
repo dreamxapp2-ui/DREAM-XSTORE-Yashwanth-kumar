@@ -35,7 +35,8 @@ app.set('trust proxy', 1);
 // Middleware
 const allowedOrigins = [
     process.env.FRONTEND_URL,
-    'https://dreamx-store.onrender.com',
+    'https://dream-xstore-yashwanth-kumar.onrender.com',
+    'https://dreamx-store-dev.onrender.com',
     'http://localhost:3001',
     'http://localhost:3000'
 ].filter(Boolean);

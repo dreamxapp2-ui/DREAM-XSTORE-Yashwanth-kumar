@@ -49,7 +49,7 @@ const SignupPage = () => {
   };
 
   const handleGoogleSignup = () => {
-    const productionUrl = 'https://dreamx-store.onrender.com';
+    const productionUrl = 'https://dream-xstore-yashwanth-kumar.onrender.com';
     const rawApiUrl = process.env.NEXT_PUBLIC_API_URL || (process.env.NODE_ENV === 'production' ? productionUrl : 'http://localhost:3000');
     window.location.href = `${rawApiUrl.replace(/\/api$/, "")}/api${ENDPOINTS.GOOGLE_AUTH}`;
   };

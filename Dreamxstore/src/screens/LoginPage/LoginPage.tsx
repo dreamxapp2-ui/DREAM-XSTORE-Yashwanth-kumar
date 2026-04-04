@@ -51,7 +51,7 @@ export const LoginPage = () => {
   };
 
   const handleGoogleLogin = () => {
-    const productionUrl = 'https://dreamx-store.onrender.com';
+    const productionUrl = 'https://dream-xstore-yashwanth-kumar.onrender.com';
     const rawApiUrl = process.env.NEXT_PUBLIC_API_URL || (process.env.NODE_ENV === 'production' ? productionUrl : 'http://localhost:3000');
     const authUrl = rawApiUrl.replace(/\/api$/, "");
     window.location.href = `${authUrl}/api${ENDPOINTS.GOOGLE_AUTH}`;
