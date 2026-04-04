@@ -37,7 +37,7 @@ interface UserProfile {
 const ProfilePage: React.FC = () => {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'profile' | 'orders' | 'settings'>('profile');
+  const [activeTab, setActiveTab] = useState<'profile' | 'orders' | 'wishlist' | 'settings'>('profile');
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [stats, setStats] = useState({
     totalOrders: 0,
@@ -187,6 +187,7 @@ const ProfilePage: React.FC = () => {
                 {[
                   { id: 'profile', icon: User, label: 'Overview' },
                   { id: 'orders', icon: Package, label: 'My Orders' },
+                  { id: 'wishlist', icon: Heart, label: 'Wishlist' },
                   { id: 'settings', icon: Settings, label: 'Preferences' }
                 ].map((tab) => (
                    <button
@@ -240,6 +241,12 @@ const ProfilePage: React.FC = () => {
                 {activeTab === 'orders' && (
                   <div className="bg-white rounded-[2.5rem] p-4 lg:p-8 border border-gray-100 shadow-sm">
                      <OrdersTab />
+                  </div>
+                )}
+
+                {activeTab === 'wishlist' && (
+                  <div className="bg-white rounded-[2.5rem] p-4 lg:p-8 border border-gray-100 shadow-sm">
+                     <WishlistTab />
                   </div>
                 )}
 

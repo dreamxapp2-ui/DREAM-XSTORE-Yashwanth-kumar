@@ -98,7 +98,7 @@ export const ProductSection = () => {
                   <span className="text-gray-400 font-bold">{product.rating}</span>
                 </div>
                 <h3 className="text-sm font-bold text-gray-900 line-clamp-1 mb-1">{product.name}</h3>
-                <p className="text-sm font-extrabold text-[#004d84]">${typeof product.price === 'number' ? product.price.toFixed(2) : product.price}</p>
+                <p className="text-sm font-extrabold text-[#004d84]">₹{typeof product.price === 'number' ? product.price.toLocaleString('en-IN') : product.price}</p>
               </div>
             </div>
           ))}

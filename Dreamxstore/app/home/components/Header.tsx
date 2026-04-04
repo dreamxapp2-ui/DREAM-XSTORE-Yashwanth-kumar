@@ -350,9 +350,9 @@ export default function Header() {
               }}
             >
               <div className={`w-9 h-9 rounded-full border flex items-center justify-center overflow-hidden transition-all group-hover:scale-105 ${isProfileOpen ? 'bg-[#bef264] border-black scale-105' : 'bg-[#bef264]/20 border-[#bef264]/40'}`}>
-                {user?.profilePicture ? (
+                {(user?.hero_image?.url || user?.hero_image || user?.profilePicture) ? (
                   <img 
-                    src={user.profilePicture} 
+                    src={typeof user.hero_image === 'object' ? user.hero_image.url : (user.hero_image || user.profilePicture)} 
                     alt="Profile" 
                     className="w-full h-full object-cover"
                   />

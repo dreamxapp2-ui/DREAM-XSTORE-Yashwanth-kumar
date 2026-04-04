@@ -26,6 +26,7 @@ const googleAuthController = {
             id: user._id,
             username: username || user.email, 
             email: user.email,
+            profilePicture: user.profilePicture || null,
             }));
 
 

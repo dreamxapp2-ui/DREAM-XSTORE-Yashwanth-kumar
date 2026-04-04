@@ -70,8 +70,8 @@ export default function CheckoutPage() {
   };
 
   const handleReviewComplete = () => {
-    // Handle order completion
-    router.push('/home');
+    // Redirect to order confirmation page
+    router.push('/checkout/confirmation');
   };
 
   return (

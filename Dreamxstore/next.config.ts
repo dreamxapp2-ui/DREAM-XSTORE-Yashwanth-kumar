@@ -41,7 +41,7 @@ const nextConfig: NextConfig = {
     ],
   },
   async rewrites() {
-    const backendPort = process.env.BACKEND_PORT || 5000;
+    const backendPort = process.env.BACKEND_PORT || process.env.NEXT_PUBLIC_API_PORT || (process.env.NODE_ENV === 'production' ? 5000 : 3001);
     return [
       {
         source: '/api/:path*',

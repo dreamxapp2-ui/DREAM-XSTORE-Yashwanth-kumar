@@ -702,4 +702,39 @@ router.put("/api/user/addresses/:addressId/default", authenticate, async (req, r
   }
 });
 
+// ── Contact Form ──────────────────────────────────────────────────────────────
+router.post('/api/contact', async (req, res) => {
+  try {
+    const { name, email, phone, subject, message } = req.body;
+
+    if (!name || !email || !message) {
+      return res.status(400).json({ success: false, message: 'Name, email, and message are required' });
+    }
+
+    const content = `
+      <h2>New Contact Form Submission</h2>
+      <p><strong>Name:</strong> ${name}</p>
+      <p><strong>Email:</strong> ${email}</p>
+      <p><strong>Phone:</strong> ${phone || 'Not provided'}</p>
+      <p><strong>Subject:</strong> ${subject || 'General Inquiry'}</p>
+      <hr/>
+      <p><strong>Message:</strong></p>
+      <p>${message}</p>
+    `;
+
+    const adminEmail = process.env.ADMIN_EMAIL || 'support@dreamxstore.com';
+
+    try {
+      await SendMail(content, `Contact: ${subject || 'General Inquiry'} from ${name}`, adminEmail);
+    } catch (mailError) {
+      console.warn('[contact] Mail send failed (non-blocking):', mailError);
+    }
+
+    res.json({ success: true, message: 'Your message has been sent successfully!' });
+  } catch (error) {
+    console.error('[contact] Error:', error);
+    res.status(500).json({ success: false, message: 'Failed to send message' });
+  }
+});
+
 module.exports = router;

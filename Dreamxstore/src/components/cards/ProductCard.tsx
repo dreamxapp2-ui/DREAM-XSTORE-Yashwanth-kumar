@@ -57,7 +57,7 @@ export default function ProductCard({
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                onWishlistToggle?.(id, true);
+                onWishlistToggle?.(id, false);
               }}
               className="bg-white/80 backdrop-blur-sm rounded-full p-2 hover:bg-white transition-colors shadow-sm"
               title="Remove from wishlist"

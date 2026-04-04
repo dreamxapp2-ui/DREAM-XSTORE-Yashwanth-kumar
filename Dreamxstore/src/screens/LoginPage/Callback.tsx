@@ -70,7 +70,8 @@ const GoogleCallbackPage = () => {
         username: decodedUser.username,
         email: decodedUser.email,
         isBrand: decodedUser.isBrand,
-        avatarUrl: undefined,
+        avatarUrl: decodedUser.profilePicture || undefined,
+        profilePicture: decodedUser.profilePicture || undefined,
         token,
       }));
 

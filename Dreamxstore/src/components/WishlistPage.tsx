@@ -37,20 +37,13 @@ const WishlistPage: React.FC<WishlistPageProps> = ({
 
   useEffect(() => {
     fetchWishlist();
-  }, []);
-
-  // Only refetch when page changes - pass page to fetch
-  useEffect(() => {
-    if (page > 1) {
-      fetchWishlist();
-    }
   }, [page]);
 
   const fetchWishlist = async () => {
     setLoading(true);
     setError('');
     try {
-      const response = await UserService.getWishlist();
+      const response = await UserService.getWishlist(page, 12);
       console.log('[WishlistPage] Response:', response);
       
       // Handle response - backend returns { success, data: [], pagination: {} }
@@ -62,15 +55,11 @@ const WishlistPage: React.FC<WishlistPageProps> = ({
       } else if ((response as any)?.data) {
         data = (response as any).data;
         pagination = (response as any).pagination;
-      } else if ((response as any)?.success) {
-        // Check if response has success property but data might be structured differently
-        data = (response as any).data || [];
-        pagination = (response as any).pagination;
       }
       
       setWishlist(data);
       setTotalPages(pagination?.pages || 1);
-      setTotalItems(pagination?.total || 0);
+      setTotalItems(pagination?.total || data.length);
       console.log('[WishlistPage] Wishlist loaded:', data.length, 'items');
     } catch (err: any) {
       console.error('[WishlistPage] Error fetching wishlist:', err);
@@ -83,7 +72,10 @@ const WishlistPage: React.FC<WishlistPageProps> = ({
   const handleRemoveItem = async (productId: string) => {
     try {
       await UserService.removeFromWishlist(productId);
-      setWishlist(wishlist.filter((item) => item.productId._id !== productId));
+      setWishlist(wishlist.filter((item) => {
+        const pid = item.productId?._id || item.productId;
+        return pid !== productId;
+      }));
       setTotalItems(totalItems - 1);
     } catch (err: any) {
       console.error('[WishlistPage] Error removing item:', err);

@@ -1,6 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { UserService } from '@/src/lib/api/services/userService';
+import type { UserAddress } from '@/src/lib/api/services/userService';
+import { TokenManager } from '@/src/lib/api/tokenManager';
 
 interface ShippingFormProps {
   onContinue: (data: any) => void;
@@ -19,20 +22,79 @@ export default function ShippingForm({ onContinue, initialData }: ShippingFormPr
     phone: '',
     useBillingAddress: true,
   });
+  const [savedAddresses, setSavedAddresses] = useState<UserAddress[]>([]);
+  const [showSavedAddresses, setShowSavedAddresses] = useState(false);
 
   useEffect(() => {
-    // If no initialData is explicitly given (like returning from payment step), try to load from localStorage
-    if (!initialData || Object.keys(initialData).length === 0) {
+    const loadUserData = async () => {
+      // If returning from a later step with explicit data, skip auto-fill
+      if (initialData && Object.keys(initialData).length > 0) return;
+
+      // Try localStorage first
       const saved = localStorage.getItem('dreamx_saved_shipping_address');
       if (saved) {
         try {
           setFormData(JSON.parse(saved));
+          return;
         } catch (e) {
           console.error('Failed to parse saved shipping address', e);
         }
       }
-    }
+
+      // Auto-fill from user profile if logged in
+      const token = TokenManager.getToken();
+      if (!token) return;
+
+      try {
+        const [profile, addresses] = await Promise.all([
+          UserService.getProfile().catch(() => null),
+          UserService.getAddresses().catch(() => []),
+        ]);
+
+        if (addresses && addresses.length > 0) {
+          setSavedAddresses(addresses);
+          const defaultAddr = addresses.find((a: UserAddress) => a.isDefault) || addresses[0];
+          const nameParts = defaultAddr.name?.split(' ') || [];
+          setFormData((prev: any) => ({
+            ...prev,
+            firstName: nameParts[0] || (profile as any)?.firstName || prev.firstName,
+            lastName: nameParts.slice(1).join(' ') || (profile as any)?.lastName || prev.lastName,
+            address: defaultAddr.address || prev.address,
+            city: defaultAddr.city || prev.city,
+            state: defaultAddr.state || prev.state,
+            postalCode: defaultAddr.pincode || prev.postalCode,
+            phone: defaultAddr.phone || (profile as any)?.phone || prev.phone,
+          }));
+        } else if (profile) {
+          setFormData((prev: any) => ({
+            ...prev,
+            firstName: (profile as any).firstName || prev.firstName,
+            lastName: (profile as any).lastName || prev.lastName,
+            phone: (profile as any).phone || prev.phone,
+          }));
+        }
+      } catch (error) {
+        console.warn('[ShippingForm] Auto-fill failed:', error);
+      }
+    };
+
+    loadUserData();
   }, [initialData]);
+
+  const selectSavedAddress = (addr: UserAddress) => {
+    const nameParts = addr.name?.split(' ') || [];
+    setFormData((prev: any) => ({
+      ...prev,
+      firstName: nameParts[0] || prev.firstName,
+      lastName: nameParts.slice(1).join(' ') || prev.lastName,
+      address: addr.address,
+      city: addr.city,
+      state: addr.state,
+      postalCode: addr.pincode,
+      phone: addr.phone || prev.phone,
+    }));
+    setShowSavedAddresses(false);
+  };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
@@ -54,6 +116,35 @@ export default function ShippingForm({ onContinue, initialData }: ShippingFormPr
       {/* Shipping Information */}
       <div className="mb-8">
         <h2 className="text-xl font-bold text-gray-900 mb-6">Shipping Information</h2>
+
+        {/* Saved Addresses */}
+        {savedAddresses.length > 0 && (
+          <div className="mb-6">
+            <button
+              type="button"
+              onClick={() => setShowSavedAddresses(!showSavedAddresses)}
+              className="text-sm font-semibold text-blue-600 hover:text-blue-700 mb-3"
+            >
+              {showSavedAddresses ? 'Hide' : 'Select from'} saved addresses ({savedAddresses.length})
+            </button>
+            {showSavedAddresses && (
+              <div className="grid gap-3 mb-4">
+                {savedAddresses.map((addr) => (
+                  <button
+                    key={addr.id}
+                    type="button"
+                    onClick={() => selectSavedAddress(addr)}
+                    className="text-left p-3 border border-gray-200 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-colors"
+                  >
+                    <p className="font-medium text-gray-900 text-sm">{addr.name}</p>
+                    <p className="text-xs text-gray-500">{addr.address}, {addr.city}, {addr.state} - {addr.pincode}</p>
+                    {addr.isDefault && <span className="text-[10px] font-bold text-blue-600 uppercase">Default</span>}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* First Name and Last Name */}
         <div className="grid grid-cols-2 gap-4 mb-6">

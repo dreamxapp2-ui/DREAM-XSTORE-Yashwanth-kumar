@@ -46,8 +46,8 @@ export const OrdersTab: React.FC<OrdersTabProps> = () => {
       const token = localStorage.getItem('token');
       const productionUrl = 'https://dream-xstore-yashwanth-kumar.onrender.com';
       const rawApiUrl = process.env.NEXT_PUBLIC_API_URL || 
-                      (process.env.NODE_ENV === 'production' ? productionUrl : 'http://localhost:3000/api');
-      const baseUrl = rawApiUrl.replace('/api', '');
+                      (process.env.NODE_ENV === 'production' ? productionUrl + '/api' : 'http://localhost:3001/api');
+      const baseUrl = rawApiUrl.replace(/\/api$/, '');
       const downloadUrl = `${baseUrl}/download/order/${orderId}/invoice`;
       
       const response = await fetch(downloadUrl, {

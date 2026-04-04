@@ -99,16 +99,22 @@ export default function ReviewOrder({
       // Simulate API delay
       await new Promise(resolve => setTimeout(resolve, 1500));
       
+      // Simulate ~20% failure rate for testing
+      const paymentSuccess = Math.random() > 0.2;
+      
+      if (!paymentSuccess) {
+        showToast('Dummy payment was declined. Please try again.', 'error', 4000);
+        setIsProcessing(false);
+        return;
+      }
+      
       const mockOrderId = `dummy_order_${Date.now()}`;
       const mockPaymentId = `dummy_pay_${Date.now()}`;
       
       console.log('[ReviewOrder] Dummy payment successful:', { mockOrderId, mockPaymentId });
       showToast('Dummy Payment successful! Processing order...', 'success', 3000);
       
-      await reduceInventoryStock();
-      await createShipmentOrder(mockOrderId, mockPaymentId);
-      
-      // SAVE ORDER TO DATABASE
+      // SAVE ORDER TO DATABASE FIRST - if this fails, don't proceed
       await UserOrderService.createOrder({
         items: cart,
         shippingData,
@@ -117,7 +123,12 @@ export default function ReviewOrder({
         paymentMethod: paymentData?.paymentMethod || 'card'
       });
       
+      // Non-blocking side effects
+      await reduceInventoryStock();
+      await createShipmentOrder(mockOrderId, mockPaymentId);
+      
       localStorage.removeItem('cart');
+      window.dispatchEvent(new Event('storage'));
       setTimeout(() => onComplete(), 2000);
       
     } catch (error) {

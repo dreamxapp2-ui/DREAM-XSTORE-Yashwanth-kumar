@@ -155,44 +155,36 @@ export class UserService {
   /**
    * Add product to wishlist
    */
-  static async addToWishlist(productId: string): Promise<User> {
+  static async addToWishlist(productId: string): Promise<any> {
     try {
       const response = await apiClient.post<any>('/user/wishlist/add', { productId });
       console.log('[UserService] addToWishlist response:', response);
-      
-      // Handle response - could be { success, user } or just user
-      const user = (response as any)?.user || response as User;
-      TokenManager.setUser(user);
-      return user;
+      return response;
     } catch (error) {
       console.error('[UserService] addToWishlist error:', error);
-      throw error; // Re-throw so the calling code can handle it
+      throw error;
     }
   }
 
   /**
    * Remove product from wishlist
    */
-  static async removeFromWishlist(productId: string): Promise<User> {
+  static async removeFromWishlist(productId: string): Promise<any> {
     try {
       const response = await apiClient.post<any>('/user/wishlist/remove', { productId });
       console.log('[UserService] removeFromWishlist response:', response);
-      
-      // Handle response - could be { success, user } or just user
-      const user = (response as any)?.user || response as User;
-      TokenManager.setUser(user);
-      return user;
+      return response;
     } catch (error) {
       console.error('[UserService] removeFromWishlist error:', error);
-      throw error; // Re-throw so the calling code can handle it
+      throw error;
     }
   }
 
   /**
    * Get user's wishlist
    */
-  static async getWishlist(): Promise<any[]> {
-    return await apiClient.get<any[]>('/user/wishlist');
+  static async getWishlist(page: number = 1, limit: number = 20): Promise<any> {
+    return await apiClient.get<any>(`/user/wishlist?page=${page}&limit=${limit}`);
   }
 }
 

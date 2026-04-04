@@ -8,6 +8,10 @@ services:
     buildCommand: npm run install-all && npm run build --prefix Dreamxstore
     startCommand: npm start
     envVars:
+      # Server Ports
+      - key: BACKEND_PORT
+        value: "5000"
+      
       # Database and Core
       - key: MONGODB_URI
         sync: false
@@ -55,6 +59,10 @@ services:
     buildCommand: npm run install-all && npm run build --prefix Dreamxstore
     startCommand: npm start
     envVars:
+      # Server Ports
+      - key: BACKEND_PORT
+        value: "5000"
+      
       # Database and Core
       - key: MONGODB_URI
         sync: false

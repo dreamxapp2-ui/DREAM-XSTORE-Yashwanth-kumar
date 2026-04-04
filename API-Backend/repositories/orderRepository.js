@@ -26,7 +26,28 @@ function toNumber(v) {
   return Number.isNaN(n) ? v : n;
 }
 
+function normalizeOrderItem(item) {
+  return {
+    productId: item.productId ? {
+      _id: item.productId,
+      name: item.product_name || item.title || '',
+      images: item.product_images || [],
+      price: toNumber(item.product_price || item.unitPrice || item.price),
+      brandName: item.product_brandName || '',
+    } : null,
+    title: item.title || item.product_name || '',
+    category: item.category || '',
+    size: item.size || null,
+    price: toNumber(item.unitPrice || item.price || 0),
+    quantity: item.quantity || 1,
+    image: item.image || (item.product_images ? item.product_images[0] : null),
+  };
+}
+
 function normalizeOrder(row) {
+  const addr = row.addressSnapshot;
+  const parsedAddr = typeof addr === 'string' ? JSON.parse(addr) : addr;
+  const items = (row.items || []).map(normalizeOrderItem);
   return {
     _id: row.id,
     id: row.id,
@@ -40,8 +61,9 @@ function normalizeOrder(row) {
     paymentMethod: (row.paymentMethod || 'card').toLowerCase(),
     shippingStatus: (row.shippingStatus || 'PENDING').toLowerCase(),
     orderStatus: (row.orderStatus || 'PENDING').toLowerCase(),
-    addressSnapshot: row.addressSnapshot,
-    items: row.items || [],
+    addressSnapshot: parsedAddr,
+    shippingAddressSnapshot: parsedAddr,
+    items,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   };
@@ -80,7 +102,7 @@ async function pgCreateOrder(userId, payload) {
       payload.tax || 0,
       payload.shippingFee || 0,
       payload.total,
-      (payload.paymentStatus || 'PENDING').toUpperCase(),
+      ({ PAID: 'COMPLETED', COMPLETED: 'COMPLETED', FAILED: 'FAILED', REFUNDED: 'REFUNDED' }[(payload.paymentStatus || 'PENDING').toUpperCase()] || 'PENDING'),
       (payload.paymentMethod || 'CARD').toUpperCase(),
       payload.shippingAddressSnapshot ? JSON.stringify(payload.shippingAddressSnapshot) : null,
     ]
@@ -482,11 +504,21 @@ async function getRecentOrdersAdmin(limit = 5) {
 
 async function getOrderByIdDirect(orderId) {
   if (canUsePostgres()) {
-    const rows = await queryPostgres(
-      `SELECT * FROM "Order" WHERE id = $1 LIMIT 1`,
+    const pool = getPool();
+    const orderResult = await pool.query(
+      'SELECT * FROM "Order" WHERE id = $1 LIMIT 1',
       [orderId]
     );
-    if (rows?.[0]) return normalizeOrder(rows[0]);
+    if (!orderResult.rowCount) return null;
+    const row = orderResult.rows[0];
+    const items = await pool.query(
+      `SELECT oi.*, p.name AS product_name, p.images AS product_images,
+              p.price AS product_price, p."brandName" AS "product_brandName"
+       FROM "OrderItem" oi LEFT JOIN "Product" p ON p.id = oi."productId"
+       WHERE oi."orderId" = $1`,
+      [row.id]
+    );
+    return normalizeOrder({ ...row, items: items.rows });
   }
 
   if (!canUseMongoFallback()) return null;

@@ -8,7 +8,7 @@ export const API_CONFIG = {
     // 3. Localhost (fallback for development)
     const productionUrl = 'https://dream-xstore-yashwanth-kumar.onrender.com';
     const url = process.env.NEXT_PUBLIC_API_URL || 
-                (process.env.NODE_ENV === 'production' ? productionUrl : 'http://localhost:3000');
+                (process.env.NODE_ENV === 'production' ? productionUrl : 'http://localhost:3001');
     
     return url.endsWith('/api') ? url : `${url}/api`;
   })(),

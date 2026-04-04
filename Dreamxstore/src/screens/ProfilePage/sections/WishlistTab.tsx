@@ -63,12 +63,15 @@ export const WishlistTab: React.FC<WishlistTabProps> = ({ wishlist: initialWishl
   };
 
   const handleWishlistToggle = async (productId: string, isWishlisted: boolean) => {
+    // isWishlisted=false means user wants to remove
     if (!isWishlisted) {
-      // User wants to remove from wishlist
       try {
         console.log('[WishlistTab] Removing product:', productId);
         await UserService.removeFromWishlist(productId);
-        setWishlistItems(wishlistItems.filter((item) => item.productId._id !== productId));
+        setWishlistItems(wishlistItems.filter((item) => {
+          const pid = item.productId?._id || item.productId;
+          return pid !== productId;
+        }));
         console.log('[WishlistTab] Product removed successfully');
       } catch (err: any) {
         console.error('[WishlistTab] Error removing item:', err);
@@ -76,8 +79,6 @@ export const WishlistTab: React.FC<WishlistTabProps> = ({ wishlist: initialWishl
         alert(errorMessage);
       }
     }
-    // If isWishlisted is true, it means trying to add - but in profile wishlist context,
-    // we only show already-wishlisted items, so this shouldn't happen
   };
 
   if (loading) {

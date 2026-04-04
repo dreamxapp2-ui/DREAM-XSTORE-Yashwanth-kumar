@@ -5,6 +5,43 @@ import { Heart } from 'lucide-react';
 import { UserService } from '../lib/api/services/userService';
 import { TokenManager } from '../lib/api/tokenManager';
 
+// Module-level dedup: all WishlistButtons on the same page share one API call
+let _wishlistFetchPromise: Promise<Set<string>> | null = null;
+let _wishlistCache: { ids: Set<string>; ts: number } | null = null;
+const CACHE_TTL = 10_000; // 10 seconds
+
+async function fetchWishlistIds(): Promise<Set<string>> {
+  if (_wishlistCache && Date.now() - _wishlistCache.ts < CACHE_TTL) {
+    return _wishlistCache.ids;
+  }
+  if (_wishlistFetchPromise) return _wishlistFetchPromise;
+
+  _wishlistFetchPromise = (async () => {
+    try {
+      const response = await UserService.getWishlist(1, 100);
+      let items: any[] = [];
+      if (Array.isArray(response)) items = response;
+      else if (response?.data) items = response.data;
+
+      const ids = new Set<string>();
+      items.forEach((item: any) => {
+        const pid = item.productId?._id || item.productId?.id || item.productId;
+        if (pid) ids.add(pid);
+      });
+      _wishlistCache = { ids, ts: Date.now() };
+      return ids;
+    } finally {
+      _wishlistFetchPromise = null;
+    }
+  })();
+
+  return _wishlistFetchPromise;
+}
+
+export function invalidateWishlistCache() {
+  _wishlistCache = null;
+}
+
 interface WishlistButtonProps {
   productId: string;
   className?: string;
@@ -27,17 +64,10 @@ const WishlistButton: React.FC<WishlistButtonProps> = ({
   const checkWishlistStatus = async () => {
     try {
       const token = TokenManager.getToken();
-      console.log('[WishlistButton] Token available:', !!token);
-      
-      const user = TokenManager.getUser();
-      console.log('[WishlistButton] User from TokenManager:', user);
-      console.log('[WishlistButton] User wishlist:', user?.wishlist);
-      
-      if (user?.wishlist) {
-        const inWishlist = user.wishlist.some((item: any) => item.productId === productId);
-        console.log('[WishlistButton] Product in wishlist:', inWishlist);
-        setIsWishlisted(inWishlist);
-      }
+      if (!token) return;
+
+      const ids = await fetchWishlistIds();
+      setIsWishlisted(ids.has(productId));
     } catch (error) {
       console.error('[WishlistButton] Error checking wishlist:', error);
     }
@@ -58,58 +88,27 @@ const WishlistButton: React.FC<WishlistButtonProps> = ({
     setIsWishlisted(newWishlistStatus);
     
     try {
-      console.log('[WishlistButton] Toggling wishlist for product:', productId);
-      console.log('[WishlistButton] New wishlist status:', newWishlistStatus);
-      
-      let response: any;
       if (newWishlistStatus) {
-        // Add to wishlist
-        console.log('[WishlistButton] Adding to wishlist...');
-        response = await UserService.addToWishlist(productId);
-        console.log('[WishlistButton] Add response:', response);
+        await UserService.addToWishlist(productId);
       } else {
-        // Remove from wishlist
-        console.log('[WishlistButton] Removing from wishlist...');
-        response = await UserService.removeFromWishlist(productId);
-        console.log('[WishlistButton] Remove response:', response);
+        await UserService.removeFromWishlist(productId);
       }
 
-      // Update user in TokenManager - handle { success, user } and direct user formats
-      if (response) {
-        console.log('[WishlistButton] Response received:', response);
-        const userData = (response as any)?.user || response;
-        TokenManager.setUser(userData);
-      }
-
-      // Also refresh the full profile to ensure sync
-      try {
-        const updatedResponse = await UserService.getProfile();
-        console.log('[WishlistButton] Updated response:', updatedResponse);
-        const updatedUser = (updatedResponse as any)?.user || updatedResponse;
-        TokenManager.setUser(updatedUser);
-      } catch (profileError) {
-        console.warn('[WishlistButton] Could not fetch updated profile:', profileError);
-      }
+      // Invalidate cache so other buttons pick up the change
+      invalidateWishlistCache();
 
       // Notify parent component
       onWishlistChange?.(newWishlistStatus);
     } catch (error: any) {
       console.error('[WishlistButton] Error toggling wishlist:', error);
-      console.error('[WishlistButton] Error type:', typeof error);
-      console.error('[WishlistButton] Error keys:', Object.keys(error || {}));
-      console.error('[WishlistButton] Error message:', error?.message);
       const errorMessage = error?.message || 'Failed to update wishlist';
       
-      // If got "already in wishlist" error, it means the product IS in wishlist
-      // Keep the heart red and don't show alert
+      // If got "already in wishlist" error, keep the heart red
       if (newWishlistStatus && error?.status === 400 && error?.message?.includes('already')) {
-        console.log('[WishlistButton] Product already in wishlist, keeping heart red');
-        // Ensure state is synced with server reality
         setIsWishlisted(true);
       } else {
-        // Real error - revert the optimistic update and sync with server
-        console.log('[WishlistButton] Real error, reverting to server state');
-        await checkWishlistStatus();
+        // Real error - revert the optimistic update
+        setIsWishlisted(!newWishlistStatus);
         alert('Failed to update wishlist: ' + errorMessage);
       }
     } finally {

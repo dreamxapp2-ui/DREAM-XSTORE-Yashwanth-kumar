@@ -74,23 +74,27 @@ export const ContactPage = () => {
     setIsSubmitting(true);
     setSubmitStatus("idle");
 
-    // Simulate form submission
-    setTimeout(() => {
-      setIsSubmitting(false);
-      setSubmitStatus("success");
-      setFormData({
-        name: "",
-        email: "",
-        phone: "",
-        subject: "",
-        message: ""
+    try {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+      const res = await fetch(`${apiUrl}/contact`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
       });
-      
-      // Reset success message after 5 seconds
-      setTimeout(() => {
-        setSubmitStatus("idle");
-      }, 5000);
-    }, 1500);
+      const data = await res.json();
+
+      if (data.success) {
+        setSubmitStatus("success");
+        setFormData({ name: "", email: "", phone: "", subject: "", message: "" });
+      } else {
+        setSubmitStatus("error");
+      }
+    } catch {
+      setSubmitStatus("error");
+    } finally {
+      setIsSubmitting(false);
+      setTimeout(() => setSubmitStatus("idle"), 5000);
+    }
   };
 
   const handleWhatsAppContact = () => {

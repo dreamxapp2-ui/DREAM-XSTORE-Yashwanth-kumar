@@ -36,9 +36,9 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({ user, stats, onEdi
         <div className="flex flex-col md:flex-row gap-6 items-start md:items-center">
           {/* Avatar */}
           <div className="flex-shrink-0">
-            {user.hero_image ? (
+            {(user.hero_image || (user as any).profilePicture) ? (
               <img
-                src={user.hero_image}
+                src={user.hero_image || (user as any).profilePicture}
                 alt={user.username}
                 className="w-24 h-24 rounded-full object-cover border-4 border-[#f1ff8c]"
               />

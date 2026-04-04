@@ -22,22 +22,21 @@ function normalizeRow(row) {
   return {
     _id: row.id,
     id: row.id,
-    productId: row.productId,
-    addedAt: row.addedAt,
-    product: row.product_name
+    productId: row.product_name
       ? {
           id: row.productId,
           _id: row.productId,
           name: row.product_name,
           price: parseFloat(row.product_price),
-          originalPrice: parseFloat(row.product_originalPrice),
-          discount: parseFloat(row.product_discount),
+          originalPrice: parseFloat(row.product_originalPrice || 0),
+          discount: parseFloat(row.product_discount || 0),
           images: row.product_images || [],
-          rating: parseFloat(row.product_rating),
-          reviewsCount: row.product_reviewsCount,
-          brandName: row.product_brandName,
+          rating: parseFloat(row.product_rating || 0),
+          reviewsCount: row.product_reviewsCount || 0,
+          brandName: row.product_brandName || '',
         }
-      : undefined,
+      : row.productId,
+    addedAt: row.addedAt,
   };
 }
 
