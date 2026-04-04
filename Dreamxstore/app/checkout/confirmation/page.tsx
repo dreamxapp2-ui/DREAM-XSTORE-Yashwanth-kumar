@@ -1,11 +1,19 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { CheckCircle, Package, ArrowRight, Home } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 
 export default function OrderConfirmationPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="animate-spin h-8 w-8 border-4 border-black border-t-transparent rounded-full" /></div>}>
+      <ConfirmationContent />
+    </Suspense>
+  );
+}
+
+function ConfirmationContent() {
   const searchParams = useSearchParams();
   const orderId = searchParams.get("orderId") || "";
   const [showConfetti, setShowConfetti] = useState(true);
